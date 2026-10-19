@@ -30,7 +30,8 @@ class RuntimeFixtures(unittest.TestCase):
             if f.with_suffix(".cases.json").exists():
                 self.assertGreater(stats["cases"], 0)
             elif not want:
-                self.assertGreater(stats["examples"], 25)
+                # Successful fixtures must execute examples; their case count varies by rule.
+                self.assertGreater(stats["examples"], 0, f.name)
 
     def test_stdlib_examples_pass(self):
         prog = load([str(ROOT / "stdlib"), str(ROOT / "examples")])

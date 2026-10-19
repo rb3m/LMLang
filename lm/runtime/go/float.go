@@ -8,6 +8,7 @@ package main
 
 import (
 	"math"
+	"math/big"
 	"regexp"
 	"strconv"
 	"strings"
@@ -99,6 +100,32 @@ func prim_float_ceil(x Value) Value { return toInt("float.ceil", x.(float64), ma
 func prim_float_round(x Value) Value { return toInt("float.round", x.(float64), math.Round(x.(float64))) }
 
 func prim_float_trunc(x Value) Value { return toInt("float.trunc", x.(float64), math.Trunc(x.(float64))) }
+
+// fixed rounds the exact binary64 rational using integer quotient/remainder, ties to even.
+// Neither the scaling nor the rounded integer passes through floating-point or Int64 arithmetic.
+func prim_float_fixed(x, digits Value) Value {
+	f, d := x.(float64), int(digits.(int64))
+	ratio := new(big.Rat).SetFloat64(math.Abs(f))
+	scale := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(d)), nil)
+	numerator := new(big.Int).Mul(ratio.Num(), scale)
+	q, rem := new(big.Int), new(big.Int)
+	q.QuoRem(numerator, ratio.Denom(), rem)
+	cmp := rem.Lsh(rem, 1).Cmp(ratio.Denom())
+	if cmp > 0 || (cmp == 0 && q.Bit(0) == 1) {
+		q.Add(q, big.NewInt(1))
+	}
+	s := q.String()
+	if len(s) <= d {
+		s = strings.Repeat("0", d+1-len(s)) + s
+	}
+	if d > 0 {
+		s = s[:len(s)-d] + "." + s[len(s)-d:]
+	}
+	if f < 0 && q.Sign() != 0 {
+		s = "-" + s
+	}
+	return s
+}
 
 // ---- prims: str.from-float / str.to-float --------------------------------------------------------
 

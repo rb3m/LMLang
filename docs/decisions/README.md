@@ -78,3 +78,4 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-068](0068-system-access-env-and-fs.md) Backlog 14: `env.lookup`, fs append/entries/is-dir/make-dir/remove/rename, effects env.read and fs.delete (2026-10-19, agent consensus)
 - [ADR-069](0069-http-client-proposal.md) Backlog 15: HTTP client design; PROPOSED, owner decisions R1-R5 pending (2026-10-19)
 - [ADR-070](0070-user-defined-generic-types.md) Backlog 16: user-defined generic types `(type (Tree a) ..)`, regular recursion, erased at runtime (2026-10-19, agent consensus)
+- [ADR-071](0071-float-fixed-and-dates.md) Backlog 18: `float.fixed` (exact half-even) and the pure `date` module (2026-10-19, agent consensus)

@@ -4,6 +4,28 @@ module billing  -- Invoice totals.  (use list)
 module colsum  -- Sum a CSV column per key, keys ascending: colsum FILE KEY-COL VALUE-COL (zero-based).  (use fs io list map str)
 *fn colsum.main  -> Int  [eff fs.read io.in io.out]  -- Entry point: parse arguments, run, map I/O errors to exit status 1.
 *fn colsum.summarize  (rows (List Str)) (kcol Int) (vcol Int) -> Summary  -- Totals per key (a Map, so in ascending key order), and the number of unparsable rows.
+module date  -- Pure Gregorian dates and UTC datetimes, years 1..9999.  (use list str)
+*type date.Date  (rec (year Int) (month Int) (day Int))
+*type date.DateTime  (rec (date Date) (hour Int) (minute Int) (second Int) (ms Int))
+*const date.ms-per-day  Int = 86400000  -- Milliseconds in a UTC calendar day.
+*fn date.add-days  (d Date) (n Int) -> (Opt Date)  -- Add calendar days, or None if the result leaves the supported range.
+*fn date.compare  (a Date) (b Date) -> Int  -- Compare dates, returning exactly -1, 0 or 1.
+*fn date.compare-datetime  (a DateTime) (b DateTime) -> Int  -- Compare UTC datetimes, returning exactly -1, 0 or 1.
+*fn date.diff-days  (a Date) (b Date) -> Int  -- Signed day difference a minus b.
+*fn date.from-days  (n Int) -> (Opt Date)  -- Date for an epoch day, or None outside 0001-01-01..9999-12-31.
+*fn date.from-epoch-ms  (ms Int) -> (Opt DateTime)  -- UTC datetime for epoch milliseconds, or None outside the supported dates.
+*fn date.is-leap-year  (year Int) -> Bool  -- Whether a year in 1..9999 is a Gregorian leap year.
+*fn date.make  (y Int) (m Int) (d Int) -> (Opt Date)  -- Construct a date, or None for invalid fields.
+*fn date.make-datetime  (d Date) (hour Int) (minute Int) (second Int) (ms Int) -> (Opt DateTime)  -- Construct a UTC datetime, or None for invalid date or clock fields.
+*fn date.parse  (s Str) -> (Opt Date)  -- Parse exactly YYYY-MM-DD with ASCII digits and a valid Gregorian date.
+*fn date.parse-datetime  (s Str) -> (Opt DateTime)  -- Parse exactly YYYY-MM-DDTHH:MM:SS.mmmZ with ASCII digits and UTC Z.
+*fn date.print  (d Date) -> Str  -- Render a valid date as YYYY-MM-DD.
+*fn date.print-datetime  (dt DateTime) -> Str  -- Render a valid UTC datetime as YYYY-MM-DDTHH:MM:SS.mmmZ.
+*fn date.to-days  (d Date) -> Int  -- Days since 1970-01-01; Hinnant civil algorithm with floor division.
+*fn date.to-epoch-ms  (dt DateTime) -> Int  -- Unix epoch milliseconds for a valid UTC datetime.
+*fn date.valid  (d Date) -> Bool  -- Whether a record is a Gregorian date in years 1..9999.
+*fn date.valid-datetime  (dt DateTime) -> Bool  -- Whether a UTC date and clock fields are valid, without leap seconds.
+*fn date.weekday  (d Date) -> Int  -- ISO weekday, Monday 1 through Sunday 7.
 module env  -- Read-only environment access.
 *fn env.lookup  (name Str) -> (Opt Str)  [eff env.read]  -- Look up an environment variable; None for unset or invalid names.
 module file-lines  -- Count lines in a UTF-8 file named by the first program argument.  (use fs io list str)
@@ -22,6 +44,7 @@ module float  -- Float helpers: conversions, rounding, constants, exp, logs, sqr
 *fn float.e  -> Float  -- Euler's number, nearest binary64, pinned to bits 0x4005bf0a8b145769.
 *fn float.exp  (x Float) -> Float  -- Exponential; overflow is E-FLOAT, underflow is allowed; error at most 1 ulp.
 *fn float.expm1  (x Float) -> Float  -- exp(x)-1, preserving tiny x lost by exp(x)-1; overflow faults E-FLOAT; error at most 1 ulp.
+*fn float.fixed  (x Float) (digits Int) -> Str  -- Fixed decimals of exact binary x, half-even; unlike round, which rounds halves away from zero.
 *fn float.floor  (x Float) -> Int  -- Largest Int not above x; outside the Int range is the fault E-OVERFLOW.
 *fn float.from-int  (n Int) -> Float  -- Nearest Float to an Int (ties to even).
 *fn float.hypot  (x Float) (y Float) -> Float  -- Euclidean length without intermediate overflow; result overflow is E-FLOAT; error at most 1 ulp.

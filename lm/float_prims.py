@@ -42,6 +42,18 @@ def from_float(it, x):
     return float_text(x)
 
 
+def fixed(it, x, digits):
+    """Round the exact binary ratio, half to even, using unbounded integer arithmetic."""
+    numerator, denominator = abs(x).as_integer_ratio()
+    scaled, remainder = divmod(numerator * 10 ** digits, denominator)
+    if remainder * 2 > denominator or (remainder * 2 == denominator and scaled % 2):
+        scaled += 1
+    text = str(scaled).zfill(digits + 1)
+    if digits:
+        text = text[:-digits] + "." + text[-digits:]
+    return ("-" if x < 0 and scaled else "") + text
+
+
 def math_prim(name, fn, positive=False):
     """Shared domain/result checks for versioned Float math algorithms."""
     def checked(it, *args):
@@ -65,6 +77,7 @@ def to_float(it, s):
 
 
 FLOAT_PRIMS = {
+    "float.fixed": fixed,
     "float.sinh": math_prim("float.sinh", float_math_hyp.sinh),
     "float.cosh": math_prim("float.cosh", float_math_hyp.cosh),
     "float.tanh": math_prim("float.tanh", float_math_hyp.tanh),

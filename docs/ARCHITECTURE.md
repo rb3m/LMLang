@@ -61,7 +61,7 @@ lm/
                float.go (checked Float ops without FMA, canonical text = Python repr, Float prims),
                coll.go (Map/Set AVL tree, mapOf/setOf, map/set prims), rand.go (clock/random), json.go (JSON)
   runtime/py/  Python runtime embedded into standalone Python build outputs: rt.py (values, checked Int/Float ops, calls, depth accounting, prims), entry.py (CLI entry/runner, diagnostics, seed)
-stdlib/        list.lm pair.lm str.lm opt.lm map.lm set.lm math.lm float.lm io.lm fs.lm time.lm rand.lm json.lm (LM source over lm/prims.py primitives)
+stdlib/        list.lm pair.lm str.lm opt.lm map.lm set.lm math.lm float.lm io.lm fs.lm time.lm date.lm rand.lm json.lm (LM source over lm/prims.py primitives; date is pure LM)
 src/           user programs
 examples/      sample projects used by tests and bench
 games/         standalone LM projects (run ../../bin/lm inside; e.g. games/roadster-lander)

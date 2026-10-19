@@ -15,9 +15,10 @@ from pathlib import Path
 
 from lm import gobackend
 from lm.build import GO_MOD, find_go, go_build
-from lm.float_prims import to_float
+from lm.float_prims import FLOAT_PRIMS, to_float
 from lm.interp import PRELUDE_FNS
 from lm.printer import float_text, format_text
+from lm.runtime.py.rt import prim_float_fixed
 from lm.sexpr import read, to_data
 from lm.values import FloatFault, show
 
@@ -48,6 +49,9 @@ func main() {
 		switch f[0] {
 		case "show":
 			writeLine(showFloat(bits(f[1])))
+		case "fixed":
+			digits, _ := strconv.ParseInt(f[2], 10, 64)
+			writeLine(prim_float_fixed(bits(f[1]), digits).(string))
 		case "parse":
 			writeLine(show(prim_str_to_float(strings.TrimPrefix(in.Text(), "parse "))))
 		default:
@@ -94,6 +98,17 @@ def random_texts(rng, n):
 
 
 class LiteralsAndText(unittest.TestCase):
+    def test_fixed_interpreter_and_python(self):
+        # Python's independently implemented decimal formatter is an oracle only in tests.
+        rng = random.Random(180)
+        for x in random_floats(rng, 2000) + [-0.0, -0.001, 0.125, 0.375, 9.995, 9.999]:
+            for digits in (0, 2, 17, rng.randrange(18)):
+                expected = format(x, f".{digits}f")
+                if expected.startswith("-") and not any(c in "123456789" for c in expected):
+                    expected = expected[1:]
+                self.assertEqual(FLOAT_PRIMS["float.fixed"](None, x, digits), expected)
+                self.assertEqual(prim_float_fixed(x, digits), expected)
+
     def test_reader_grammar(self):
         node, d = read("(1.0 -0.5 2.5e-3 1e+16 1E5 -0.0 7)")
         self.assertEqual(d, [])
@@ -158,6 +173,16 @@ class GoParity(unittest.TestCase):
     def test_to_float(self):
         texts = random_texts(random.Random(40), 6000)
         self.compare([f"parse {t}" for t in texts], [show(to_float(None, t)) for t in texts])
+
+    def test_fixed(self):
+        rng = random.Random(181)
+        xs = random_floats(rng, 2000)
+        cases = [(x, rng.randrange(18)) for x in xs]
+        want = [format(x, f".{d}f") for x, d in cases]
+        want = [s[1:] if s.startswith("-") and not any(c in "123456789" for c in s) else s
+                for s in want]
+        self.assertEqual([FLOAT_PRIMS["float.fixed"](None, x, d) for x, d in cases], want)
+        self.compare([f"fixed {hexbits(x)} {d}" for x, d in cases], want)
 
     def test_arithmetic(self):
         rng = random.Random(41)

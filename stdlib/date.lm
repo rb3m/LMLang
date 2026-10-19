@@ -1,0 +1,364 @@
+(module date
+  (purpose "Pure Gregorian dates and UTC datetimes, years 1..9999.")
+  (use list str)
+  (export
+    Date
+    DateTime
+    add-days
+    compare
+    compare-datetime
+    diff-days
+    from-days
+    from-epoch-ms
+    is-leap-year
+    make
+    make-datetime
+    ms-per-day
+    parse
+    parse-datetime
+    print
+    print-datetime
+    to-days
+    to-epoch-ms
+    valid
+    valid-datetime
+    weekday)
+  (type Date (rec (year Int) (month Int) (day Int)))
+  (type DateTime (rec (date Date) (hour Int) (minute Int) (second Int) (ms Int)))
+  (const ms-per-day (purpose "Milliseconds in a UTC calendar day.") (type Int) (value 86400000))
+  (fn add-days
+    (purpose "Add calendar days, or None if the result leaves the supported range.")
+    (sig (d Date) (n Int) -> (Opt Date))
+    (requires (valid d))
+    (example
+      ((new Date (year 2000) (month 2) (day 29)) 1)
+      =>
+      (Some (new Date (year 2000) (month 3) (day 1))))
+    (body
+      (let
+        ((base (to-days d)))
+        (if (or (< n (- -719162 base)) (> n (- 2932896 base))) None (from-days (+ base n))))))
+  (fn compare
+    (purpose "Compare dates, returning exactly -1, 0 or 1.")
+    (sig (a Date) (b Date) -> Int)
+    (requires (and (valid a) (valid b)))
+    (example
+      ((new Date (year 1) (month 1) (day 1)) (new Date (year 9999) (month 12) (day 31)))
+      =>
+      -1)
+    (body (let ((x (to-days a)) (y (to-days b))) (if (< x y) -1 (if (> x y) 1 0)))))
+  (fn compare-datetime
+    (purpose "Compare UTC datetimes, returning exactly -1, 0 or 1.")
+    (sig (a DateTime) (b DateTime) -> Int)
+    (requires (and (valid-datetime a) (valid-datetime b)))
+    (example
+      (
+        (new
+          DateTime
+          (date (new Date (year 1969) (month 12) (day 31)))
+          (hour 23)
+          (minute 59)
+          (second 59)
+          (ms 999))
+        (new
+          DateTime
+          (date (new Date (year 1970) (month 1) (day 1)))
+          (hour 0)
+          (minute 0)
+          (second 0)
+          (ms 0)))
+      =>
+      -1)
+    (body (let ((x (to-epoch-ms a)) (y (to-epoch-ms b))) (if (< x y) -1 (if (> x y) 1 0)))))
+  (fn diff-days
+    (purpose "Signed day difference a minus b.")
+    (sig (a Date) (b Date) -> Int)
+    (requires (and (valid a) (valid b)))
+    (example
+      ((new Date (year 1970) (month 1) (day 2)) (new Date (year 1970) (month 1) (day 1)))
+      =>
+      1)
+    (body (- (to-days a) (to-days b))))
+  (fn digits-value
+    (purpose "Parse a bounded field containing exactly width ASCII digits.")
+    (sig (s Str) (width Int) -> (Opt Int))
+    (example ("09" 2) => (Some 9))
+    (body
+      (if
+        (!= (str.length s) width)
+        None
+        (list.fold
+          (str.to-codes s)
+          (Some 0)
+          (lam
+            ((acc (Opt Int)) (c Int))
+            (if (and (>= c 48) (<= c 57)) (let? ((n acc)) (Some (+ (* n 10) (- c 48)))) None))))))
+  (fn from-days
+    (purpose "Date for an epoch day, or None outside 0001-01-01..9999-12-31.")
+    (sig (n Int) -> (Opt Date))
+    (example (0) => (Some (new Date (year 1970) (month 1) (day 1))))
+    (body
+      (if
+        (or (< n -719162) (> n 2932896))
+        None
+        (let
+          ((z (+ n 719468)))
+          (let
+            ((era (/ z 146097)))
+            (let
+              ((doe (- z (* era 146097))))
+              (let
+                ((yoe (/ (- (+ (- doe (/ doe 1460)) (/ doe 36524)) (/ doe 146096)) 365)))
+                (let
+                  ((y (+ yoe (* era 400))) (doy (- doe (- (+ (* 365 yoe) (/ yoe 4)) (/ yoe 100)))))
+                  (let
+                    ((mp (/ (+ (* 5 doy) 2) 153)))
+                    (let
+                      ((m (+ mp (if (< mp 10) 3 -9))) (day (+ (- doy (/ (+ (* 153 mp) 2) 5)) 1)))
+                      (Some (new Date (year (+ y (if (<= m 2) 1 0))) (month m) (day day)))))))))))))
+  (fn from-epoch-ms
+    (purpose "UTC datetime for epoch milliseconds, or None outside the supported dates.")
+    (sig (ms Int) -> (Opt DateTime))
+    (example
+      (-1)
+      =>
+      (Some
+        (new
+          DateTime
+          (date (new Date (year 1969) (month 12) (day 31)))
+          (hour 23)
+          (minute 59)
+          (second 59)
+          (ms 999))))
+    (body
+      (if
+        (or (< ms -62135596800000) (> ms 253402300799999))
+        None
+        (let
+          ((days (/ ms 86400000)) (rem (mod ms 86400000)))
+          (let?
+            ((d (from-days days)))
+            (make-datetime
+              d
+              (/ rem 3600000)
+              (mod (/ rem 60000) 60)
+              (mod (/ rem 1000) 60)
+              (mod rem 1000)))))))
+  (fn is-leap-year
+    (purpose "Whether a year in 1..9999 is a Gregorian leap year.")
+    (sig (year Int) -> Bool)
+    (example (1900) => false)
+    (example (2000) => true)
+    (body
+      (and
+        (>= year 1)
+        (<= year 9999)
+        (= (mod year 4) 0)
+        (or (!= (mod year 100) 0) (= (mod year 400) 0)))))
+  (fn make
+    (purpose "Construct a date, or None for invalid fields.")
+    (sig (y Int) (m Int) (d Int) -> (Opt Date))
+    (example (2000 2 29) => (Some (new Date (year 2000) (month 2) (day 29))))
+    (body (let ((v (new Date (year y) (month m) (day d)))) (if (valid v) (Some v) None))))
+  (fn make-datetime
+    (purpose "Construct a UTC datetime, or None for invalid date or clock fields.")
+    (sig (d Date) (hour Int) (minute Int) (second Int) (ms Int) -> (Opt DateTime))
+    (example
+      ((new Date (year 1970) (month 1) (day 1)) 0 0 0 0)
+      =>
+      (Some
+        (new
+          DateTime
+          (date (new Date (year 1970) (month 1) (day 1)))
+          (hour 0)
+          (minute 0)
+          (second 0)
+          (ms 0))))
+    (body
+      (let
+        ((v (new DateTime (date d) (hour hour) (minute minute) (second second) (ms ms))))
+        (if (valid-datetime v) (Some v) None))))
+  (fn month-length
+    (purpose "Days in a month of a supported year.")
+    (sig (y Int) (m Int) -> Int)
+    (example (2000 2) => 29)
+    (body (if (= m 2) (if (is-leap-year y) 29 28) (if (or (= m 4) (= m 6) (= m 9) (= m 11)) 30 31))))
+  (fn padded
+    (purpose "Zero-pad a nonnegative decimal field.")
+    (sig (n Int) (width Int) -> Str)
+    (example (7 2) => "07")
+    (body (str.pad-left (str.from-int n) width "0")))
+  (fn parse
+    (purpose "Parse exactly YYYY-MM-DD with ASCII digits and a valid Gregorian date.")
+    (sig (s Str) -> (Opt Date))
+    (example ("0001-01-01") => (Some (new Date (year 1) (month 1) (day 1))))
+    (body
+      (match
+        (str.split s "-")
+        (
+          (list y m d)
+          (let?
+            ((yv (digits-value y 4)) (mv (digits-value m 2)) (dv (digits-value d 2)))
+            (make yv mv dv)))
+        (_ None))))
+  (fn parse-clock
+    (purpose "Parse the exact HH:MM:SS.mmmZ clock suffix.")
+    (sig (d Date) (s Str) -> (Opt DateTime))
+    (example ((new Date (year 2000) (month 2) (day 29)) "24:00:00.000Z") => None)
+    (body
+      (match
+        (str.split s "Z")
+        (
+          (list clock "")
+          (match
+            (str.split clock ".")
+            (
+              (list hms millis)
+              (match
+                (str.split hms ":")
+                (
+                  (list h m sec)
+                  (let?
+                    (
+                      (hv (digits-value h 2))
+                      (mv (digits-value m 2))
+                      (sv (digits-value sec 2))
+                      (msv (digits-value millis 3)))
+                    (make-datetime d hv mv sv msv)))
+                (_ None)))
+            (_ None)))
+        (_ None))))
+  (fn parse-datetime
+    (purpose "Parse exactly YYYY-MM-DDTHH:MM:SS.mmmZ with ASCII digits and UTC Z.")
+    (sig (s Str) -> (Opt DateTime))
+    (example
+      ("1969-12-31T23:59:59.999Z")
+      =>
+      (Some
+        (new
+          DateTime
+          (date (new Date (year 1969) (month 12) (day 31)))
+          (hour 23)
+          (minute 59)
+          (second 59)
+          (ms 999))))
+    (body
+      (match
+        (str.split s "T")
+        ((list ds clock) (let? ((d (parse ds))) (parse-clock d clock)))
+        (_ None))))
+  (fn print
+    (purpose "Render a valid date as YYYY-MM-DD.")
+    (sig (d Date) -> Str)
+    (requires (valid d))
+    (example ((new Date (year 1) (month 1) (day 1))) => "0001-01-01")
+    (body
+      (str.join (list (padded (get d year) 4) (padded (get d month) 2) (padded (get d day) 2)) "-")))
+  (fn print-datetime
+    (purpose "Render a valid UTC datetime as YYYY-MM-DDTHH:MM:SS.mmmZ.")
+    (sig (dt DateTime) -> Str)
+    (requires (valid-datetime dt))
+    (example
+      (
+        (new
+          DateTime
+          (date (new Date (year 1969) (month 12) (day 31)))
+          (hour 23)
+          (minute 59)
+          (second 59)
+          (ms 999)))
+      =>
+      "1969-12-31T23:59:59.999Z")
+    (body
+      (str.join
+        (list
+          (print (get dt date))
+          "T"
+          (padded (get dt hour) 2)
+          ":"
+          (padded (get dt minute) 2)
+          ":"
+          (padded (get dt second) 2)
+          "."
+          (padded (get dt ms) 3)
+          "Z")
+        "")))
+  (fn to-days
+    (purpose "Days since 1970-01-01; Hinnant civil algorithm with floor division.")
+    (sig (d Date) -> Int)
+    (requires (valid d))
+    (example ((new Date (year 1970) (month 1) (day 1))) => 0)
+    (body
+      (let
+        ((y (- (get d year) (if (<= (get d month) 2) 1 0))))
+        (let
+          ((era (/ y 400)))
+          (let
+            ((yoe (- y (* era 400))) (mp (+ (get d month) (if (> (get d month) 2) -3 9))))
+            (let
+              ((doy (+ (/ (+ (* 153 mp) 2) 5) (- (get d day) 1))))
+              (- (+ (* era 146097) (+ (- (+ (* yoe 365) (/ yoe 4)) (/ yoe 100)) doy)) 719468)))))))
+  (fn to-epoch-ms
+    (purpose "Unix epoch milliseconds for a valid UTC datetime.")
+    (sig (dt DateTime) -> Int)
+    (requires (valid-datetime dt))
+    (example
+      (
+        (new
+          DateTime
+          (date (new Date (year 1969) (month 12) (day 31)))
+          (hour 23)
+          (minute 59)
+          (second 59)
+          (ms 999)))
+      =>
+      -1)
+    (body
+      (+
+        (* (to-days (get dt date)) ms-per-day)
+        (+
+          (* (get dt hour) 3600000)
+          (+ (* (get dt minute) 60000) (+ (* (get dt second) 1000) (get dt ms)))))))
+  (fn valid
+    (purpose "Whether a record is a Gregorian date in years 1..9999.")
+    (sig (d Date) -> Bool)
+    (example ((new Date (year 2000) (month 2) (day 29))) => true)
+    (body
+      (and
+        (>= (get d year) 1)
+        (<= (get d year) 9999)
+        (>= (get d month) 1)
+        (<= (get d month) 12)
+        (>= (get d day) 1)
+        (<= (get d day) (month-length (get d year) (get d month))))))
+  (fn valid-datetime
+    (purpose "Whether a UTC date and clock fields are valid, without leap seconds.")
+    (sig (dt DateTime) -> Bool)
+    (example
+      (
+        (new
+          DateTime
+          (date (new Date (year 1969) (month 12) (day 31)))
+          (hour 23)
+          (minute 59)
+          (second 59)
+          (ms 999)))
+      =>
+      true)
+    (body
+      (and
+        (valid (get dt date))
+        (>= (get dt hour) 0)
+        (<= (get dt hour) 23)
+        (>= (get dt minute) 0)
+        (<= (get dt minute) 59)
+        (>= (get dt second) 0)
+        (<= (get dt second) 59)
+        (>= (get dt ms) 0)
+        (<= (get dt ms) 999))))
+  (fn weekday
+    (purpose "ISO weekday, Monday 1 through Sunday 7.")
+    (sig (d Date) -> Int)
+    (requires (valid d))
+    (example ((new Date (year 1970) (month 1) (day 1))) => 4)
+    (body (+ (mod (+ (to-days d) 3) 7) 1))))

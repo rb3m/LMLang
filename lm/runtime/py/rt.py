@@ -329,6 +329,17 @@ def prim_float_round(x: float):
     return _float_to_int("float.round", x, t + (1 if x > 0 else -1) if abs(x - t) >= 0.5 else t)
 def prim_float_trunc(x: float): return _float_to_int("float.trunc", x, math.trunc(x))
 
+def prim_float_fixed(x: float, digits: int):
+    # Exact binary ratio and unbounded integers; ties round to an even scaled integer.
+    numerator, denominator = abs(x).as_integer_ratio()
+    scaled, remainder = divmod(numerator * 10 ** digits, denominator)
+    if remainder * 2 > denominator or (remainder * 2 == denominator and scaled % 2):
+        scaled += 1
+    text = str(scaled).zfill(digits + 1)
+    if digits:
+        text = text[:-digits] + "." + text[-digits:]
+    return ("-" if x < 0 and scaled else "") + text
+
 def sanitize_arg(a: str) -> str:
     try: return a.encode("utf-8", errors="surrogateescape").decode("utf-8", errors="replace")
     except Exception: return a

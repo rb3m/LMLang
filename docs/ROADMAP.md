@@ -25,7 +25,7 @@ Numbers are stable identifiers (commits and ADRs cite them); new items take the 
 15. (Designed 2026-10-19, ADR-069 PROPOSED: waiting on owner decisions R1-R5 before implementation.) (Queued 2026-10-18.) Networking: HTTP client first, then a minimal HTTP server, so the Python target (ADR-062) can serve on DreamHost. Security-sensitive (untrusted input, TLS, request limits): the risky choices go to the owner per the 2026-10-18 rule. Deferred from M12 "until a program needs it".
 16. (Done 2026-10-19, ADR-070: `(type (Tree a) ..)`, inferred construction, regular recursion, erased at runtime; examples/tree.lm.) (Queued 2026-10-18.) User-defined generic types (`(type (Tree a) ..)`, `(Result a e)`): today every container is re-declared per concrete type; the built-in `Pair` (ADR-059) was a workaround. Largest language-level gap.
 17. (Queued 2026-10-18.) An indexed collection with efficient update (vector/array): lists are immutable linked sequences, so grids, simulations and large tables pay O(n) per update.
-18. (Queued 2026-10-18.) Formatting and dates: number formatting (fixed decimals, padding; Roadster Lander wrote its own formatter), calendar dates and durations with parsing and formatting (the M9 ledger parsed dates by hand).
+18. (Done 2026-10-19, ADR-071: `float.fixed`, module `date` with Date/DateTime, ISO parse/print, epoch conversion; duration text deferred.) (Queued 2026-10-18.) Formatting and dates: number formatting (fixed decimals, padding; Roadster Lander wrote its own formatter), calendar dates and durations with parsing and formatting (the M9 ledger parsed dates by hand).
 19. (Queued 2026-10-18.) Text patterns: a regex-like matcher with pinned, backend-identical semantics.
 20. (Queued 2026-10-18.) Effect mocking, so examples can cover functions with effects (files, clock, network) using fake inputs; today only scenarios exercise effectful code.
 21. (Queued 2026-10-18.) Thesis validation in the real world: the S5 real-tokenizer re-measure (needs an ANTHROPIC_API_KEY), a first run on DreamHost (copy a `--target py` script, run `python3`), and a program used day to day.
@@ -35,6 +35,8 @@ Numbers are stable identifiers (commits and ADRs cite them); new items take the 
 24. (Done 2026-10-19, ADR-067: E-SCENARIO in `lm check`, INVALID in `accept --guard`, `index --stdlib --modules` 824 bytes vs 15.8 KB; one-effect allows and the declared-effects rule kept and documented.) (Queued 2026-10-19, from the ADR-065 cold start.) Onboarding gaps: (1) `lm accept --guard` (and `check`) pass while a proposed scenario is malformed, e.g. `(allow io.out fs.read)`; only `--review` reports it, so an agent believes it is done; (2) `lm index --stdlib` is 15 KB, 54% of what a new agent read: a per-module filter (`--stdlib MOD`) or a shorter form; (3) scenarios must allow every effect the target declares even on paths that never use it (by design? note it in the guide or decide).
 
 25. (Queued 2026-10-19, split from 14; needs an owner decision, security.) Subprocesses: run a program with arguments (no shell), capture exit status, stdout and stderr; owner decides whether LM programs may run other programs at all, under which effect (e.g. `proc.run`), and limits (allowed commands, timeouts, environment passed through).
+
+26. (Queued 2026-10-19.) `lm run` prints check warnings (JSON lines) on stdout before the program's own output, so piping a program's output picks them up; send them to stderr (found while verifying ADR-071).
 
 ## Working order inside a milestone
 

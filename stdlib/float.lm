@@ -14,6 +14,7 @@
     e
     exp
     expm1
+    fixed
     floor
     from-int
     hypot
@@ -115,6 +116,17 @@
     (example (1e-300) => 1e-300)
     (example (-1000.0) => -1.0)
     (body (prim "float.expm1")))
+  (fn fixed
+    (purpose
+      "Fixed decimals of exact binary x, half-even; unlike round, which rounds halves away from zero.")
+    (sig (x Float) (digits Int) -> Str)
+    (requires (and (>= digits 0) (<= digits 17)))
+    (example (0.125 2) => "0.12")
+    (example (0.375 2) => "0.38")
+    (example (-0.001 2) => "0.00")
+    (example (2.5 0) => "2")
+    (example (0.1 17) => "0.10000000000000001")
+    (body (prim "float.fixed")))
   (fn floor
     (purpose "Largest Int not above x; outside the Int range is the fault E-OVERFLOW.")
     (sig (x Float) -> Int)

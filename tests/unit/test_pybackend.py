@@ -77,8 +77,8 @@ class PyDifferential(unittest.TestCase):
                 label, kind, detail = line.split("\t", 2)
                 got_py[label] = (kind, detail)
 
-        # The generic tree example adds fourteen cases to the existing corpus.
-        self.assertEqual(len(cases), 724)
+        # Formatting and date examples exercise exact rounding and civil/UTC boundaries.
+        self.assertEqual(len(cases), 816)
         diffs = [f"{k}: interp {want.get(k)} != py {got_py.get(k)}"
                  for k, _, _ in cases if want.get(k) != got_py.get(k)]
         self.assertEqual(diffs, [])
