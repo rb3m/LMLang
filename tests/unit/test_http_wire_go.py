@@ -32,7 +32,7 @@ class HttpWireGo(unittest.TestCase):
                 '.DialContext(connectCtx, network, address)',
                 'httpTestDial(connectCtx, network, address)')
             modified = re.sub(r'httpTotalTimeout\s+= 30 \* time.Second',
-                              'httpTotalTimeout = 300 * time.Millisecond',
+                              'httpTotalTimeout = 1500 * time.Millisecond',
                               modified)
             self.assertNotEqual(modified, original)
             path.write_text(modified)

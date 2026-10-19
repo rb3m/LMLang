@@ -52,7 +52,7 @@ func httpTestDial(ctx context.Context, network, address string) (net.Conn, error
 			time.Sleep(bodyDelay)
 			for _, b := range []byte(body) {
 				if drip {
-					time.Sleep(120 * time.Millisecond)
+					time.Sleep(600 * time.Millisecond)
 				}
 				if _, err := server.Write([]byte{b}); err != nil {
 					return
@@ -110,8 +110,8 @@ func TestHTTPClientPipe(t *testing.T) {
 		{name: "trailers101", method: "GET", response: "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n" + strings.Repeat("X: a\r\n", 100) + "\r\n", want: "limit"},
 		{name: "trailers-bytes-exact", method: "GET", response: "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nX: " + strings.Repeat("a", 65503) + "\r\n\r\n"},
 		{name: "trailers-bytes-limit", method: "GET", response: "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nX: " + strings.Repeat("a", 65504) + "\r\n\r\n", want: "limit"},
-		{name: "timeout", method: "GET", response: "HTTP/1.1 200 OK\r\n\r\n", want: "timeout", delay: 500 * time.Millisecond},
-		{name: "body-timeout", method: "GET", response: "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello", want: "timeout", bodyDelay: 500 * time.Millisecond},
+		{name: "timeout", method: "GET", response: "HTTP/1.1 200 OK\r\n\r\n", want: "timeout", delay: 2500 * time.Millisecond},
+		{name: "body-timeout", method: "GET", response: "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello", want: "timeout", bodyDelay: 2500 * time.Millisecond},
 		{name: "drip-deadline", method: "GET", response: "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello", want: "timeout", drip: true},
 	}
 	for _, test := range tests {

@@ -180,7 +180,7 @@ class HttpClient(unittest.TestCase):
             if target == 'interp':
                 # Test-only patch; neither LM nor a binary has a knob.
                 driver = ('import socket,sys; import lm.http_prims as h; '
-                          'h.HTTP_TOTAL_TIMEOUT = 0.3; '
+                          'h.HTTP_TOTAL_TIMEOUT = 1.5; '
                           'original = socket.getaddrinfo\n'
                           'def guarded(host, *args, **kwargs):\n'
                           ' if host == "localhost":\n'
@@ -203,7 +203,7 @@ class HttpClient(unittest.TestCase):
                 if target == 'py':
                     original = output.read_text()
                     modified = original.replace('HTTP_TOTAL_TIMEOUT = 30.0',
-                                                'HTTP_TOTAL_TIMEOUT = 0.3')
+                                                'HTTP_TOTAL_TIMEOUT = 1.5')
                     self.assertNotEqual(original, modified)
                     output.write_text(modified)
                     command = [sys.executable, str(output)]
@@ -212,7 +212,7 @@ class HttpClient(unittest.TestCase):
                     original = path.read_text()
                     modified = re.sub(
                         r'httpTotalTimeout\s+= 30 \* time.Second',
-                        'httpTotalTimeout = 300 * time.Millisecond', original)
+                        'httpTotalTimeout = 1500 * time.Millisecond', original)
                     self.assertNotEqual(original, modified)
                     path.write_text(modified)
                     go_build(find_go(), root / 'go', output)

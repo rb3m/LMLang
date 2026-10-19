@@ -51,16 +51,16 @@ class Handler(socketserver.StreamRequestHandler):
         if path == '/drop':
             return
         if path == '/slow':
-            time.sleep(0.8)
+            time.sleep(4.0)
         if path in ('/slow-body', '/drip'):
             self.request.sendall(b'HTTP/1.1 200 OK\r\n'
                                  b'Content-Length: 5\r\n\r\n')
             if path == '/slow-body':
-                time.sleep(0.8)
+                time.sleep(4.0)
                 self.request.sendall(b'hello')
                 return
             for byte in b'hello':
-                time.sleep(0.12)
+                time.sleep(0.6)
                 self.request.sendall(bytes([byte]))
             return
         if path == '/headers-count':
