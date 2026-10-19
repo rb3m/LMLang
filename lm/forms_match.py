@@ -108,6 +108,7 @@ class MatchFormsMixin:
         vi, mp = hit[1], {}
         self.prog.refs[(m.name, path)] = f"{vi.mod.name}.{vi.name}" if vi.mod.name else vi.name
         self.expect(m, t, self.s.inst(vi.vtype, mp), name, path, "pattern")
+        self.note_keys(t, name, path)
         key = (vi.mod.name, vi.name)
         if not self.arity(m, f"variant `{name.value}`", len(vi.fields), len(subs), name, path):
             return ("ctor", key, False)

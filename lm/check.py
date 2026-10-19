@@ -213,11 +213,8 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
             if hit is None:
                 return self.s.fresh()
             vi = hit[1]
-            if vi.fields:
-                self.diag(m, "E-ARITY", e, path, f"variant `{v}` takes {len(vi.fields)} argument(s); write ({v} ...)", expected=str(len(vi.fields)), found="0")
-                return self.s.fresh()
             self.prog.refs[(m.name, path)] = f"{vi.mod.name}.{vi.name}" if vi.mod.name else vi.name
-            return self.s.inst(vi.vtype, {})
+            return self.variant_type(m, vi, e, path, callable_value=True)
         if v in ("true", "false"):
             return BOOL
         if v == "unit":
@@ -393,6 +390,7 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
         vi, mp = hit[1], {}
         self.prog.refs[(m.name, path + "/0")] = f"{vi.mod.name}.{vi.name}" if vi.mod.name else vi.name
         vt = self.s.inst(vi.vtype, mp)
+        self.note_keys(vt, e, path)
         if self.arity(m, f"variant `{h.value}`", len(vi.fields), len(args), e, path):
             for i, ((fname, ft), got) in enumerate(zip(vi.fields, ats), 1):
                 self.expect(m, self.s.inst(ft, mp), got, args[i - 1], f"{path}/{i}", f"field `{fname}`")

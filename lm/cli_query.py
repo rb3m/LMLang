@@ -155,7 +155,7 @@ def cmd_hash(args) -> int:
 
 
 def cmd_explain(args) -> int:
-    from .explain import explain
+    from .explain import explain, explain_type
 
     r = _sym_cmd("explain", args, {})
     if r is None:
@@ -164,9 +164,10 @@ def cmd_explain(args) -> int:
     paths = pos[1:] or [d for d in ("src", "examples") if Path(d).is_dir()]
     prog, idx = _open(paths, [pos[0].split(".", 1)[0]])
     sym, err = idx.find(pos[0])
-    if sym is None or sym.kind != "fn":
-        sys.stderr.write(f"lm explain: {err or pos[0] + ' is not a function'}\n")
+    if sym is None or sym.kind not in ("fn", "type"):
+        sys.stderr.write(f"lm explain: {err or pos[0] + ' is not a function or type'}\n")
         return 3
-    sys.stdout.write(explain(prog, idx, sym.info))
+    text = explain_type(idx, sym.info) if sym.kind == "type" else explain(prog, idx, sym.info)
+    sys.stdout.write(text)
     return 0
 

@@ -1,0 +1,3 @@
+(module generic-param-duplicate
+  (purpose "Generic declaration rule.")
+  (type (Box a a) (rec (item a))))

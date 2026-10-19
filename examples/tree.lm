@@ -1,0 +1,54 @@
+(module tree
+  (purpose "A persistent binary search tree with reusable generic traversals.")
+  (use list)
+  (export Tree insert member size to-list)
+  (type (Tree a) (sum Leaf (Node (left (Tree a)) (value a) (right (Tree a)))))
+  (fn insert
+    (purpose "Insert an integer, preserving order and ignoring duplicate values.")
+    (sig (value Int) (tree (Tree Int)) -> (Tree Int))
+    (example (2 Leaf) => (Node Leaf 2 Leaf))
+    (example (1 (Node Leaf 2 Leaf)) => (Node (Node Leaf 1 Leaf) 2 Leaf))
+    (example (3 (Node Leaf 2 Leaf)) => (Node Leaf 2 (Node Leaf 3 Leaf)))
+    (example (2 (Node Leaf 2 Leaf)) => (Node Leaf 2 Leaf))
+    (body
+      (match
+        tree
+        (Leaf (Node Leaf value Leaf))
+        (
+          (Node left pivot right)
+          (if
+            (< value pivot)
+            (Node (insert value left) pivot right)
+            (if (> value pivot) (Node left pivot (insert value right)) tree))))))
+  (fn member
+    (purpose "Test whether an integer is present in an ordered tree.")
+    (sig (value Int) (tree (Tree Int)) -> Bool)
+    (example (1 Leaf) => false)
+    (example (2 (Node Leaf 2 Leaf)) => true)
+    (example (1 (Node (Node Leaf 1 Leaf) 2 Leaf)) => true)
+    (example (3 (Node Leaf 2 Leaf)) => false)
+    (body
+      (match
+        tree
+        (Leaf false)
+        (
+          (Node left pivot right)
+          (if (< value pivot) (member value left) (if (> value pivot) (member value right) true))))))
+  (fn size
+    (purpose "Count values in a tree of any element type.")
+    (sig (tree (Tree a)) -> Int)
+    (example (Leaf) => 0)
+    (example ((Node Leaf "one" Leaf)) => 1)
+    (example ((Node (Node Leaf 1 Leaf) 2 (Node Leaf 3 Leaf))) => 3)
+    (body (match tree (Leaf 0) ((Node left value right) (+ 1 (+ (size left) (size right)))))))
+  (fn to-list
+    (purpose "List values in order; ordered trees produce ascending lists.")
+    (sig (tree (Tree a)) -> (List a))
+    (example (Leaf) => (list))
+    (example ((Node Leaf "one" Leaf)) => (list "one"))
+    (example ((Node (Node Leaf 1 Leaf) 2 (Node Leaf 3 Leaf))) => (list 1 2 3))
+    (body
+      (match
+        tree
+        (Leaf (list))
+        ((Node left value right) (list.concat (to-list left) (cons value (to-list right))))))))

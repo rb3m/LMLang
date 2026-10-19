@@ -171,7 +171,11 @@ class Interp:
         if k in ("int", "float", "str"):
             return v
         if k == "type":
-            return Var(*self.vkey(v, m), ())
+            mn, name = self.vkey(v, m)
+            variant = self.prog.modules[mn].variants[name] if mn else None
+            if v == "Some" or (variant is not None and variant.fields):
+                return PyFn(v, lambda *args: Var(mn, name, tuple(args)))
+            return Var(mn, name, ())
         if v == "true":
             return True
         if v == "false":

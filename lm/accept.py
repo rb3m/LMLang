@@ -262,7 +262,8 @@ def external_value(ck, m, node, path):
 def check_args(ck, m, f, raw_nodes):
     """Normalize and check a list of argument nodes against a function's parameters."""
     nodes = [external_value(ck, m, n, f"arg#{k}") for k, n in enumerate(raw_nodes)]
-    ck.effs, ck.frames, ck.cur_fn, ck.constraints = {}, [{}], None, []
+    ck.effs, ck.frames, ck.cur_fn = {}, [{}], None
+    ck.constraints, ck.eq_checks = [], []
     ft = ck.fn_type(f)
     for k, (n, pt) in enumerate(zip(nodes, ft[1])):
         ck.clear_facts()

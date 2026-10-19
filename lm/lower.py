@@ -148,6 +148,19 @@ class Lowerer:
         if k == "str":
             return ir.Lit("str", v)
         if k == "type":
+            q = self.vkey(v, m)
+            if q == "Some":
+                arity = 1
+            elif "." in q:
+                mn, name = q.split(".", 1)
+                arity = len(self.prog.modules[mn].variants[name].fields)
+            else:
+                arity = 0
+            if arity:
+                params = [f"ctor-arg-{i}" for i in range(arity)]
+                args = [ir.Local(p) for p in params]
+                body = ir.Construct(self.ctor(v, m, arity), args)
+                return ir.Lambda(params, [], body)
             return ir.Construct(self.ctor(v, m, 0), [])
         if v in ("true", "false"):
             return ir.Lit("bool", v == "true")

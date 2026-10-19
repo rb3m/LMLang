@@ -1,0 +1,3 @@
+(module generic-recursion-nested
+  (purpose "Generic declaration rule.")
+  (type (Tree a) (sum Leaf (Node (item a) (next (Tree (List a)))))))

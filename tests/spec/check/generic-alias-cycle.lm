@@ -1,0 +1,3 @@
+(module generic-alias-cycle
+  (purpose "Generic declaration rule.")
+  (type (Loop a) (List (Loop a))))

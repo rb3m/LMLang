@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import re
 
+from .generics import declaration_name
 from .printer import _block, flat, print_module, render
 from .resolve import head, suggest
 from .sexpr import Atom, SList
@@ -96,7 +97,7 @@ class Index:
                 h = head(c)
                 if h not in ("type", "error", "const", "fn"):
                     continue
-                nm = c.items[1].value
+                nm = declaration_name(c).value
                 exp = nm in m.exported_consts if h == "const" else nm in m.exported_fns if h == "fn" else nm in m.exported_caps
                 if exported_only and not exp:
                     continue
@@ -114,7 +115,9 @@ class Index:
                     out.append(f"{mark}fn {m.name}.{nm}  {sig}{extra}  -- {f.purpose}")
                 elif h == "type":
                     body = c.items[2:]
-                    out.append(f"{mark}type {m.name}.{nm}  {flat(body[0]) if body else '?'}")
+                    params = " ".join(m.types[nm].params)
+                    label = f"{m.name}.{nm}" + (f" {params}" if params else "")
+                    out.append(f"{mark}type {label}  {flat(body[0]) if body else '?'}")
                 else:
                     out.append(f"{mark}error {m.name}.{nm}  {' '.join(flat(x) for x in c.items[2:])}".rstrip())
         return out
@@ -180,7 +183,8 @@ class Index:
             keep = [c for c in f.node.items[2:] if head(c) in SIG_BLOCK]
             return SList((f.node.items[0], f.node.items[1], *keep))
         for c in m.root.items[2:]:
-            if head(c) in ("type", "error", "const", "fn") and c.items[1].value == nm:
+            if (head(c) in ("type", "error", "const", "fn")
+                    and declaration_name(c).value == nm):
                 return c
 
     def render_items(self, items):
@@ -193,7 +197,7 @@ class Index:
                 if h == "purpose":
                     kids.append(c)
                 elif h in ("type", "error", "const", "fn"):
-                    q = f"{mn}.{c.items[1].value}"
+                    q = f"{mn}.{declaration_name(c).value}"
                     if q in items:
                         kids.append(self._node(q, items[q][1]))
             out.append(print_module(SList((Atom("sym", "module"), Atom("sym", mn), *kids))))

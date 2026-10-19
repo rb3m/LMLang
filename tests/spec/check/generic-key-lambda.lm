@@ -1,0 +1,7 @@
+(module generic-key-lambda
+  (purpose "Generic key requirements also apply in typed lambdas.")
+  (type (Keys a) (rec (items (Set a))))
+  (fn invalid
+    (purpose "An unused lambda still needs a well-formed parameter type.")
+    (sig -> Int)
+    (body (let ((f (lam ((x (Keys (List Int)))) 1))) 1))))

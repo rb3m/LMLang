@@ -1,0 +1,4 @@
+(module generic-alias-mutual-cycle
+  (purpose "Generic declaration rule.")
+  (type (First a) (List (Second a)))
+  (type (Second a) (Opt (First a))))

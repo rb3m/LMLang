@@ -1,0 +1,15 @@
+(module generic-key-call-bad
+  (purpose "Generic constraints survive inference and substitution.")
+  (type (Keyed a) (sum Vacant (Stored (value a) (items (Map a Int)))))
+  (fn constructed
+    (purpose "Constructor fields still require scalar keys.")
+    (sig -> Int)
+    (body (let ((box (Stored (list 1) (mapof)))) 0)))
+  (fn nullary
+    (purpose "Nullary constructors are checked after inference.")
+    (sig -> (List Int))
+    (body (select Vacant (list 1))))
+  (fn select
+    (purpose "Infer the instance from a second argument.")
+    (sig (box (Keyed a)) (value a) -> a)
+    (body value)))

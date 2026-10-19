@@ -28,6 +28,8 @@ def check_const(ck, m: ModInfo, c: ConstInfo):
         return
     val_node = c.clauses["value"][0].items[1]
     path = f"{m.name}/{c.name}/value/1"
+    ck.cur_mod, ck.cur_fn = m, None
+    ck.constraints, ck.eq_checks = [], []
 
     def run():
         ck.clear_facts()
@@ -36,6 +38,8 @@ def check_const(ck, m: ModInfo, c: ConstInfo):
     vt = ck.sandbox(m, f"constant `{c.name}`", run)
     if c.declared_type is not None:
         ck.expect(m, c.declared_type, vt, val_node, path, "constant value")
+    ck.note_keys(vt, val_node, path)
+    ck.check_eq(m)
     wvt = ck.s.resolve(vt)
     if has_type_vars(wvt):
         ck.diag(m, "E-TYPE", val_node, path,

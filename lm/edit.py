@@ -5,6 +5,7 @@ import json
 import re
 
 from .ast import FN_ORDER, NAME_RE, TYPE_NAME_RE, canonicalize
+from .generics import declaration_name
 from .printer import print_module
 from .resolve import head
 from .sexpr import Atom, SList, classify, read, to_data
@@ -35,7 +36,10 @@ def locate(root, segs):
     out = []
     first = segs[1]
     for i, c in enumerate(root.items):
-        if i >= 2 and ((head(c) in ("fn", "type", "error", "const") and c.items[1].value == first) or (head(c) == first and first in ("purpose", "use", "export"))):
+        is_decl = (head(c) in ("fn", "type", "error", "const")
+                   and declaration_name(c).value == first)
+        is_clause = head(c) == first and first in ("purpose", "use", "export")
+        if i >= 2 and (is_decl or is_clause):
             out.append(i)
             decl = c
             break
@@ -132,7 +136,10 @@ def replace_body(w, a):
 def replace_decl(w, a):
     s = w.symbol(a[0])
     form = parse_form(a[1], s.kind)
-    if len(form.items) < 2 or form.items[1].value != s.name:
+    name = form.items[1] if len(form.items) > 1 else None
+    if isinstance(name, SList):
+        name = name.items[0] if name.items else None
+    if not isinstance(name, Atom) or name.value != s.name:
         raise EditError(f"the new form must keep the name `{s.name}` (use rename to change it)")
     root = w.roots[s.mod.name]
     w.put(s.mod.name, set_at(root, [w.decl_idx(s)], form))
@@ -297,7 +304,10 @@ def rename(w, a, force=False):
             w.changed.add(mn)
     own = roots[s.mod.name]
     di = locate(own, [s.mod.name, old])[0]
-    own = set_at(own, [di, 1], Atom(own.items[di].items[1].kind, new))
+    name_path = [di, 1]
+    if isinstance(own.items[di].items[1], SList):
+        name_path.append(0)
+    own = set_at(own, name_path, Atom(declaration_name(own.items[di]).kind, new))
     own = SList(tuple(_swap_export(c, old, new) if head(c) == "export" else c for c in own.items))
     roots[s.mod.name] = own
     w.changed.add(s.mod.name)

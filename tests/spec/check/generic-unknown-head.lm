@@ -1,0 +1,3 @@
+(module generic-unknown-head
+  (purpose "Generic declaration rule.")
+  (error Bad (item (Missing Int))))

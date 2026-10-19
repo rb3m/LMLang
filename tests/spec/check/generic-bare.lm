@@ -1,0 +1,4 @@
+(module generic-bare
+  (purpose "Generic declaration rule.")
+  (type (Box a) (rec (item a)))
+  (error Bad (item Box)))

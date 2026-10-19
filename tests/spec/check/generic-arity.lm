@@ -1,0 +1,4 @@
+(module generic-arity
+  (purpose "Generic declaration rule.")
+  (type (Box a) (rec (item a)))
+  (error Bad (item (Box Int Str))))

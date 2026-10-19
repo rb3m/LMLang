@@ -1,0 +1,3 @@
+(module generic-recursion-permuted
+  (purpose "Generic declaration rule.")
+  (type (Tree a b) (sum Leaf (Node (first a) (second b) (next (Tree b a))))))

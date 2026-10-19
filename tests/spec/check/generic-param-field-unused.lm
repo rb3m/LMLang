@@ -1,0 +1,3 @@
+(module generic-param-field-unused
+  (purpose "Generic parameter occurrences.")
+  (type (Box a) (rec (a Int))))

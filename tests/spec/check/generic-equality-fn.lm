@@ -1,0 +1,7 @@
+(module generic-equality-fn
+  (purpose "Equality inspects substituted recursive generic fields.")
+  (type (Chain a) (sum End (Link (item a) (next (Chain a)))))
+  (fn invalid
+    (purpose "Functions inside generic sums cannot be compared.")
+    (sig (left (Chain (Fn (Int) Int))) (right (Chain (Fn (Int) Int))) -> Bool)
+    (body (= left right))))

@@ -1,0 +1,3 @@
+(module generic-fn-alias
+  (purpose "Generic parameter occurrences.")
+  (type (Callback a b) (Fn (a b) Int)))

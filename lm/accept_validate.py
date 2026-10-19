@@ -66,6 +66,7 @@ def validate(prog, ck, s):
                 ck.sandbox(m, 'an expected error argument',
                            lambda arg=arg: ck.infer(m, arg, {}, 'expect-fail'))
             ck.infer(m, want_node, {}, 'expect-fail')
+        ck.check_eq(m)
         errors = [d for d in prog.diags[before:] if d.severity == 'error']
     finally:
         del prog.diags[before:]

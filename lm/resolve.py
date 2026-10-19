@@ -5,13 +5,13 @@ import difflib
 import re
 
 from .diag import make
+from .generics import GenericMixin, declaration_name
 from .prelude import EFFECTS, RESERVED_CAPS, RESERVED_VALUES, VALUES
 from .program import ConstInfo, ErrInfo, FnInfo, ModInfo, Program, TypeInfo, VariantInfo
 from .sexpr import Atom, SList
-from .types import BASE, INT, KEY, Subst, fn, lst, mapt, opt, nom, pair, sett, var
+from .types import BASE, Subst, fn, opt, var
 
 FN_NAME = re.compile(r"[a-z][a-z0-9-]*")
-TVAR = re.compile(r"[a-z]")
 
 
 def head(n):
@@ -22,7 +22,7 @@ def suggest(name, cands, n=5):
     return difflib.get_close_matches(name, sorted(set(cands)), n=n, cutoff=0.6)
 
 
-class Resolver:
+class Resolver(GenericMixin):
     def __init__(self, prog: Program):
         self.prog = prog
         self.s = Subst()
@@ -52,10 +52,18 @@ class Resolver:
     # ---- pass 1-3: build symbol tables ---------------------------------------------------
     def build(self):
         mods = [self.prog.modules[n] for n in sorted(self.prog.modules)]
-        for m in mods: self._names(m)
-        for m in mods: self._exports(m)
-        for m in mods: self._decls(m)
-        for m in mods: self._sigs(m)
+        for m in mods:
+            self._names(m)
+        for m in mods:
+            self._exports(m)
+        for m in mods:
+            self.classify_types(m)
+        self.check_regular_recursion()
+        for m in mods:
+            self._decls(m)
+        for m in mods:
+            self._sigs(m)
+        self.check_declared_keys()
 
     def _reserved_cap(self, m, nm, node, path):
         if nm in RESERVED_CAPS:
@@ -74,11 +82,12 @@ class Resolver:
             elif h == "export":
                 m.export_nodes = list(c.items[1:])
             elif h == "type":
-                nm = c.items[1].value
+                nm = declaration_name(c).value
                 path = f"{m.name}/{nm}"
                 if self._reserved_cap(m, nm, c.items[1], path):
                     continue
                 t = TypeInfo(m, nm, c)
+                self.declaration_params(t)
                 m.types[nm] = t
                 m.caps[nm] = ("type", t)
                 self.prog.type_index[t.qual] = t
@@ -107,128 +116,6 @@ class Resolver:
                     self.diag(m, "E-DUP-NAME", c.items[1], f"{m.name}/{nm}", f"`{nm}` is a reserved word or prelude name")
                     continue
                 m.fns[nm] = FnInfo(m, nm, c)
-
-    def _fields(self, m, nodes, path, first):
-        """`first` is the index of nodes[0] in its parent form, so field paths address real nodes."""
-        out, seen = [], set()
-        for i, f in enumerate(nodes, first):
-            if not (isinstance(f, SList) and len(f.items) == 2 and isinstance(f.items[0], Atom) and f.items[0].kind == "sym"
-                    and FN_NAME.fullmatch(f.items[0].value)):
-                self.diag(m, "E-PARSE", f, f"{path}/{i}", "field must be (name Type)")
-                continue
-            nm = f.items[0].value
-            if nm in seen:
-                self.diag(m, "E-DUP-NAME", f, f"{path}/{i}", f"duplicate field `{nm}`")
-                continue
-            seen.add(nm)
-            out.append((nm, self.resolve_type(m, f.items[1], None, f"{path}/{i}/1")))
-        return out
-
-    def _decls(self, m: ModInfo):
-        # Classify every type before resolving any field, so a field may name a type declared later.
-        for t in m.types.values():
-            body = t.node.items[2:]
-            if len(body) != 1:
-                continue
-            if head(body[0]) in ("rec", "sum"):
-                t.kind = head(body[0])
-                continue
-            t.alias_node = body[0]
-        for e in m.errors.values():
-            e.fields = self._fields(m, e.node.items[2:], f"{m.name}/{e.name}", 2)
-        for t in m.types.values():
-            body = t.node.items[2:]
-            path = f"{m.name}/{t.name}"
-            if len(body) != 1:
-                self.diag(m, "E-PARSE", t.node, path, "(type Name T) takes exactly one type or (rec ..)/(sum ..)")
-                t.alias_t = self.s.fresh()
-                continue
-            b = body[0]
-            if head(b) == "rec":
-                t.kind = "rec"
-                t.fields = self._fields(m, b.items[1:], path + "/2", 1)
-            elif head(b) == "sum":
-                t.kind = "sum"
-                for i, v in enumerate(b.items[1:], 1):
-                    vp = f"{path}/2/{i}"
-                    vnode = v.items[0] if isinstance(v, SList) and v.items else v
-                    if not (isinstance(vnode, Atom) and vnode.kind == "type" and "." not in vnode.value):
-                        self.diag(m, "E-PARSE", v, vp, "variant must be Name or (Name (field Type)...)")
-                        continue
-                    if self._reserved_cap(m, vnode.value, vnode, vp):
-                        continue
-                    flds = self._fields(m, v.items[1:], vp, 1) if isinstance(v, SList) else []
-                    vi = VariantInfo(m, vnode.value, t.name, flds, nom(t.qual))
-                    t.variants[vi.name] = vi
-                    m.variants[vi.name] = vi
-                    m.caps[vi.name] = ("variant", vi)
-                    if t.name in m.exported_caps:
-                        m.exported_caps.add(vi.name)
-            else:
-                t.alias_node = b
-        for t in m.types.values():
-            if t.kind == "alias" and t.alias_node is not None:
-                self.alias_type(t)
-
-    def alias_type(self, t: TypeInfo):
-        if t.alias_t is not None:
-            return t.alias_t
-        if t.busy:
-            self.diag(t.mod, "E-CYCLE", t.node, f"{t.mod.name}/{t.name}", f"type alias `{t.name}` refers to itself")
-            return self.s.fresh()
-        t.busy = True
-        t.alias_t = self.resolve_type(t.mod, t.alias_node, None, f"{t.mod.name}/{t.name}/2")
-        t.busy = False
-        return t.alias_t
-
-    # ---- type expressions ----------------------------------------------------------------
-    def resolve_type(self, m, n, tvars, path):
-        """tvars: None = type variables not allowed; a set = collect used variable names."""
-        bad = lambda msg: (self.diag(m, "E-TYPE", n, path, msg), self.s.fresh())[1]
-        if isinstance(n, Atom):
-            if n.kind == "type":
-                v = n.value
-                if v in BASE:
-                    return BASE[v]
-                if v in ("List", "Opt", "Pair", "Map", "Set", "Fn"):
-                    return bad(f"`{v}` needs arguments")
-                hit = self.find_cap(m, v, ("type",), n, path)
-                if hit is None:
-                    return self.s.fresh()
-                self.prog.refs[(m.name, path)] = hit[1].qual
-                return self.alias_type(hit[1]) if hit[1].kind == "alias" else nom(hit[1].qual)
-            if n.kind == "sym" and TVAR.fullmatch(n.value):
-                if tvars is None:
-                    return bad(f"type variable `{n.value}` is only allowed in function signatures")
-                tvars.add(n.value)
-                return var(n.value)
-            return bad("expected a type")
-        h = head(n)
-        if h in ("List", "Opt") and len(n.items) == 2:
-            inner = self.resolve_type(m, n.items[1], tvars, path + "/1")
-            return lst(inner) if h == "List" else opt(inner)
-        if h == "Pair" and len(n.items) == 3:
-            return pair(self.resolve_type(m, n.items[1], tvars, path + "/1"),
-                        self.resolve_type(m, n.items[2], tvars, path + "/2"))
-        if (h, len(n.items)) in (("Map", 3), ("Set", 2)):
-            k = self.key_type(m, n.items[1], tvars, path + "/1")
-            return mapt(k, self.resolve_type(m, n.items[2], tvars, path + "/2")) if h == "Map" else sett(k)
-        if h == "Fn" and len(n.items) == 3 and isinstance(n.items[1], SList):
-            args = [self.resolve_type(m, a, tvars, f"{path}/1/{i}") for i, a in enumerate(n.items[1].items)]
-            return fn(args, self.resolve_type(m, n.items[2], tvars, path + "/2"))
-        return bad("malformed type; use Int Float Bool Str Unit (List T) (Opt T) (Pair A B) (Map K V) (Set K) (Fn (T..) R) or a declared type")
-
-    def key_type(self, m, n, tvars, path):
-        """A Map key / Set element type: Int, Float, Str, Bool, or a signature type variable, whose
-        instances are checked at every use (ADR-049 item 1, ADR-050)."""
-        t = self.resolve_type(m, n, tvars, path)
-        wt = self.s.walk(t)
-        if wt[0] not in (*KEY, "V", "M"):
-            shown = self.s.show(t)
-            hint = "; suggest a Str key or nested maps" if wt[0] == "Pair" else ""
-            self.diag(m, "E-TYPE", n, path, f"Map keys and Set elements must be Int, Float, Str or Bool, found {shown}{hint}",
-                      expected="Int, Float, Str or Bool", found=shown)
-        return t
 
     # ---- function signatures --------------------------------------------------------------
     def _sigs(self, m: ModInfo):

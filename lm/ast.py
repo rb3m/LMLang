@@ -85,10 +85,13 @@ def canonicalize(root, file: str = ""):
             continue
         # type / error / const / fn: (head Name ...)
         rx = NAME_RE if h in ("fn", "const") else TYPE_NAME_RE
-        if len(c.items) < 2 or not _is_name(c.items[1], rx):
+        name = c.items[1] if len(c.items) > 1 else None
+        if h == "type" and isinstance(name, SList) and name.items:
+            name = name.items[0]
+        if not _is_name(name, rx):
             err("E-PARSE", c, f"({h} ...) needs a {'lowercase-kebab' if h in ('fn', 'const') else 'Capitalized'} name")
             continue
-        nm = c.items[1].value
+        nm = name.value
         if nm in decls[h]:
             err("E-DUP-NAME", c.items[1], f"duplicate {h} `{nm}`")
             continue

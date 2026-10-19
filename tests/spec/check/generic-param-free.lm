@@ -1,0 +1,3 @@
+(module generic-param-free
+  (purpose "Generic declaration rule.")
+  (type (Box a) (rec (item a) (extra b))))

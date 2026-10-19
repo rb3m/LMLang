@@ -30,15 +30,27 @@ def sett(a):
     return ("Set", a)
 
 
-def keys_of(t) -> list:
-    """Key types of every Map/Set inside t (t not walked: for signatures and instantiated fn types)."""
+def keys_of(t, type_index=None, seen=frozenset()) -> list:
+    """Map/Set keys, including substituted fields of nominal instances."""
     out = [t[1]] if t[0] in ("Map", "Set") else []
     for c in children(t):
-        out += keys_of(c)
+        out += keys_of(c, type_index, seen)
+    if t[0] != "N" or type_index is None or t[1] in seen:
+        return out
+    ti = type_index.get(t[1])
+    if ti is None:
+        return out
+    seen = seen | {t[1]}
+    fields = list(ti.fields) + [f for v in ti.variants.values() for f in v.fields]
+    mapping = dict(zip(ti.params, t[2:]))
+    for _, ft in fields:
+        out += keys_of(substitute(ft, mapping), type_index, seen)
     return out
 
 
 def children(t) -> tuple:
+    if t[0] == "N":
+        return t[2:]
     if t[0] in CONTAINERS:
         return t[1:]
     if t[0] == "Fn":
@@ -50,12 +62,24 @@ def fn(args, ret):
     return ("Fn", tuple(args), ret)
 
 
-def nom(q):
-    return ("N", q)
+def nom(q, *args):
+    return ("N", q, *args)
 
 
 def var(n):
     return ("V", n)
+
+
+def substitute(t, mapping):
+    """Substitute declaration parameters without freshening rigid variables."""
+    if t[0] == "V":
+        return mapping.get(t[1], t)
+    return Subst._rebuild(t, lambda c: substitute(c, mapping))
+
+
+def fields_of(ti, instance):
+    mapping = dict(zip(ti.params, instance[2:]))
+    return [(name, substitute(t, mapping)) for name, t in ti.fields]
 
 
 class Subst:
@@ -78,6 +102,8 @@ class Subst:
 
     @staticmethod
     def _rebuild(t, f):
+        if t[0] == "N":
+            return ("N", t[1], *(f(c) for c in t[2:]))
         if t[0] in CONTAINERS:
             return (t[0], *(f(c) for c in t[1:]))
         if t[0] == "Fn":
@@ -102,6 +128,9 @@ class Subst:
             return True
         if a[0] != b[0]:
             return False
+        if a[0] == "N":
+            return (a[1] == b[1] and len(a) == len(b)
+                    and all(self.unify(x, y) for x, y in zip(a[2:], b[2:])))
         if a[0] in CONTAINERS:
             return all(self.unify(x, y) for x, y in zip(a[1:], b[1:]))
         if a[0] == "Fn":
@@ -132,6 +161,8 @@ class Subst:
             return f"({tag} " + " ".join(self.show(c) for c in t[1:]) + ")"
         if tag == "Fn":
             return "(Fn (" + " ".join(self.show(a) for a in t[1]) + ") " + self.show(t[2]) + ")"
+        if tag == "N" and len(t) > 2:
+            return "(" + t[1] + " " + " ".join(self.show(c) for c in t[2:]) + ")"
         if tag in ("N", "V"):
             return t[1]
         return "?"

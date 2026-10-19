@@ -1,4 +1,4 @@
-"""`lm explain SYM`: plain-language description of a function for a human reviewer."""
+"""`lm explain SYM`: function and type descriptions for a human reviewer."""
 from __future__ import annotations
 
 from .printer import flat
@@ -11,6 +11,16 @@ def _sig(f):
     k = next(i for i, x in enumerate(items) if getattr(x, "value", None) == "->")
     takes = [f"{p.items[0].value}: {flat(p.items[1])}" for p in items[:k]]
     return takes, flat(items[k + 1])
+
+
+def explain_type(idx, t) -> str:
+    lines = [t.qual]
+    lines.append("Parameters: " + (" ".join(t.params) if t.params else "none"))
+    lines.append("Definition: " + flat(t.node))
+    callers = sorted({owner for owner, _ in idx.callers(t.qual)})
+    used = ", ".join(callers) if callers else "nothing in this project"
+    lines.append("Used by:  " + used)
+    return "\n".join(lines) + "\n"
 
 
 def explain(prog, idx, f) -> str:

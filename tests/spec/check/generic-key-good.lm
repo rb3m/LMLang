@@ -1,0 +1,25 @@
+(module generic-key-good
+  (purpose "Map and Set requirements propagate through fields and aliases.")
+  (type (Keys a) (rec (items (Set a))))
+  (type (Table a) (rec (items (Map a Int))))
+  (type (Via a) (Wrapped a))
+  (type (Wrapped a) (rec (table (Table a)) (keys (Keys a))))
+  (fn identity
+    (purpose "Rigid keys are permitted in a generic function.")
+    (sig (value (Via a)) -> (Via a))
+    (body value))
+  (fn make
+    (purpose "A concrete scalar key is permitted transitively.")
+    (sig -> (Via Str))
+    (example
+      ()
+      =>
+      (new
+        Wrapped
+        (keys (new Keys (items (setof "x"))))
+        (table (new Table (items (mapof ("x" 1)))))))
+    (body
+      (new
+        Wrapped
+        (keys (new Keys (items (setof "x"))))
+        (table (new Table (items (mapof ("x" 1)))))))))

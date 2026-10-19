@@ -1,0 +1,3 @@
+(module generic-param-unused
+  (purpose "Generic declaration rule.")
+  (type (Box a) (rec (item Int))))

@@ -1,0 +1,4 @@
+(module generic-const-uninstantiated
+  (purpose "Constants require fully instantiated generic arguments.")
+  (type (Tree a) (sum Leaf (Node (value a))))
+  (const empty (purpose "A constant cannot retain a type variable.") (type (Tree a)) (value Leaf)))

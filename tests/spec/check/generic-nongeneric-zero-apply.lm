@@ -1,0 +1,5 @@
+(module generic-nongeneric-zero-apply
+  (purpose "Applying a non-generic name requires an error.")
+  (type Plain (rec (value Int)))
+  (type Alias Int)
+  (error Bad (plain (Plain)) (alias (Alias))))

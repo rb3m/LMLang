@@ -1,0 +1,3 @@
+(module generic-param-invalid
+  (purpose "Generic declaration rule.")
+  (type (Box item) (rec (value Int))))

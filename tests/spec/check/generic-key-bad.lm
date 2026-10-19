@@ -1,0 +1,10 @@
+(module generic-key-bad
+  (purpose "Non-key instances are rejected through aliases and fields.")
+  (type (Keys a) (rec (items (Set a))))
+  (type (Table a) (rec (items (Map a Int))))
+  (type (Via a) (Wrapped a))
+  (type (Wrapped a) (rec (table (Table a)) (keys (Keys a))))
+  (fn invalid
+    (purpose "Lists cannot become keys through a generic wrapper.")
+    (sig (value (Via (List Int))) -> (Via (List Int)))
+    (body value)))

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from .prelude import CONSTRAINED
-from .types import INT, UNIT, children, fn, keys_of
+from .types import INT, UNIT, children, fn, keys_of, substitute
 
 
 class TypeChecksMixin:
@@ -14,7 +14,7 @@ class TypeChecksMixin:
 
     def note_keys(self, t, node, path):
         """Every Map key / Set element type inside an instantiated fn type is constrained (ADR-049 item 1)."""
-        for k in keys_of(t):
+        for k in keys_of(t, self.prog.type_index):
             self.note_constraint("key", k, node, path)
 
     def key_vars(self) -> set:
@@ -22,7 +22,7 @@ class TypeChecksMixin:
         checked when they instantiate them, so inside the fn they satisfy the key constraint (ADR-050)."""
         f = self.cur_fn
         sig = fn([t for _, t in f.params], f.ret) if f is not None and f.sig_ok else UNIT
-        return {k[1] for k in keys_of(sig) if k[0] == "V"}
+        return {k[1] for k in keys_of(sig, self.prog.type_index) if k[0] == "V"}
 
     def check_constraints(self, m):
         bad_keys = set()  # one key diagnostic per type and fn: every call naming the Map/Set notes it
@@ -65,11 +65,20 @@ class TypeChecksMixin:
             return True
         if t[0] != "N":
             return any(self.has_fn(c, seen) for c in children(t))
-        if t[1] in seen:
+        t = self.s.resolve(t)
+        if t in seen:
             return False
-        seen.add(t[1])
+        seen = seen | {t}
         ti = self.prog.type_index.get(t[1])
-        if ti is None:
+        if ti is None or getattr(ti, "invalid_recursion", False):
             return False
+        mapping = dict(zip(ti.params, t[2:]))
         fields = list(ti.fields) + [x for v in ti.variants.values() for x in v.fields]
-        return any(self.has_fn(ft, seen) for _, ft in fields) or (ti.alias_t is not None and self.has_fn(ti.alias_t, seen))
+        return any(self.has_fn(substitute(ft, mapping), seen) for _, ft in fields)
+
+    def variant_type(self, m, vi, node, path, callable_value=False):
+        """Fresh constructor parameters are shared by its fields and result."""
+        template = fn([t for _, t in vi.fields], vi.vtype)
+        ft = self.s.inst(template, {})
+        self.note_keys(ft, node, path)
+        return ft if callable_value and vi.fields else ft[2]

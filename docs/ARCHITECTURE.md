@@ -15,7 +15,9 @@ lm/
   loader.py    find modules (src/, examples/, stdlib/, given paths), parse, canonicalize, link `use`, detect cycles
   prelude.py   closed prelude tables, reserved words, effect set
   types.py     type tuples + Subst (unification with metas; generics via inst())
-  resolve.py   Resolver: symbol tables, name lookup + diagnostics, type expressions, fn signatures
+  resolve.py   Resolver: symbol tables, name lookup + diagnostics, fn signatures
+  generics.py  declaration parameter scopes, schematic field/alias resolution, type applications, instantiated key validation
+  generic_cycles.py declaration SCCs and regular recursive type checks before alias expansion
   check.py     Checker(CollFormsMixin, FormsMixin, Resolver): per-fn checking, contracts, examples, calls, effects/fails accumulation
   forms.py     special forms: if let let? match lam list new get with and or fail try note prim
   forms_coll.py special forms mapof/setof (constant keys, duplicates) (ADR-049)

@@ -1,0 +1,4 @@
+(module generic-recursion-alias
+  (purpose "Generic declaration rule.")
+  (type (Tree a) (sum Leaf (Node (item a) (next (Link (List a))))))
+  (type (Link a) (Tree a)))

@@ -1,0 +1,4 @@
+(module generic-nongeneric-apply
+  (purpose "Generic declaration rule.")
+  (type Box (rec (item Int)))
+  (error Bad (item (Box Int))))

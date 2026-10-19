@@ -1,0 +1,4 @@
+(module generic-param-scope
+  (purpose "Generic parameter occurrences.")
+  (type (Box a) (rec (item a)))
+  (fn id (purpose "Separate generic scopes.") (sig (x (Box b)) -> (Box b)) (body x)))

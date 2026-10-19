@@ -1,0 +1,4 @@
+(module generic-recursion-mutual
+  (purpose "Generic declaration rule.")
+  (type (Left a) (sum Stop (Next (item a) (other (Right a)))))
+  (type (Right a) (rec (item a) (other (Left a)))))

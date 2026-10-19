@@ -23,3 +23,9 @@ module shapes  -- Areas and descriptions of simple shapes.  (use float math str)
 *fn shapes.describe  (s Shape) -> Str  -- One-line text description.
 *fn shapes.longest-side  (s Shape) -> Int  -- Largest dimension; circles use the diameter.
 *fn shapes.scale  (s Shape) (k Int) -> Shape  -- Multiply every dimension by k.
+module tree  -- A persistent binary search tree with reusable generic traversals.  (use list)
+*type tree.Tree a  (sum Leaf (Node (left (Tree a)) (value a) (right (Tree a))))
+*fn tree.insert  (value Int) (tree (Tree Int)) -> (Tree Int)  -- Insert an integer, preserving order and ignoring duplicate values.
+*fn tree.member  (value Int) (tree (Tree Int)) -> Bool  -- Test whether an integer is present in an ordered tree.
+*fn tree.size  (tree (Tree a)) -> Int  -- Count values in a tree of any element type.
+*fn tree.to-list  (tree (Tree a)) -> (List a)  -- List values in order; ordered trees produce ascending lists.

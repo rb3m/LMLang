@@ -7,7 +7,7 @@ from .sexpr import Atom, SList
 from .forms_for import ForFormsMixin
 from .forms_match import MatchFormsMixin
 from .printer import flat
-from .types import BOOL, FLOAT, INT, NEVER, STR, UNIT, fn, lst, nom, opt, pair
+from .types import BOOL, FLOAT, INT, NEVER, STR, UNIT, fields_of, fn, lst, nom, opt, pair, var
 
 
 class FormsMixin(MatchFormsMixin, ForFormsMixin):
@@ -175,7 +175,9 @@ class FormsMixin(MatchFormsMixin, ForFormsMixin):
             bt = self.sandbox(m, "a lambda", lambda: self.infer(m, it[2], {**env, **penv}, path + "/2"))
         finally:
             self.bindings = sb
-        return fn(pts, bt)
+        ft = fn(pts, bt)
+        self.note_keys(ft, e, path)
+        return ft
 
 
     # ---- records ---------------------------------------------------------------------------------
@@ -187,8 +189,8 @@ class FormsMixin(MatchFormsMixin, ForFormsMixin):
             return None
         return ti
 
-    def _field_pairs(self, m, ti, pairs, env, path, start, need_all):
-        fields = dict(ti.fields)
+    def _field_pairs(self, m, ti, rt, pairs, env, path, start, need_all):
+        fields = dict(fields_of(ti, self.s.walk(rt)))
         seen = set()
         for i, p in enumerate(pairs, start):
             pp = f"{path}/{i}"
@@ -219,10 +221,12 @@ class FormsMixin(MatchFormsMixin, ForFormsMixin):
         if ti.kind != "rec":
             self.diag(m, "E-TYPE", it[1], path + "/1", f"`{it[1].value}` is not a record type")
             return self.s.fresh()
-        missing = self._field_pairs(m, ti, it[2:], env, path, 2, True)
+        rt = self.s.inst(nom(ti.qual, *(var(p) for p in ti.params)), {})
+        self.note_keys(rt, e, path)
+        missing = self._field_pairs(m, ti, rt, it[2:], env, path, 2, True)
         if missing:
             self.diag(m, "E-TYPE", e, path, "missing field(s): " + " ".join(missing), expected=" ".join(missing))
-        return nom(ti.qual)
+        return rt
 
     def f_with(self, m, e, env, path):
         it = e.items
@@ -232,17 +236,20 @@ class FormsMixin(MatchFormsMixin, ForFormsMixin):
         ti = self._rec(m, rt, it[1], path + "/1")
         if ti is None:
             return self.s.fresh()
-        self._field_pairs(m, ti, it[2:], env, path, 2, False)
-        return nom(ti.qual)
+        self.note_keys(rt, e, path)
+        self._field_pairs(m, ti, rt, it[2:], env, path, 2, False)
+        return rt
 
     def f_get(self, m, e, env, path):
         it = e.items
         if not (len(it) == 3 and isinstance(it[2], Atom) and it[2].kind == "sym"):
             return self._shape(m, e, path, "(get record field)")
-        ti = self._rec(m, self.infer(m, it[1], env, path + "/1"), it[1], path + "/1")
+        rt = self.infer(m, it[1], env, path + "/1")
+        ti = self._rec(m, rt, it[1], path + "/1")
         if ti is None:
             return self.s.fresh()
-        fields = dict(ti.fields)
+        self.note_keys(rt, e, path)
+        fields = dict(fields_of(ti, self.s.walk(rt)))
         if it[2].value not in fields:
             self.diag(m, "E-TYPE", it[2], path + "/2", f"type {ti.name} has no field `{it[2].value}`", expected=" ".join(fields), found=it[2].value)
             return self.s.fresh()

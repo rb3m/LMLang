@@ -1,0 +1,28 @@
+(module generic-tree
+  (purpose "Insert and fold a regular generic binary tree.")
+  (type (Tree a) (sum Leaf (Node (left (Tree a)) (value a) (right (Tree a)))))
+  (fn fold
+    (purpose "Fold values in order while keeping declaration and signature variables separate.")
+    (sig (tree (Tree a)) (seed b) (step (Fn (b a) b)) -> b)
+    (example ((Node (Node Leaf 1 Leaf) 2 (Node Leaf 3 Leaf)) 0 +) => 6)
+    (body
+      (match
+        tree
+        (Leaf seed)
+        ((Node left value right) (fold right (step (fold left seed step) value) step)))))
+  (fn insert
+    (purpose "Insert an integer into an ordered generic tree.")
+    (sig (value Int) (tree (Tree Int)) -> (Tree Int))
+    (example (2 Leaf) => (Node Leaf 2 Leaf))
+    (example (1 (Node Leaf 2 Leaf)) => (Node (Node Leaf 1 Leaf) 2 Leaf))
+    (example (3 (Node Leaf 2 Leaf)) => (Node Leaf 2 (Node Leaf 3 Leaf)))
+    (body
+      (match
+        tree
+        (Leaf (Node Leaf value Leaf))
+        (
+          (Node left pivot right)
+          (if
+            (< value pivot)
+            (Node (insert value left) pivot right)
+            (if (> value pivot) (Node left pivot (insert value right)) tree)))))))

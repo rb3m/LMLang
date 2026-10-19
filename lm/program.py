@@ -72,12 +72,14 @@ class TypeInfo:
     mod: ModInfo
     name: str
     node: object
+    params: tuple = ()  # declaration-scoped type variable names
     kind: str = "alias"  # alias | rec | sum
     fields: list = field(default_factory=list)
     variants: dict = field(default_factory=dict)
     alias_node: object = None
     alias_t: tuple | None = None
     busy: bool = False
+    invalid_recursion: bool = False
 
     @property
     def qual(self) -> str:

@@ -1,0 +1,45 @@
+(module generic-values
+  (purpose "Generic values infer, substitute and erase their arguments.")
+  (use list)
+  (type (Assoc k v) (List (Pair k v)))
+  (type (Box a) (rec (item a)))
+  (type (Even a) (sum (EvenEnd (value a)) (EvenNext (next (Odd a)))))
+  (type (Odd a) (sum (OddNext (next (Even a)))))
+  (type (Tree a) (sum Leaf (Node (left (Tree a)) (value a) (right (Tree a)))))
+  (error BadTree (tree (Tree Int)))
+  (const
+    singleton
+    (purpose "A fully instantiated generic constant.")
+    (type (Tree Int))
+    (value (Node Leaf 1 Leaf)))
+  (fn assoc
+    (purpose "Generic aliases expand their argument types.")
+    (sig -> (Assoc Str Int))
+    (example () => (list (pair "one" 1)))
+    (body (list (pair "one" 1))))
+  (fn box
+    (purpose "Record construction and updates retain the inferred instance.")
+    (sig (value a) -> a)
+    (example (7) => 7)
+    (example ("seven") => "seven")
+    (body (get (with (new Box (item value)) (item value)) item)))
+  (fn constructors
+    (purpose "Each first-class constructor use has fresh arguments.")
+    (sig -> (List (Even Int)))
+    (example () => (list (EvenEnd 1) (EvenEnd 2)))
+    (body (list.map (list 1 2) EvenEnd)))
+  (fn lambda
+    (purpose "Typed lambda arguments accept generic instances.")
+    (sig -> Int)
+    (example () => 1)
+    (body ((lam ((b (Box Int))) (get b item)) (new Box (item 1)))))
+  (fn mutual
+    (purpose "Mutually recursive generic sums substitute their fields.")
+    (sig (value a) -> (Even a))
+    (example (1) => (EvenNext (OddNext (EvenEnd 1))))
+    (body (EvenNext (OddNext (EvenEnd value)))))
+  (fn nullary
+    (purpose "Nullary generic constructors instantiate independently.")
+    (sig -> (Pair (Tree Int) (Tree Str)))
+    (example () => (pair Leaf Leaf))
+    (body (pair Leaf Leaf))))

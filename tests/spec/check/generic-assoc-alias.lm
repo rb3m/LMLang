@@ -1,0 +1,4 @@
+(module generic-assoc-alias
+  (purpose "Generic declaration rule.")
+  (type (Assoc k v) (List (Pair k v)))
+  (error Bad (items (Assoc Str Int))))

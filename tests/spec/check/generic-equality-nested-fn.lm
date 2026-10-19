@@ -1,0 +1,7 @@
+(module generic-equality-nested-fn
+  (purpose "Generic constraints survive inference and substitution.")
+  (type (Box a) (rec (item a)))
+  (fn invalid
+    (purpose "Nested instances of one declaration are all inspected.")
+    (sig (value (Box (Box (Fn (Int) Int)))) -> Bool)
+    (body (= value value))))

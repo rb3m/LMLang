@@ -1,0 +1,8 @@
+(module generic-key-rigid-hidden
+  (purpose "Generic constraints survive inference and substitution.")
+  (use map)
+  (type (Keyed a) (rec (items (Map a Int))))
+  (fn hidden
+    (purpose "An unconstrained rigid parameter cannot become a key.")
+    (sig (value a) -> Int)
+    (body (let ((box (new Keyed (items (map.from-list (list (pair value 1))))))) 0))))
