@@ -5,6 +5,24 @@ from .prelude import CONSTRAINED
 from .types import INT, UNIT, children, fn, keys_of, substitute
 
 
+def contains_opaque(t, name, type_index, seen=frozenset()):
+    """Inspect a resolved type, including substituted nominal fields."""
+    if t[0] == name or (t[0] == "N" and t[1] == name):
+        return True
+    if t[0] != "N":
+        return any(contains_opaque(c, name, type_index, seen)
+                   for c in children(t))
+    if t in seen:
+        return False
+    ti = type_index.get(t[1])
+    if ti is None or getattr(ti, "invalid_recursion", False):
+        return False
+    mapping = dict(zip(ti.params, t[2:]))
+    fields = list(ti.fields) + [x for v in ti.variants.values() for x in v.fields]
+    return any(contains_opaque(substitute(ft, mapping), name, type_index,
+                               seen | {t}) for _, ft in fields)
+
+
 class TypeChecksMixin:
     def note_eq(self, t, node, path):
         self.__dict__.setdefault("eq_checks", []).append((t, node, path))
@@ -54,27 +72,24 @@ class TypeChecksMixin:
     def check_eq(self, m):
         self.check_constraints(m)
         for t, node, path in self.eq_checks:
-            if self.has_fn(t, set()):
+            if self.has_pat(t, set()):
+                self.diag(m, "E-TYPE", node, path,
+                          "`=`/`!=` cannot compare values containing Pat",
+                          expected="a type without Pat", found=self.s.show(t))
+            elif self.has_fn(t, set()):
                 self.diag(m, "E-TYPE", node, path, f"`=`/`!=` cannot compare values containing functions ({self.s.show(self.s.resolve(t))})",
                           expected="a type without Fn", found=self.s.show(self.s.resolve(t)))
         self.eq_checks = []
 
     def has_fn(self, t, seen):
-        t = self.s.walk(t)
-        if t[0] == "Fn":
-            return True
-        if t[0] != "N":
-            return any(self.has_fn(c, seen) for c in children(t))
-        t = self.s.resolve(t)
-        if t in seen:
-            return False
-        seen = seen | {t}
-        ti = self.prog.type_index.get(t[1])
-        if ti is None or getattr(ti, "invalid_recursion", False):
-            return False
-        mapping = dict(zip(ti.params, t[2:]))
-        fields = list(ti.fields) + [x for v in ti.variants.values() for x in v.fields]
-        return any(self.has_fn(substitute(ft, mapping), seen) for _, ft in fields)
+        return self.has_opaque(t, seen, "Fn")
+
+    def has_pat(self, t, seen):
+        return self.has_opaque(t, seen, "pat.Pat")
+
+    def has_opaque(self, t, seen, name):
+        return contains_opaque(self.s.resolve(t), name, self.prog.type_index,
+                               frozenset(seen))
 
     def variant_type(self, m, vi, node, path, callable_value=False):
         """Fresh constructor parameters are shared by its fields and result."""

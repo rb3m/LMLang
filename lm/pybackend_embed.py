@@ -288,6 +288,24 @@ def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False) -> s
             parts.append(f"def prim_{fn}(*args): return vec_mod.VEC_PRIMS[{prim!r}](_it, *args)")
         parts.append("")
 
+    if any(p.startswith("pat.") for p in prog.prims):
+        parts.append("# --- Embedded text-pattern compiler and Pike VM ---")
+        for module in ("pat_compile.py", "pat_vm.py"):
+            source = (LM_DIR / module).read_text(encoding="utf-8")
+            parts.append(clean_source(source))
+        parts.append(wrap_module(
+            (LM_DIR / "pat_prims.py").read_text(encoding="utf-8"), "pat_mod"))
+        for prim in sorted(p for p in prog.prims if p.startswith("pat.")):
+            name = prim.replace(".", "_").replace("-", "_")
+            parts.append(f"def prim_{name}(*args): "
+                         f"return pat_mod.PAT_PRIMS[{prim!r}](_it, *args)")
+        parts.append("def safe_pat_compile(s, site):\n"
+                     "    try: return prim_pat_compile(s)\n"
+                     "    except LmFail as error:\n"
+                     "        if error.id != 'pat.BadPattern': raise\n"
+                     "        fault('E-PROOF-VIOLATED', site, "
+                     "f'discharged operation at {sites[site].path} violated', '')")
+
     if has_map_set(prog):
         tree_src = clean_source((LM_DIR / "tree.py").read_text(encoding="utf-8"))
         coll_src = (LM_DIR / "coll_prims.py").read_text(encoding="utf-8")

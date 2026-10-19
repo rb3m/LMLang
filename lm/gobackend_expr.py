@@ -41,7 +41,7 @@ class GoExprMixin:
         return f"preludeValues[{golit(e.op)}]"
 
     def x_Call(self, e):
-        if e.discharged and e.fid in ("list.nth", "vec.nth", "vec.put"):
+        if e.discharged and e.fid in ("list.nth", "vec.nth", "vec.put", "pat.compile"):
             a = self.args(e.args)
             fn = e.fid.replace(".", "_")
             return f"safe_{fn}({', '.join(a)}, {self.site(e.site)})"

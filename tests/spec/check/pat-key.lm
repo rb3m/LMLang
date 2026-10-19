@@ -1,0 +1,7 @@
+(module pat-key
+  (purpose "Text pattern checker conformance.")
+  (use pat)
+  (fn probe
+    (purpose "Exercise the pattern rule.")
+    (sig (p (Map pat.Pat Int)) -> Int)
+    (body 0)))

@@ -19,6 +19,7 @@ lm/
   generics.py  declaration parameter scopes, schematic field/alias resolution, type applications, instantiated key validation
   generic_cycles.py declaration SCCs and regular recursive type checks before alias expansion
   check.py     Checker(CollFormsMixin, FormsMixin, Resolver): per-fn checking, contracts, examples, calls, effects/fails accumulation
+  check_pat.py literal pattern proof validation and opaque external-value restrictions
   examples.py  example syntax, module-local value checking and constant fake-world metadata validation
   forms.py     special forms: if let let? match lam list vecof new get with and or fail try note prim
   forms_coll.py special forms mapof/setof (constant keys, duplicates) (ADR-049)
@@ -29,6 +30,9 @@ lm/
   edit.py      path addressing (locate/get_at/set_at over canonical trees), Work set, ops table, fix application; rename walks prog.refs
   values.py    runtime values (Var, Rec, Closure...), LM-syntax `show()`
   vector.py    Vec values: persistent 32-way trie with a tail; leaf traversal for linear bulk operations
+  pat_compile.py pattern parser and bounded bytecode compiler (ADR-075)
+  pat_vm.py    ordered Pike VM, scalar search and capture state
+  pat_prims.py pattern primitive wrappers and match iteration
   vec_prims.py Vec primitive implementations (shared by interpreter and embedded Python target)
   tree.py      Map/Set values: persistent AVL tree + `Coll` (ADR-049/050; Go twin runtime/go/coll.go)
   prims.py     Python implementations of stdlib `(prim "..")` bodies (PRIMS table); siblings by family: float_prims.py (Float),
@@ -63,9 +67,9 @@ lm/
   runtime/go/  Go runtime copied next to the generated main.go: value.go (values, equality, show),
                rt.go (fail/fault, checked Int ops, calls, stdout, entry/harness), prims.go (ONE func per prim; prims_text.go: M10 str prims; prims_system.go: env and filesystem additions; prims_http.go: HTTP client; http_wire.go: bounded header/trailer capture; http_roots.go: system TLS roots without environment overrides; link_darwin.go/link_other.go: hard links without following symlinks),
                float.go (checked Float ops without FMA, canonical text = Python repr, Float prims),
-               coll.go (Map/Set AVL tree, mapOf/setOf, map/set prims), rand.go (clock/random), json.go (JSON)
+               coll.go (Map/Set AVL tree, mapOf/setOf, map/set prims), rand.go (clock/random), json.go (JSON), pat*.go (pattern compiler and Pike VM)
   runtime/py/  Python runtime embedded into standalone Python build outputs: rt.py (values, checked Int/Float ops, calls, depth accounting, prims), entry.py (CLI entry/runner, diagnostics, seed)
-stdlib/        list.lm vec.lm pair.lm str.lm opt.lm map.lm set.lm math.lm float.lm io.lm env.lm fs.lm http.lm time.lm date.lm rand.lm json.lm (LM source over lm/prims.py primitives; date is pure LM)
+stdlib/        list.lm vec.lm pair.lm str.lm opt.lm map.lm set.lm math.lm float.lm io.lm env.lm fs.lm http.lm time.lm date.lm rand.lm json.lm pat.lm (LM source over lm/prims.py primitives; date is pure LM)
 src/           user programs
 examples/      sample projects used by tests and bench
 games/         standalone LM projects (run ../../bin/lm inside; e.g. games/roadster-lander)
@@ -105,6 +109,7 @@ Entry points: `sexpr` (Atom kinds int|str|sym|type; SList) -> `ast.canonicalize(
 - **HTTP client** (ADR-069): `http.request` is the primitive boundary; `http.fetch` is its LM GET wrapper. The interpreter and embedded Python target share `http_prims.py`; Go implements the same policy in `runtime/go/prims_http.go`, with environment-independent system roots in `runtime/go/http_roots.go`. Validation happens before networking, localhost dials loopback without DNS, TLS uses verified system trust, and proxy/certificate environment overrides are ignored. Limits and deadlines are fixed runtime constants. Response headers retain wire arrival order before a stable lowercase-name sort; bodies are bounded, strict UTF-8. Header limits include informational blocks and trailers, which are not returned. `HttpError.msg` contains only a fixed category. Offline loopback and raw-socket differential tests pin response bytes and error categories across all three runtimes (TESTING.md).
 - **Self tail calls**: `tailcall.tail_sites` walks only the permitted body positions; the interpreter and lowering share the same node-identity decisions. `Interp.call_fn` consumes `TailArgs` in a loop with fresh environments and one frame. Lowering emits `ir.TailCall`; Go uses next-argument slots and fresh locals inside a loop. With contracts on and postconditions present, both keep argument histories on the heap and check them innermost first on exit; otherwise no history is allocated. Calls inside `try`, lambdas, contracts and examples are excluded.
 - **Vec**: Vec is a built-in unary type throughout generic substitution, constraint traversal and IR lowering. `(vecof ..)` evaluates elements left to right. Indexing proofs reuse ADR-061 binding identities and literal bounds, with `(vec.size NAME)` as a distinct fact term. Discharged `vec.nth` and `vec.put` retain an uncatchable E-PROOF-VIOLATED check in all runtimes. Trie updates copy only the affected path; leaf traversal drives bulk construction, mapping, folding, equality and printing in O(n).
+- **Text patterns** (ADR-075): the interpreter and embedded Python runtime share `pat_compile.py` and `pat_vm.py`; Go implements the same bounded compiler and ordered Pike VM. Threads deduplicate by pc, first wins; captures are copied on split and nullable loops guard empty iterations. Unanchored search adds candidate starts in one pass. Literal `pat.compile` validation feeds the ADR-061 proof-site mechanism, retaining E-PROOF-VIOLATED at runtime. Pat is an opaque nominal `pat.Pat` excluded transitively from equality and external constants. Signatures containing Pat have no required constant examples; caller wrappers exercise them. `tests/spec/pat/vectors.json` supplies one conformance oracle for the interpreter and both standalone targets, including exact compile-error offsets/reasons.
 - **Determinism**: all listings sorted; no timestamps in outputs except `bench/results`.
 
 - **Native and script builds** (ADR-026/032/033/062): the interpreter is the oracle. `lower.py` makes every runtime decision of `interp.py` explicit (call kinds, captures, match tests, fail/try, contracts with sites); a backend is a printer plus a runtime. `gobackend` targets Go (`Value = any`, fail as panic caught by try's deferred recover, faults as panics caught by entry); `pybackend` targets Python (emits a standalone self-contained script with embedded runtime `lm/runtime/py/rt.py`). Both count LM call depth so runaway recursion is a fault (E-RECURSION-LIMIT) instead of an uncontrolled host stack crash.

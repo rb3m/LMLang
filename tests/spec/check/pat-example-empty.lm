@@ -1,0 +1,8 @@
+(module pat-example-empty
+  (purpose "Empty containers cannot bypass opaque example restrictions.")
+  (use pat)
+  (fn probe
+    (purpose "Accept a list of compiled patterns.")
+    (sig (p (List pat.Pat)) -> Bool)
+    (example ((list)) => true)
+    (body true)))

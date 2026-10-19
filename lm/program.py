@@ -73,7 +73,7 @@ class TypeInfo:
     name: str
     node: object
     params: tuple = ()  # declaration-scoped type variable names
-    kind: str = "alias"  # alias | rec | sum
+    kind: str = "alias"  # alias | rec | sum | opaque (primitive-owned)
     fields: list = field(default_factory=list)
     variants: dict = field(default_factory=dict)
     alias_node: object = None

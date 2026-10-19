@@ -167,7 +167,7 @@ class Interp:
                     return fv.f(*args)
                 return self.apply(fv, args)
             except LmFail as f:
-                if f.id in ("DivZero", "OutOfRange"):
+                if f.id in ("DivZero", "OutOfRange", "pat.BadPattern"):
                     raise ProofViolation(self.prog.discharged[id(e)])
                 raise
         if isinstance(fv, PyFn):

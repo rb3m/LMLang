@@ -75,7 +75,7 @@ The agent walks you through each scenario. Only after your explicit yes may it r
 
 ## Status
 
-Research prototype **v0.8.0**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
+Research prototype **v0.9.0**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
 
 | Metric | Target | Recorded result |
 |---|---|---|

@@ -102,6 +102,10 @@ class Denied(Exception):
 
 
 def show(v) -> str:
+    from .pat_compile import Pat
+
+    if isinstance(v, Pat):
+        return "<pat>"
     if v is True:
         return "true"
     if v is False:

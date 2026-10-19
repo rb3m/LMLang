@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .diag import make
+from .check_pat import check_external_type
 from .prelude import EFFECTS
 from .sexpr import Atom, SList, read
 
@@ -57,14 +58,16 @@ def validate(prog, ck, s):
             t = ck.sandbox(m, 'the expected value',
                            lambda: ck.infer(m, exp_node, {}, 'expect'))
             ck.expect(m, ft[2], t, exp_node, 'expect', 'expected value')
+            check_external_type(ck, m, t, exp_node, 'expect')
         if kind == 'expect-fail':
             want_node = external_value(
                 ck, m, SList((Atom('sym', 'fail'), *s.exp.items[1:])),
                 'expect-fail')
             for arg in want_node.items[2:]:
                 ck.clear_facts()
-                ck.sandbox(m, 'an expected error argument',
-                           lambda arg=arg: ck.infer(m, arg, {}, 'expect-fail'))
+                t = ck.sandbox(m, 'an expected error argument',
+                               lambda arg=arg: ck.infer(m, arg, {}, 'expect-fail'))
+                check_external_type(ck, m, t, arg, 'expect-fail')
             ck.infer(m, want_node, {}, 'expect-fail')
         ck.check_eq(m)
         errors = [d for d in prog.diags[before:] if d.severity == 'error']

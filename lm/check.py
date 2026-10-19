@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 
 from .check_types import TypeChecksMixin
+from .check_pat import discharged_compile
 from .consts import check_const, check_const_cycles, eval_all_consts
 from .examples import check_example
 from .facts import Binding, FactSet, LenTerm, extract_term
@@ -78,6 +79,10 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
             for fn_name in sorted(m.fns):
                 f = m.fns[fn_name]
                 if f.eff or "example" in f.clauses or not f.sig_ok:
+                    continue
+                # Pat has no constant representation, including in examples.
+                # Exercise opaque signatures through concrete caller wrappers.
+                if self.has_pat(fn([t for _, t in f.params], f.ret), set()):
                     continue
                 needs = (fn_name in m.exported_fns) if m.export_nodes is not None else (fn_name in m.referenced_fns)
                 if needs:
@@ -337,6 +342,8 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
             for eff in info.eff:
                 self.note_eff(eff, path, e)
             for fid in info.fails:
+                if fid == "pat.BadPattern" and discharged_compile(self, info, args, e, path):
+                    continue
                 if fid == "OutOfRange" and self.discharged_nth(info, args, e, path):
                     continue
                 self.note_fail(fid, path, e)

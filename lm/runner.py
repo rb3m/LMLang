@@ -69,6 +69,9 @@ def runtime_diag(ex, context="", it=None):
 
 def test_program(prog):
     """Run every example of every target module. Returns (diagnostics, stats)."""
+    from .check_types import contains_opaque
+    from .types import fn
+
     diags, stats = [], {"examples": 0, "failed": 0, "no_examples": []}
 
     def go():
@@ -77,7 +80,9 @@ def test_program(prog):
             for f in (m.fns[n] for n in sorted(m.fns)):
                 exs = f.clauses.get("example", [])
                 if not exs:
-                    if not f.eff:
+                    signature = fn([t for _, t in f.params], f.ret)
+                    if not f.eff and not contains_opaque(
+                            signature, "pat.Pat", prog.type_index):
                         stats["no_examples"].append(f.qual)
                     continue
                 for k, c in enumerate(exs):

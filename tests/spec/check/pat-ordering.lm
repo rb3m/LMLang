@@ -1,0 +1,7 @@
+(module pat-ordering
+  (purpose "Compiled patterns have no ordering.")
+  (use pat)
+  (fn probe
+    (purpose "Attempt to order compiled patterns.")
+    (sig (p pat.Pat) -> Bool)
+    (body (< p p))))

@@ -1,0 +1,7 @@
+(module pat-literal-valid
+  (purpose "Text pattern checker conformance.")
+  (use pat)
+  (fn probe
+    (purpose "Exercise the pattern rule.")
+    (sig -> pat.Pat)
+    (body (pat.compile "a+"))))

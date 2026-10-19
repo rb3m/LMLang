@@ -77,8 +77,8 @@ class PyDifferential(unittest.TestCase):
                 label, kind, detail = line.split("\t", 2)
                 got_py[label] = (kind, detail)
 
-        # Includes the offline HTTP invalid-request runtime case.
-        self.assertEqual(len(cases), 879)
+        # Includes offline HTTP validation and pattern compile failure.
+        self.assertEqual(len(cases), 880)
         diffs = [f"{k}: interp {want.get(k)} != py {got_py.get(k)}"
                  for k, _, _ in cases if want.get(k) != got_py.get(k)]
         self.assertEqual(diffs, [])

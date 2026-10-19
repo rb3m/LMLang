@@ -7,6 +7,7 @@ import io
 from pathlib import Path
 
 from .interp import Interp
+from .check_pat import check_external_type
 from .printer import flat
 from .runner import in_big_stack
 from .sexpr import Atom, SList, read
@@ -269,6 +270,7 @@ def check_args(ck, m, f, raw_nodes):
         ck.clear_facts()
         t = ck.sandbox(m, "an argument", lambda n=n, k=k: ck.infer(m, n, {}, f"arg#{k}"))
         ck.expect(m, pt, t, n, f"arg#{k}", f"argument {k + 1}")
+        check_external_type(ck, m, t, n, f"arg#{k}")
     if nodes:
         ck.note_keys(ft, nodes[0], "arg#0")
     ck.check_constraints(m)

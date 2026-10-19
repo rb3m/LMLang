@@ -1,0 +1,36 @@
+(module pat
+  (purpose "Bounded Unicode text patterns with deterministic ordered matching.")
+  (export BadPattern Match Pat compile find find-all matches replace-all replace-with split)
+  (type Match (rec (start Int) (end Int) (text Str) (groups (List (Opt Str)))))
+  (type Pat (opaque))
+  (error BadPattern (pos Int) (reason Str))
+  (fn compile
+    (purpose "Compile a pattern; positions count Unicode scalars.")
+    (sig (s Str) -> Pat)
+    (fails BadPattern)
+    (example ("[") => (fail BadPattern 0 "unclosed class"))
+    (body (prim "pat.compile")))
+  (fn find
+    (purpose "Find the first leftmost match.")
+    (sig (s Str) (p Pat) -> (Opt Match))
+    (body (prim "pat.find")))
+  (fn find-all
+    (purpose "Find nonoverlapping matches, advancing one scalar after empty matches.")
+    (sig (s Str) (p Pat) -> (List Match))
+    (body (prim "pat.find-all")))
+  (fn matches
+    (purpose "Test the whole text against a pattern.")
+    (sig (s Str) (p Pat) -> Bool)
+    (body (prim "pat.matches")))
+  (fn replace-all
+    (purpose "Replace each match with literal replacement text.")
+    (sig (s Str) (p Pat) (replacement Str) -> Str)
+    (body (prim "pat.replace-all")))
+  (fn replace-with
+    (purpose "Replace each match with the result of a pure callback.")
+    (sig (s Str) (p Pat) (replacement (Fn (Match) Str)) -> Str)
+    (body (prim "pat.replace-with")))
+  (fn split
+    (purpose "Split on matches, retaining empty fields and omitting captures.")
+    (sig (s Str) (p Pat) -> (List Str))
+    (body (prim "pat.split"))))

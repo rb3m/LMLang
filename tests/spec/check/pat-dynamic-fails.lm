@@ -1,0 +1,7 @@
+(module pat-dynamic-fails
+  (purpose "Text pattern checker conformance.")
+  (use pat)
+  (fn probe
+    (purpose "Exercise the pattern rule.")
+    (sig (s Str) -> pat.Pat)
+    (body (pat.compile s))))

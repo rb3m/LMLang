@@ -56,7 +56,13 @@ class GenericMixin:
                 t.alias_t = self.s.fresh()
                 continue
             b = body[0]
-            if head(b) == "rec":
+            if head(b) == "opaque":
+                if (t.qual != "pat.Pat" or not m.is_stdlib
+                        or len(b.items) != 1 or t.params):
+                    self.diag(m, "E-TYPE", b, path + "/2",
+                              "opaque declarations are reserved for primitive types")
+                t.kind = "opaque"
+            elif head(b) == "rec":
                 t.kind = "rec"
                 t.fields = self._fields(m, b.items[1:], path + "/2", 1, frozenset(t.params))
             elif head(b) == "sum":
@@ -237,7 +243,7 @@ class GenericMixin:
             body = t.node.items[2:]
             if len(body) != 1:
                 continue
-            if head(body[0]) in ("rec", "sum"):
+            if head(body[0]) in ("rec", "sum", "opaque"):
                 t.kind = head(body[0])
                 continue
             t.alias_node = body[0]

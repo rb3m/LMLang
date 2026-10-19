@@ -5,8 +5,8 @@
 2. Change code with `lm edit` ops (see `lm help edit`) rather than rewriting files.
 3. Loop `lm check` -> `lm test` until clean.
 4. JSON diagnostics give a code, node path and often a `fix` for `lm edit apply`.
-5. Write scenarios (`tests/accept/*.accept`) with `(status proposed)`; show the human `lm accept --review`.
-6. Only after the human's explicit yes run `lm accept --approve DIGEST --by "<their words>"`; never run `--bless`.
+5. Propose scenarios in `tests/accept/*.accept`; show `lm accept --review`.
+6. Only after explicit human yes: `lm accept --approve DIGEST --by "<their words>"`; never `--bless`.
 7. `lm accept --guard` must pass at the end.
 
 Full stdlib: `lm index --stdlib`.
@@ -28,12 +28,13 @@ Full stdlib: `lm index --stdlib`.
     (body (if (= region "MX") (let ((s (list.sum items))) (+ s (/ (* s 16) 100))) (fail BadRegion region)))))
 ```
 (Zero-parameter fn: `(sig -> Int)`. Own names bare; others `mod.name`. No shadowing. Fn values (lambdas, `list.map` callbacks) must be pure and total.)
-External constants (`lm run` args; scenario args/expectations): module-defined names always qualified, e.g. `(shapes.Circle 2)`; prelude names stay unqualified.
+External constants (`lm run`/scenarios): qualify module names, e.g. `(shapes.Circle 2)`; prelude stays bare.
 Generic types bind distinct, used single letters: `(type (Tree a) (sum Leaf (Node (left (Tree a)) (value a) (right (Tree a)))))`; use `(Tree Int)`; `(export Tree)` exports type and variants. Constructors infer fresh arguments; records use `(type (Box a) (rec (item a)))` and `(new Box (item 1))`. Aliases may take parameters too. Recursion preserves parameter order; aliases cannot be recursive. Map/Set key requirements propagate through fields and aliases.
 Constants: `(const moon-gravity (purpose "Lunar surface gravity.") (type Float) (value 1.62))`; bare in own module, qualified elsewhere; evaluated at check time under a 1,000,000-step budget.
 
 Expressions: literals (Str escapes: `\" \\ \n \t \u{..}`), `x`, `mod.x`, `(f a)`, `(if c a b)`, `(let ((x e)) b)`, `(let? ((x opt-e)..) b)` (each `opt-e` is `(Opt T)`, `x` gets the payload; the first None skips the rest and gives None; `b` is `(Opt R)`; replaces `match` pyramids over Opt), `(do e1 .. en)` (`e1`..`e(n-1)` Unit), `(for (x xs) b)` (`xs` List evaluated once; `x` bound per element; `b` Unit, returns Unit), `(match e (pat b)..)` exhaustive (pats include `(list p..)`, `(cons h t)`, `(pair p q)`), `(lam ((x T)..) b)` / `(lam (x..) b)` (inferred types: all typed or all untyped), `(list ..)`, `(mapof (k v)..)` `(setof k..)` (keys: Int/Float/Str/Bool literals, no duplicates; `(mapof)` empty), `(new T (f e)..)`, `(get r f)`, `(with r (f e)..)`, `(and ..)`, `(or ..)`, `(fail E ..)`, `(try e (catch E (x..) h))`, `(note "..")`.
 Prelude (only unqualified names): `+ - * / mod = != < <= > >= not len cons pair Some None DivZero OutOfRange`. Everything else is qualified and needs `(use ..)`. Type `(Pair a b)`: `(pair a b)` value, `pair.first pair.second pair.swap` (more than two fields: use a record; Pair cannot be a Map key or Set element). Types `(Map K V)`/`(Set K)`: K is Int, Float, Str or Bool (or a sig type var used as a key); immutable, `=` structural, every traversal and print in ascending key order. `map.put at has remove size keys values fold update to-list from-list` (`at` -> Opt; `get` is reserved; `to-list` ascending pairs, `from-list` last-wins), `set.add has remove size to-list from-list fold union intersect diff`. Opt/list/str helpers: `opt.unwrap-or opt.map opt.is-some`, `list.head list.tail list.last` (Opt), `list.zip` (equal lengths), `list.at` (Opt; `nth` fails OutOfRange unless proven safe) `list.take list.drop list.sort-by`, `str.index-of str.replace str.repeat str.pad-left str.pad-right str.upper str.lower str.upper-ascii str.lower-ascii str.to-codes str.from-codes (str.BadCode)` (full list: `index --stdlib`). JSON: `json.Json` (7 variants), `json.parse json.print json.field`. Output: `io.print`/`io.eprint` write a line to stdout/stderr (eff `io.out`); `io.args`, `io.read-line`, `io.read-all` use `io.in`. Effects set: `io.out io.in env.read fs.read fs.write fs.delete net.http time.now rand`; `time.now-ms time.mono-ms` use `time.now`, `rand.int rand.float` use `rand`.
+`pat`: `compile(Str) -> Pat` (fails `BadPattern`; literals proven safe), subject-first `matches find find-all split replace-all replace-with`; scalar offsets/captures, leftmost-first; opaque `<pat>` (SPEC 8).
 Vec: `(Vec a)`, `(vecof e..)`, `vec.empty from-list to-list size at set push pop last fold map repeat tabulate nth put`; persistent trie; proofs use `(vec.size NAME)`; `len`/`for` stay List-only.
 `env.lookup(name) -> (Opt Str)` reads the environment (eff `env.read`, total; invalid names give None). Files: `fs.read exists entries is-dir` use `fs.read`; `fs.write append make-dir` use `fs.write`; `fs.remove` uses `fs.delete`; `fs.rename` requires both `fs.write` and `fs.delete`. All fs functions fail `fs.IoError`.
 `http.request(method,url,headers,body)` / `http.fetch(url)` -> `http.Response`, eff `net.http`, fails `http.HttpError`. Verified HTTPS; HTTP loopback-only; fixed limits, no redirects/proxies or network examples (SPEC 8).
@@ -56,7 +57,7 @@ Each scenario file contains one `(scenarios ...)` form. Names are unique.
     (expect 348)))
 ```
 
-Write arguments as separate LM constants after the qualified function name. Qualify all module-defined variants, constants, record/type names in `new`, and errors, including the target module's own names and nested values. Prelude names stay unqualified. Arguments and expectations are checked against the signature.
+Write separate LM constants after the qualified function name. Qualify module-defined names, including nested values and `new`. Prelude stays bare. Arguments and expectations must match the signature.
 
 Use exactly one of `(expect VALUE)`, `(expect-fail billing.BadRegion "US")`, or `(expect-out "text")`. For output expectations, add `(allow io.out)` before `run`. Proposed scenarios await human approval; review and approve them only as described in Workflow.
 

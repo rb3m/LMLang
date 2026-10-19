@@ -31,6 +31,7 @@ CODES = {
     "E-FLOAT": "error",
     "E-CONST-BUDGET": "error",
     "E-PROOF-VIOLATED": "error",
+    "E-PATTERN": "error",
     "W-USE-UNUSED": "warning",
     "W-EFFECT-UNUSED": "warning",
     "W-FAILS-UNUSED": "warning",

@@ -1,0 +1,8 @@
+(module pat-equality-user
+  (purpose "Opaque values stay opaque through generic user types.")
+  (use pat)
+  (type (Box a) (rec (item (Opt (List a)))))
+  (fn probe
+    (purpose "Compare a nested pattern container.")
+    (sig (p (Box pat.Pat)) -> Bool)
+    (body (= p p))))

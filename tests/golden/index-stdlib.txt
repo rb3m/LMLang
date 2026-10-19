@@ -140,6 +140,17 @@ module pair  -- Pair operations: accessors and swap.
 *fn pair.first  (p (Pair a b)) -> a  -- First element of a pair.
 *fn pair.second  (p (Pair a b)) -> b  -- Second element of a pair.
 *fn pair.swap  (p (Pair a b)) -> (Pair b a)  -- Swap elements of a pair.
+module pat  -- Bounded Unicode text patterns with deterministic ordered matching.
+*type pat.Match  (rec (start Int) (end Int) (text Str) (groups (List (Opt Str))))
+*type pat.Pat  (opaque)
+*error pat.BadPattern  (pos Int) (reason Str)
+*fn pat.compile  (s Str) -> Pat  [fails BadPattern]  -- Compile a pattern; positions count Unicode scalars.
+*fn pat.find  (s Str) (p Pat) -> (Opt Match)  -- Find the first leftmost match.
+*fn pat.find-all  (s Str) (p Pat) -> (List Match)  -- Find nonoverlapping matches, advancing one scalar after empty matches.
+*fn pat.matches  (s Str) (p Pat) -> Bool  -- Test the whole text against a pattern.
+*fn pat.replace-all  (s Str) (p Pat) (replacement Str) -> Str  -- Replace each match with literal replacement text.
+*fn pat.replace-with  (s Str) (p Pat) (replacement (Fn (Match) Str)) -> Str  -- Replace each match with the result of a pure callback.
+*fn pat.split  (s Str) (p Pat) -> (List Str)  -- Split on matches, retaining empty fields and omitting captures.
 module rand  -- Seedable SplitMix64 random numbers.
 *fn rand.float  -> Float  [eff rand]  -- Uniform random Float in [0, 1) using 53 random bits.
 *fn rand.int  (lo Int) (hi Int) -> Int  [eff rand]  -- Uniform random Int in the inclusive range lo..hi.

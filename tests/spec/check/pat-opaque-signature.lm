@@ -1,0 +1,9 @@
+(module pat-opaque-signature
+  (purpose "Opaque signatures cannot have constant examples.")
+  (use pat)
+  (export probe)
+  (type (Box a) (rec (item (Opt a))))
+  (fn probe
+    (purpose "Accept an opaque value through a user type.")
+    (sig (p (Box pat.Pat)) -> Bool)
+    (body true)))

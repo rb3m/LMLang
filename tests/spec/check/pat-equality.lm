@@ -1,0 +1,7 @@
+(module pat-equality
+  (purpose "Text pattern checker conformance.")
+  (use pat)
+  (fn probe
+    (purpose "Exercise the pattern rule.")
+    (sig (p pat.Pat) -> Bool)
+    (body (= (list p) (list p)))))

@@ -1,0 +1,7 @@
+(module pat-set-key
+  (purpose "Compiled patterns cannot be Set elements.")
+  (use pat)
+  (fn probe
+    (purpose "Accept an invalid Set type.")
+    (sig (p (Set pat.Pat)) -> Int)
+    (body 0)))

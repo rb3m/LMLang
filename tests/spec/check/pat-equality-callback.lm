@@ -1,0 +1,7 @@
+(module pat-equality-callback
+  (purpose "Equality as a function retains opaque restrictions.")
+  (use pat)
+  (fn probe
+    (purpose "Compare patterns using a bound operator.")
+    (sig (p pat.Pat) -> Bool)
+    (body (let ((same =)) (same p p)))))

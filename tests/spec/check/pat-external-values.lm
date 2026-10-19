@@ -1,0 +1,26 @@
+(module pat-external-values
+  (purpose "Compiled patterns cannot enter through external constants.")
+  (use pat)
+  (type (Box a) (rec (items (List a))))
+  (const
+    pattern
+    (purpose "A compiled pattern for internal reuse.")
+    (type pat.Pat)
+    (value (pat.compile "a")))
+  (const
+    wrapped
+    (purpose "A pattern nested inside a generic record.")
+    (type (Box pat.Pat))
+    (value (new Box (items (list pattern)))))
+  (fn direct
+    (purpose "Accept an internally compiled pattern.")
+    (sig (p pat.Pat) -> Bool)
+    (body (pat.matches "a" p)))
+  (fn empty
+    (purpose "Accept even an empty pattern container internally.")
+    (sig (p (List pat.Pat)) -> Int)
+    (body (len p)))
+  (fn nested
+    (purpose "Accept patterns nested inside a generic record.")
+    (sig (p (Box pat.Pat)) -> Int)
+    (body (len (get p items)))))

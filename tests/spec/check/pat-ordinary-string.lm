@@ -1,0 +1,7 @@
+(module pat-ordinary-string
+  (purpose "Pattern syntax does not affect ordinary strings.")
+  (fn probe
+    (purpose "Return a string which is not a valid pattern.")
+    (sig -> Str)
+    (example () => "[")
+    (body "[")))

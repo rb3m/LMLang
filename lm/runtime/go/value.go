@@ -214,6 +214,8 @@ func showTo(b *strings.Builder, v Value) {
 		b.WriteString("(vecof")
 		vecEach(x, func(e Value) { b.WriteByte(' '); showTo(b, e) })
 		b.WriteByte(')')
+	case *Pat:
+		b.WriteString("<pat>")
 	default:
 		b.WriteString("<fn>")
 	}

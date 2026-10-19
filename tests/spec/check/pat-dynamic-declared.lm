@@ -1,0 +1,8 @@
+(module pat-dynamic-declared
+  (purpose "Dynamic patterns retain their declared failure.")
+  (use pat)
+  (fn probe
+    (purpose "Compile a runtime string.")
+    (sig (s Str) -> pat.Pat)
+    (fails pat.BadPattern)
+    (body (pat.compile s))))

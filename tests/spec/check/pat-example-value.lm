@@ -1,0 +1,8 @@
+(module pat-example-value
+  (purpose "Text pattern checker conformance.")
+  (use pat)
+  (fn probe
+    (purpose "Exercise the pattern rule.")
+    (sig (p pat.Pat) -> Bool)
+    (example ((pat.compile "a")) => true)
+    (body true)))

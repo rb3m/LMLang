@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .check_pat import check_external_type
 from .fake_world import parent_path, valid_path
 from .resolve import head
 from .sexpr import Atom, SList
@@ -71,8 +72,10 @@ def check_example(ck, m, f, clause, path):
     def run():
         for i, (arg, pt) in enumerate(zip(args, ft[1])):
             ap = f"{path}/1/{i}"
-            ck.expect(m, pt, ck.infer(m, arg, {}, ap), arg, ap,
+            at = ck.infer(m, arg, {}, ap)
+            ck.expect(m, pt, at, arg, ap,
                       "example argument")
+            check_external_type(ck, m, at, arg, ap)
         exp, ep = parts.result, f"{path}/{parts.result_index}"
         if head(exp) == "fail":
             err = ck.fail_check(m, exp, {}, ep)
@@ -80,9 +83,15 @@ def check_example(ck, m, f, clause, path):
                 ck.diag(m, "E-FAILS-UNDECLARED", exp, ep,
                         f"example expects undeclared failure `{err.id}`",
                         found=err.id)
+            if err is not None:
+                fields = zip(exp.items[2:], err.fields)
+                for i, (arg, (_, t)) in enumerate(fields, 2):
+                    check_external_type(ck, m, t, arg, f"{ep}/{i}")
         else:
-            ck.expect(m, ft[2], ck.infer(m, exp, {}, ep), exp, ep,
+            et = ck.infer(m, exp, {}, ep)
+            ck.expect(m, ft[2], et, exp, ep,
                       "example result")
+            check_external_type(ck, m, et, exp, ep)
 
     ck.sandbox(m, "an example", run)
     ck.check_eq(m)
