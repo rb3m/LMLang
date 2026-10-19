@@ -1,0 +1,36 @@
+(module vec-proof-control-required
+  (purpose "Vec proof facts do not infer relationships, aliases or facts past branch joins.")
+  (use vec)
+  (fn after-branch
+    (purpose "A bound from a branch cannot escape its branch.")
+    (sig (v (Vec Int)) -> Int)
+    (body (do (if (> (vec.size v) 0) unit unit) (vec.nth v 0))))
+  (fn binding-alias
+    (purpose "Equal Vec bindings retain distinct proof identities.")
+    (sig (v (Vec Int)) -> (Vec Int))
+    (requires (> (vec.size v) 0))
+    (body (let ((w v)) (vec.put w 0 9))))
+  (fn measured-alias
+    (purpose "A first-class alias of vec.size is not a recognized fact term.")
+    (sig (v (Vec Int)) -> Int)
+    (body (let ((measure vec.size)) (if (> (measure v) 0) (vec.nth v 0) 0))))
+  (fn negative-update
+    (purpose "A size bound cannot make a negative put index valid.")
+    (sig (v (Vec Int)) -> (Vec Int))
+    (requires (> (vec.size v) 10))
+    (body (vec.put v -1 9)))
+  (fn or-operand
+    (purpose "An or left operand does not prove the right operand safe.")
+    (sig (v (Vec Int)) -> Bool)
+    (body (or (> (vec.size v) 0) (= (vec.nth v 0) 1))))
+  (fn own-requires
+    (purpose "The function requires clauses are not assumed during contract evaluation.")
+    (sig (v (Vec Int)) -> Int)
+    (requires (> (vec.nth v 0) 0))
+    (requires (> (vec.size v) 0))
+    (body 1))
+  (fn variable-update
+    (purpose "An index variable remains checked even with relational bounds.")
+    (sig (v (Vec Int)) (i Int) -> (Vec Int))
+    (requires (and (>= i 0) (< i (vec.size v))))
+    (body (vec.put v i 9))))

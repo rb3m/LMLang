@@ -1,0 +1,24 @@
+(module vec-proof-control-ok
+  (purpose "Vec proof facts normalize negation, reversed bounds and scoped bindings.")
+  (use vec)
+  (fn divisor
+    (purpose "A proven nonzero size is an Int term just like len.")
+    (sig (v (Vec Int)) -> Int)
+    (requires (!= 0 (vec.size v)))
+    (body (/ 10 (vec.size v))))
+  (fn else-branch
+    (purpose "The else branch negates the condition for a checked update.")
+    (sig (v (Vec Int)) -> (Vec Int))
+    (body (if (= (vec.size v) 0) v (vec.put v 0 9))))
+  (fn local-binding
+    (purpose "Facts about a let-bound Vec use its binding identity.")
+    (sig (v (Vec Int)) -> Int)
+    (body (let ((w v)) (if (> (vec.size w) 0) (vec.nth w 0) 0))))
+  (fn negated
+    (purpose "Negating a non-strict upper bound proves a literal index safe.")
+    (sig (v (Vec Int)) -> Int)
+    (body (if (not (<= (vec.size v) 2)) (vec.nth v 2) 0)))
+  (fn nested-and
+    (purpose "Nested conjunctions prove both access and update.")
+    (sig (v (Vec Int)) -> Bool)
+    (body (and (and (>= (vec.size v) 2) true) (= (vec.nth v 1) 3) (= (vec.put v 1 3) v)))))

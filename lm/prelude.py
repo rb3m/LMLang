@@ -25,10 +25,10 @@ FAILING = {"/": "DivZero", "mod": "DivZero"}  # `/` fails DivZero only on Int op
 # Allowed operand types of the operators whose type variable `n` is constrained (checked after unification).
 # "key" is the Map key / Set element constraint (ADR-049 item 1); it is not a prelude name.
 CONSTRAINED = {**{op: NUMERIC for op in "+-*/"}, **{op: ORDERED for op in ("<", "<=", ">", ">=")}, "key": KEY}
-SPECIAL = frozenset(["if", "let", "let?", "do", "match", "lam", "list", "new", "get", "with", "and", "or", "fail", "try", "catch", "note", "prim", "mapof", "setof", "for"])
+SPECIAL = frozenset(["if", "let", "let?", "do", "match", "lam", "list", "new", "get", "with", "and", "or", "fail", "try", "catch", "note", "prim", "mapof", "setof", "vecof", "for"])
 LITERALS = frozenset(["true", "false", "unit"])
 RESERVED_VALUES = SPECIAL | LITERALS | frozenset(VALUES) | {"result"}
-RESERVED_CAPS = frozenset(["Int", "Bool", "Str", "Unit", "Float", "List", "Opt", "Map", "Set", "Fn", "Some", "None", "DivZero", "OutOfRange", "Pair"])
+RESERVED_CAPS = frozenset(["Int", "Bool", "Str", "Unit", "Float", "List", "Vec", "Opt", "Map", "Set", "Fn", "Some", "None", "DivZero", "OutOfRange", "Pair"])
 EFFECTS = frozenset([
     "io.out", "io.in", "env.read", "fs.read", "fs.write", "fs.delete",
     "net.http", "time.now", "rand",

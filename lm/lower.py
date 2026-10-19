@@ -253,6 +253,9 @@ class Lowerer:
     def s_list(self, e, m, env, p, fq):
         return ir.ListLit([self.ex(a, m, env, f"{p}/{k + 1}", fq) for k, a in enumerate(e.items[1:])])
 
+    def s_vecof(self, e, m, env, p, fq):
+        return ir.VecLit([self.ex(a, m, env, f"{p}/{k + 1}", fq) for k, a in enumerate(e.items[1:])])
+
     def s_mapof(self, e, m, env, p, fq):
         pairs = e.items[1:]
         keys = [self.atom(x.items[0], m, env) for x in pairs]

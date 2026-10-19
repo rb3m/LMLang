@@ -9,6 +9,7 @@ from .http_prims import HTTP_PRIMS
 from .str_prims import STR_PRIMS
 from .rand_prims import RAND_PRIMS
 from .json_prims import JSON_PRIMS
+from .vec_prims import VEC_PRIMS
 
 
 def list_concat(it, xs, ys):
@@ -114,7 +115,7 @@ def io_print(it, s):
 
 PRIMS = {
     **HTTP_PRIMS, **JSON_PRIMS, **IO_PRIMS, **STR_PRIMS, **FLOAT_PRIMS,
-    **COLL_PRIMS, **RAND_PRIMS,
+    **COLL_PRIMS, **RAND_PRIMS, **VEC_PRIMS,
     "list.concat": list_concat, "list.filter": list_filter, "list.fold": list_fold, "list.map": list_map,
     "list.any": list_any, "list.all": list_all, "list.map2": list_map2, "list.index-of": list_index_of,
     "list.nth": list_nth, "list.at": list_at, "list.take": list_take, "list.drop": list_drop,

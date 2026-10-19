@@ -1,0 +1,19 @@
+(module bin-vec-proof
+  (purpose "Discharged vector access retains a runtime fault at each site.")
+  (use io vec)
+  (export main)
+  (fn main
+    (purpose "Violate either precondition to test the discharged access guard.")
+    (sig -> Int)
+    (eff io.in)
+    (body (if (= (io.args) (list "put")) (vec.size (write-first (vecof))) (read-first (vecof)))))
+  (fn read-first
+    (purpose "Read index zero under a size precondition.")
+    (sig (v (Vec Int)) -> Int)
+    (requires (> (vec.size v) 0))
+    (body (vec.nth v 0)))
+  (fn write-first
+    (purpose "Write index zero under a size precondition.")
+    (sig (v (Vec Int)) -> (Vec Int))
+    (requires (> (vec.size v) 0))
+    (body (vec.put v 0 99))))

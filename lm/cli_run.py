@@ -57,7 +57,9 @@ def cmd_run(args) -> int:
         if not any(d.severity == "error" for d in prog.diags):
             sys.stderr.write(f"lm run: no module `{mname}`\n")
             return 3
-    e = _report(prog.diags, lambda e, w: "") if prog.diags else 0
+    e = 0
+    if prog.diags:
+        e = _report(prog.diags, lambda e, w: "", stream=sys.stderr)
     if e:
         return 1
     f = prog.modules[mname].fns.get(fname)
@@ -68,18 +70,20 @@ def cmd_run(args) -> int:
     for a in pos[1:]:
         n, d = read(a, "<arg>")
         if n is None:
-            _report(d, lambda e, w: "")
+            _report(d, lambda e, w: "", stream=sys.stderr)
             return 1
         nodes.append(n)
     if len(nodes) != len(f.params):
         sys.stderr.write(f"lm run: {f.qual} takes {len(f.params)} argument(s), got {len(nodes)}\n")
         return 3
     m = prog.modules[mname]
+    reported = len(prog.diags)
     nodes, ft = check_args(ck, m, f, nodes)
-    for d in prog.diags:
+    arg_diags = prog.diags[reported:]
+    for d in arg_diags:
         if d.path.startswith("arg#"):
             d.file = "<arg>"
-    if _report(prog.diags, lambda e, w: ""):
+    if _report(arg_diags, lambda e, w: "", stream=sys.stderr):
         return 1
     it = Interp(prog, allowed=allow, contracts=contracts, args=program_args, seed=seed)
 

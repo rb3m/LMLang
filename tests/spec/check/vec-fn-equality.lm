@@ -1,0 +1,7 @@
+(module vec-fn-equality
+  (purpose "Vec equality rejects function elements even inside generic fields.")
+  (type (Box a) (rec (value (Vec a))))
+  (fn bad
+    (purpose "Function-containing Vec values have no equality.")
+    (sig (x (Box (Fn (Int) Int))) -> Bool)
+    (body (= x x))))

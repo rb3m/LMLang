@@ -5,7 +5,10 @@ import re
 
 from .program import ModInfo, TypeInfo, VariantInfo
 from .sexpr import Atom, SList
-from .types import BASE, KEY, fn, keys_of, lst, mapt, nom, opt, pair, sett, substitute, var
+from .types import (
+    BASE, KEY, fn, keys_of, lst, mapt, nom, opt, pair, sett, substitute,
+    var, vec,
+)
 
 FN_NAME = re.compile(r"[a-z][a-z0-9-]*")
 TVAR = re.compile(r"[a-z]")
@@ -109,7 +112,7 @@ class GenericMixin:
                 v = n.value
                 if v in BASE:
                     return BASE[v]
-                if v in ("List", "Opt", "Pair", "Map", "Set", "Fn"):
+                if v in ("List", "Vec", "Opt", "Pair", "Map", "Set", "Fn"):
                     return bad(f"`{v}` needs arguments")
                 hit = self.find_cap(m, v, ("type",), n, path)
                 if hit is None:
@@ -128,9 +131,9 @@ class GenericMixin:
                 return var(n.value)
             return bad("expected a type")
         h = head(n)
-        if h in ("List", "Opt") and len(n.items) == 2:
+        if h in ("List", "Vec", "Opt") and len(n.items) == 2:
             inner = self.resolve_type(m, n.items[1], tvars, path + "/1")
-            return lst(inner) if h == "List" else opt(inner)
+            return {"List": lst, "Vec": vec, "Opt": opt}[h](inner)
         if h == "Pair" and len(n.items) == 3:
             return pair(self.resolve_type(m, n.items[1], tvars, path + "/1"),
                         self.resolve_type(m, n.items[2], tvars, path + "/2"))
@@ -145,7 +148,7 @@ class GenericMixin:
             return fn(args, self.resolve_type(m, n.items[2], tvars, path + "/2"))
         if n.items and isinstance(n.items[0], Atom) and n.items[0].kind == "type":
             name = n.items[0]
-            if h not in (*BASE, "List", "Opt", "Pair", "Map", "Set", "Fn"):
+            if h not in (*BASE, "List", "Vec", "Opt", "Pair", "Map", "Set", "Fn"):
                 hit = self.find_cap(m, h, ("type",), name, path + "/0")
                 if hit is None:
                     return self.s.fresh()
@@ -155,7 +158,7 @@ class GenericMixin:
                 args = [self.resolve_type(m, a, tvars, f"{path}/{i}")
                         for i, a in enumerate(n.items[1:], 1)]
                 return self.applied_type(m, hit[1], args, n, path)
-        return bad("malformed type; use Int Float Bool Str Unit (List T) "
+        return bad("malformed type; use Int Float Bool Str Unit (List T) (Vec T) "
                    "(Opt T) (Pair A B) (Map K V) (Set K) (Fn (T..) R) "
                    "or a declared type")
 

@@ -1,0 +1,26 @@
+(module vec-proof-required
+  (purpose "Vec facts cannot discharge variable indices, insufficient bounds or sibling bindings.")
+  (use vec)
+  (fn insufficient
+    (purpose "put needs the same strict bound as nth.")
+    (sig (v (Vec Int)) -> (Vec Int))
+    (requires (>= (vec.size v) 1))
+    (body (vec.put v 1 2)))
+  (fn negative
+    (purpose "Negative literal indices always retain OutOfRange.")
+    (sig (v (Vec Int)) -> Int)
+    (requires (> (vec.size v) 0))
+    (body (vec.nth v -1)))
+  (fn sibling
+    (purpose "Size facts do not escape a sibling let binding.")
+    (sig (c Bool) -> Int)
+    (body
+      (if
+        c
+        (let ((v (vecof 1))) (if (> (vec.size v) 0) (vec.nth v 0) 0))
+        (let ((v (vecof))) (vec.nth v 0)))))
+  (fn variable
+    (purpose "Relational variable reasoning is deliberately unavailable.")
+    (sig (v (Vec Int)) (i Int) -> Int)
+    (requires (and (>= i 0) (< i (vec.size v))))
+    (body (vec.nth v i))))

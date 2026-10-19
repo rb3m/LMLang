@@ -1,0 +1,10 @@
+(module vec-list-only
+  (purpose "len and list patterns remain List-only.")
+  (fn bad-length
+    (purpose "The prelude len operation does not accept Vec.")
+    (sig (v (Vec Int)) -> Int)
+    (body (len v)))
+  (fn bad-pattern
+    (purpose "List patterns do not destructure Vec.")
+    (sig (v (Vec Int)) -> Int)
+    (body (match v ((list) 0) (_ 1)))))

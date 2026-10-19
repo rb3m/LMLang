@@ -24,7 +24,7 @@ Numbers are stable identifiers (commits and ADRs cite them); new items take the 
 14. (Done 2026-10-19, ADR-068: `env.lookup`; fs append, entries, is-dir, make-dir, remove, rename; effects env.read and fs.delete; subprocesses moved to 25.) (Queued 2026-10-18; suggested order 22, 14, 15, 16, 18, 20.) System access for real scripts: environment variables (read), filesystem append, directory listing, delete and rename; subprocesses as a separate decision. Evidence: today a program cannot read a config token or `$HOME`, keep a log, or walk a folder (fs has only whole-file read/write/exists).
 15. (Client done 2026-10-19, ADR-069, v0.7.0; the HTTP server is next on this item.) (Queued 2026-10-18.) Networking: HTTP client first, then a minimal HTTP server, so the Python target (ADR-062) can serve on DreamHost. Security-sensitive (untrusted input, TLS, request limits): the risky choices go to the owner per the 2026-10-18 rule. Deferred from M12 "until a program needs it".
 16. (Done 2026-10-19, ADR-070: `(type (Tree a) ..)`, inferred construction, regular recursion, erased at runtime; examples/tree.lm.) (Queued 2026-10-18.) User-defined generic types (`(type (Tree a) ..)`, `(Result a e)`): today every container is re-declared per concrete type; the built-in `Pair` (ADR-059) was a workaround. Largest language-level gap.
-17. (Queued 2026-10-18.) An indexed collection with efficient update (vector/array): lists are immutable linked sequences, so grids, simulations and large tables pay O(n) per update.
+17. (Done 2026-10-19, ADR-074: persistent `(Vec a)`.) (Queued 2026-10-18.) An indexed collection with efficient update (vector/array): lists are immutable linked sequences, so grids, simulations and large tables pay O(n) per update.
 18. (Done 2026-10-19, ADR-071: `float.fixed`, module `date` with Date/DateTime, ISO parse/print, epoch conversion; duration text deferred.) (Queued 2026-10-18.) Formatting and dates: number formatting (fixed decimals, padding; Roadster Lander wrote its own formatter), calendar dates and durations with parsing and formatting (the M9 ledger parsed dates by hand).
 19. (Queued 2026-10-18.) Text patterns: a regex-like matcher with pinned, backend-identical semantics.
 20. (Done 2026-10-19, ADR-072: hermetic `(given ..)` examples on effectful fns.) (Queued 2026-10-18.) Effect mocking, so examples can cover functions with effects (files, clock, network) using fake inputs; today only scenarios exercise effectful code.
@@ -36,7 +36,7 @@ Numbers are stable identifiers (commits and ADRs cite them); new items take the 
 
 25. (Approved 2026-10-19, ADR-073: owner go-ahead; queued after 19.) (Queued 2026-10-19, split from 14; needs an owner decision, security.) Subprocesses: run a program with arguments (no shell), capture exit status, stdout and stderr; owner decides whether LM programs may run other programs at all, under which effect (e.g. `proc.run`), and limits (allowed commands, timeouts, environment passed through).
 
-26. (Queued 2026-10-19.) `lm run` prints check warnings (JSON lines) on stdout before the program's own output, so piping a program's output picks them up; send them to stderr (found while verifying ADR-071).
+26. (Done 2026-10-19: all `lm run` diagnostics on stderr, each reported once.) (Queued 2026-10-19.) `lm run` prints check warnings (JSON lines) on stdout before the program's own output, so piping a program's output picks them up; send them to stderr (found while verifying ADR-071).
 
 ## Working order inside a milestone
 

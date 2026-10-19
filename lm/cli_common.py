@@ -18,10 +18,10 @@ def _static(paths, extra=()):
 
 
 
-def _report(prog_diags, summary):
+def _report(prog_diags, summary, stream=None):
     diags = sorted(prog_diags, key=lambda d: (d.file, d.line, d.col, d.code, d.path))
     for d in diags:
-        print(d.to_json())
+        print(d.to_json(), file=stream)
     e = sum(d.severity == "error" for d in diags)
     sys.stderr.write(summary(e, len(diags) - e))
     return e

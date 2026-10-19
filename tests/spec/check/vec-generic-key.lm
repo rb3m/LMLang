@@ -1,0 +1,4 @@
+(module vec-generic-key
+  (purpose "Map key requirements traverse Vec and generic declarations.")
+  (type BadKeys (Keys (Vec Int)))
+  (type (Keys a) (rec (items (Vec (Map a Int))))))

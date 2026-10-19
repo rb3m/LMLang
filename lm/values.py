@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from .printer import flat, float_text
 from .sexpr import Atom
 from .tree import Coll, items
+from .vector import Vec
 
 
 class Unit:
@@ -113,6 +114,8 @@ def show(v) -> str:
         return flat(Atom("str", v))
     if isinstance(v, tuple):
         return "(list" + "".join(" " + show(x) for x in v) + ")"
+    if isinstance(v, Vec):
+        return "(vecof" + "".join(" " + show(x) for x in v) + ")"
     if v is UNIT:
         return "unit"
     if isinstance(v, Var):

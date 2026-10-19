@@ -8,7 +8,7 @@ import (
 )
 
 // Value is any LM value. Int=int64, Float=float64 (finite, never -0.0), Bool=bool, Str=string, Unit=UnitT, List=[]Value,
-// variants=*Variant, records=*Record, Map and Set=*Coll (coll.go), function values=*Closure.
+// variants=*Variant, records=*Record, Map and Set=*Coll (coll.go), Vec=*Vec (vec.go), functions=*Closure.
 type Value = any
 
 type UnitT struct{}
@@ -117,6 +117,8 @@ func equal(a, b Value) bool {
 		return ok && equal(x.A, y.A) && equal(x.B, y.B)
 	case *Coll:
 		return equalColl(x, b.(*Coll))
+	case *Vec:
+		return equalVec(x, b.(*Vec))
 	case *Closure:
 		return x == b.(*Closure)
 	}
@@ -208,6 +210,10 @@ func showTo(b *strings.Builder, v Value) {
 		b.WriteByte(')')
 	case *Coll:
 		showColl(b, x)
+	case *Vec:
+		b.WriteString("(vecof")
+		vecEach(x, func(e Value) { b.WriteByte(' '); showTo(b, e) })
+		b.WriteByte(')')
 	default:
 		b.WriteString("<fn>")
 	}

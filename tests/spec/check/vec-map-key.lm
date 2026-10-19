@@ -1,0 +1,4 @@
+(module vec-map-key
+  (purpose "Vec cannot be a Map key or Set element.")
+  (type BadMap (Map (Vec Int) Str))
+  (type BadSet (Set (Vec Int))))

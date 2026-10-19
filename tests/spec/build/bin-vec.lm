@@ -1,0 +1,19 @@
+(module bin-vec
+  (purpose "Persistent vector compiled runtime and checked access.")
+  (use vec)
+  (fn main
+    (purpose "Exercise literal lowering and persistent updates.")
+    (sig -> Int)
+    (example () => 0)
+    (body
+      (let
+        ((v (vecof 10 20 30)))
+        (if
+          (and
+            (= (vec.size (vec.push v 40)) 4)
+            (= (vec.at v 3) None)
+            (= (vec.set v 1 99) (Some (vecof 10 99 30)))
+            (= (vec.pop v) (Some (vecof 10 20)))
+            (= v (vec.from-list (list 10 20 30))))
+          0
+          1)))))

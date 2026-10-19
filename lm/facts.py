@@ -21,6 +21,7 @@ class Binding:
 @dataclass(frozen=True)
 class LenTerm:
     binding: Binding
+    operation: str = "len"
 
 
 Term = Binding | LenTerm
@@ -144,8 +145,9 @@ def extract_term(node, bindings: dict[str, Binding], env=None, s=None) -> Term |
         return None
     if isinstance(node, SList) and len(node.items) == 2:
         h, arg = node.items
-        if isinstance(h, Atom) and h.value == "len" and isinstance(arg, Atom) and arg.kind == "sym":
+        if (isinstance(h, Atom) and h.value in ("len", "vec.size")
+                and isinstance(arg, Atom) and arg.kind == "sym"):
             b = bindings.get(arg.value)
             if b is not None:
-                return LenTerm(b)
+                return LenTerm(b, h.value)
     return None

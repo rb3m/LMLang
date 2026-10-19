@@ -1,0 +1,6 @@
+(module vec-mixed-literal
+  (purpose "Vec literals require homogeneous elements.")
+  (fn bad
+    (purpose "A Str cannot appear in an Int Vec.")
+    (sig -> (Vec Int))
+    (body (vecof 1 "bad"))))

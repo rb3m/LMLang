@@ -195,3 +195,19 @@ module tree  -- A persistent binary search tree with reusable generic traversals
 *fn tree.member  (value Int) (tree (Tree Int)) -> Bool  -- Test whether an integer is present in an ordered tree.
 *fn tree.size  (tree (Tree a)) -> Int  -- Count values in a tree of any element type.
 *fn tree.to-list  (tree (Tree a)) -> (List a)  -- List values in order; ordered trees produce ascending lists.
+module vec  -- Persistent immutable indexed collections backed by a 32-way trie with a tail.
+*fn vec.at  (v (Vec a)) (i Int) -> (Opt a)  -- The element at zero-based index i, or None out of range.
+*fn vec.empty  -> (Vec a)  -- An empty vector.
+*fn vec.fold  (v (Vec a)) (init b) (step (Fn (b a) b)) -> b  -- Combine elements in increasing index order, starting from init.
+*fn vec.from-list  (xs (List a)) -> (Vec a)  -- The vector of the given list in order.
+*fn vec.last  (v (Vec a)) -> (Opt a)  -- The last element, or None when empty.
+*fn vec.map  (v (Vec a)) (f (Fn (a) b)) -> (Vec b)  -- Apply f to each element in increasing index order.
+*fn vec.nth  (v (Vec a)) (i Int) -> a  [fails OutOfRange]  -- The element at zero-based index i; fails OutOfRange for invalid indices.
+*fn vec.pop  (v (Vec a)) -> (Opt (Vec a))  -- A vector without its last element, or None when empty.
+*fn vec.push  (v (Vec a)) (x a) -> (Vec a)  -- A vector with x appended, sharing its unchanged structure.
+*fn vec.put  (v (Vec a)) (i Int) (x a) -> (Vec a)  [fails OutOfRange]  -- A vector with index i replaced by x; fails OutOfRange for invalid indices.
+*fn vec.repeat  (n Int) (x a) -> (Vec a)  -- A vector containing n copies of x; negative n gives empty.
+*fn vec.set  (v (Vec a)) (i Int) (x a) -> (Opt (Vec a))  -- A vector with index i replaced by x, or None out of range.
+*fn vec.size  (v (Vec a)) -> Int  -- The number of elements.
+*fn vec.tabulate  (n Int) (f (Fn (Int) a)) -> (Vec a)  -- A vector of f applied to indices 0 through n minus one; negative n gives empty.
+*fn vec.to-list  (v (Vec a)) -> (List a)  -- The vector elements as a list in index order.

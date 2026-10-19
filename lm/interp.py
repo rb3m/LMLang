@@ -11,6 +11,7 @@ from .program import ModInfo, Program
 from .resolve import head
 from .sexpr import Atom, SList
 from .tree import build
+from .vector import Vec
 from .tailcall import TailArgs, tail_sites
 from .values import UNIT, Closure, Denied, FloatFault, LmFail, Named, Overflow, Pair, ProofViolation, PyFn, Rec, Var, Violation, in_range
 
@@ -351,6 +352,9 @@ class Interp:
                     binds = dict(zip((a.value for a in c.items[2].items), f.args_))
                     return self.ev(c.items[3], {**env, **binds}, m)
             raise
+
+    def s_vecof(self, e, env, m):
+        return Vec.from_iterable(self.ev(x, env, m) for x in e.items[1:])
 
     def s_mapof(self, e, env, m):
         """Keys are constants; values are evaluated left to right in source order (ADR-049 item 4)."""

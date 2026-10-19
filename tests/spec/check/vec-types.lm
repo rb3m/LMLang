@@ -1,0 +1,9 @@
+(module vec-types
+  (purpose "Vec literals, aliases, nested generic fields and contextual empty values.")
+  (type (Box a) (rec (value a)))
+  (type (Items a) (Vec a))
+  (type (Tree a) (sum End (Branch (items (Vec (Tree a)))) (Value (item a))))
+  (fn nested
+    (purpose "A generic record can contain nested Vec values.")
+    (sig -> (Box (Items (Vec Int))))
+    (body (new Box (value (vecof (vecof 1 2) (vecof)))))))

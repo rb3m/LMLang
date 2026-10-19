@@ -359,7 +359,10 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
         return False
 
     def discharged_nth(self, info, args, e, path):
-        if (info.mod.name != "list" or info.name != "nth") or len(args) != 2:
+        operation = (info.mod.name, info.name)
+        arity = {("list", "nth"): 2, ("vec", "nth"): 2,
+                 ("vec", "put"): 3}.get(operation)
+        if arity is None or len(args) != arity:
             return False
         k_node = args[1]
         if not (isinstance(k_node, Atom) and k_node.kind == "int" and k_node.value >= 0):
@@ -367,7 +370,8 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
         b = self.bindings.get(args[0].value) if isinstance(args[0], Atom) and args[0].kind == "sym" else None
         if b is None:
             return False
-        if self.facts.is_gt(LenTerm(b), k_node.value):
+        size_op = "vec.size" if info.mod.name == "vec" else "len"
+        if self.facts.is_gt(LenTerm(b, size_op), k_node.value):
             fq = self.cur_fn.qual if self.cur_fn else ""
             self.prog.discharged[id(e)] = (self.cur_mod.file if self.cur_mod else "", e.line, e.col, path, fq)
             return True

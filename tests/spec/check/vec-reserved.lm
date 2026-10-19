@@ -1,0 +1,6 @@
+(module vec-reserved
+  (purpose "vecof is reserved in local binding positions.")
+  (fn bad
+    (purpose "A literal keyword cannot be a parameter.")
+    (sig (vecof Int) -> Int)
+    (body 1)))

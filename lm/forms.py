@@ -7,7 +7,10 @@ from .sexpr import Atom, SList
 from .forms_for import ForFormsMixin
 from .forms_match import MatchFormsMixin
 from .printer import flat
-from .types import BOOL, FLOAT, INT, NEVER, STR, UNIT, fields_of, fn, lst, nom, opt, pair, var
+from .types import (
+    BOOL, FLOAT, INT, NEVER, STR, UNIT, fields_of, fn, lst, nom, opt,
+    pair, var, vec,
+)
 
 
 class FormsMixin(MatchFormsMixin, ForFormsMixin):
@@ -121,6 +124,12 @@ class FormsMixin(MatchFormsMixin, ForFormsMixin):
         for i, t in enumerate(self.infer_all(m, e.items[1:], env, path), 1):
             self.expect(m, el, t, e.items[i], f"{path}/{i}", "list element")
         return lst(el)
+
+    def f_vecof(self, m, e, env, path):
+        el = self.s.fresh()
+        for i, t in enumerate(self.infer_all(m, e.items[1:], env, path), 1):
+            self.expect(m, el, t, e.items[i], f"{path}/{i}", "Vec element")
+        return vec(el)
 
     def f_note(self, m, e, env, path):
         if not (len(e.items) == 2 and isinstance(e.items[1], Atom) and e.items[1].kind == "str"):

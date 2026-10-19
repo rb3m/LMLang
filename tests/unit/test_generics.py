@@ -144,8 +144,9 @@ class GenericExternalValues(unittest.TestCase):
             self.assertEqual(result.stdout, expected)
         result = self.command("run", "boxes.tree", '(boxes.Node "wrong")')
         self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(result.stdout, "")
         codes = [json.loads(line)["code"]
-                 for line in result.stdout.splitlines()]
+                 for line in result.stderr.splitlines()]
         self.assertIn("E-TYPE", codes)
 
     def test_scenario_expectation_checks_key_constraints(self):

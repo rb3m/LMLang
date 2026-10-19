@@ -89,6 +89,8 @@ def equal(a, b) -> bool:
     if isinstance(a, Rec): return a.t == b.t and equal(a.items, b.items)
     if isinstance(a, Pair): return equal(a.a, b.a) and equal(a.b, b.b)
     if isinstance(a, Closure): return a is b
+    if "Vec" in globals() and isinstance(a, Vec):
+        return len(a) == len(b) and all(equal(x, y) for x, y in zip(a, b))
     if "Coll" in globals() and isinstance(a, Coll):
         if a.is_set != b.is_set or size(a.root) != size(b.root): return False
         return all(equal(k1, k2) and equal(v1, v2) for (k1, v1), (k2, v2) in zip(items(a.root), items(b.root)))
@@ -123,6 +125,8 @@ def show(v) -> str:
     if isinstance(v, Rec):
         return f"(new {v.t}" + "".join(f" ({k} {show(x)})" for k, x in v.items) + ")"
     if isinstance(v, Pair): return f"(pair {show(v.a)} {show(v.b)})"
+    if "Vec" in globals() and isinstance(v, Vec):
+        return "(vecof" + "".join(" " + show(x) for x in v) + ")"
     if "Coll" in globals() and isinstance(v, Coll): return show_coll(v)
     return "<fn>"
 
@@ -231,6 +235,18 @@ def safe_mod(x, y, site: int):
 def safe_list_nth(xs, i: int, site: int):
     if not 0 <= i < len(xs): fault("E-PROOF-VIOLATED", site, f"discharged operation at {sites[site].path} violated", "")
     return xs[i]
+
+def safe_vec_nth(v, i: int, site: int):
+    if not 0 <= i < len(v):
+        fault("E-PROOF-VIOLATED", site,
+              f"discharged operation at {sites[site].path} violated", "")
+    return v.at(i)
+
+def safe_vec_put(v, i: int, x, site: int):
+    if not 0 <= i < len(v):
+        fault("E-PROOF-VIOLATED", site,
+              f"discharged operation at {sites[site].path} violated", "")
+    return v.set(i, x)
 
 def prim_list_concat(xs, ys): return xs + ys
 def prim_list_filter(xs, keep): return tuple(x for x in xs if keep(x) is True)

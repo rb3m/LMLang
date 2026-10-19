@@ -1,0 +1,16 @@
+(module vec-proof-ok
+  (purpose "Vec size facts discharge literal-index nth and put like list.nth.")
+  (use vec)
+  (fn first
+    (purpose "Requires supplies the lower bound for nth.")
+    (sig (v (Vec Int)) -> Int)
+    (requires (> (vec.size v) 0))
+    (body (vec.nth v 0)))
+  (fn test-and
+    (purpose "A preceding and operand supplies the bound.")
+    (sig (v (Vec Int)) -> Bool)
+    (body (and (>= (vec.size v) 1) (= (vec.nth v 0) 1))))
+  (fn update
+    (purpose "An if condition supplies the lower bound for put.")
+    (sig (v (Vec Int)) -> (Vec Int))
+    (body (if (< 2 (vec.size v)) (vec.put v 2 9) v))))

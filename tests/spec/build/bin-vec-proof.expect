@@ -1,0 +1,5 @@
+[
+  {"exit": 70, "stdout": "", "code": "E-REQUIRES-VIOLATED"},
+  {"flags": ["--no-contracts"], "exit": 70, "stdout": "", "code": "E-PROOF-VIOLATED", "path": "bin-vec-proof/read-first/body/1"},
+  {"flags": ["--no-contracts"], "args": ["put"], "exit": 70, "stdout": "", "code": "E-PROOF-VIOLATED", "path": "bin-vec-proof/write-first/body/1"}
+]

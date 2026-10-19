@@ -72,7 +72,9 @@ class CliTests(unittest.TestCase):
             p = subprocess.run([sys.executable, "-m", "lm", "run", "app.id", "moon-gravity"],
                                cwd=d, env=env, capture_output=True, text=True)
             self.assertEqual(p.returncode, 1)
-            errs = [json.loads(line) for line in p.stdout.splitlines() if line.startswith("{")]
+            self.assertEqual(p.stdout, "")
+            errs = [json.loads(line) for line in p.stderr.splitlines()
+                    if line.startswith("{")]
             unresolved = [d for d in errs if d["code"] == "E-NAME-UNRESOLVED"]
             self.assertTrue(unresolved)
             self.assertEqual(unresolved[0]["expected"], "app.moon-gravity")

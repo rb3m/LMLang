@@ -7,11 +7,15 @@ BASE = {"Int": INT, "Float": FLOAT, "Bool": BOOL, "Str": STR, "Unit": UNIT}
 # Constraints on prelude operator type variables, checked once a fn's types are solved (ADR-039 item 3).
 NUMERIC, ORDERED = ("Int", "Float"), ("Int", "Float", "Str")
 KEY = ("Int", "Float", "Str", "Bool")  # Map keys and Set elements (ADR-049 item 1)
-CONTAINERS = ("List", "Opt", "Set", "Map", "Pair")  # (tag, child..)
+CONTAINERS = ("List", "Vec", "Opt", "Set", "Map", "Pair")  # (tag, child..)
 
 
 def lst(t):
     return ("List", t)
+
+
+def vec(t):
+    return ("Vec", t)
 
 
 def opt(t):

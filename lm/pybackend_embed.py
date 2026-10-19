@@ -105,6 +105,17 @@ def _has_map_set(e) -> bool:
     return any(_has_map_set(c) for c in ir.children(e))
 
 
+def has_vec(prog: ir.Program) -> bool:
+    def contains(e):
+        return isinstance(e, ir.VecLit) or any(contains(c) for c in ir.children(e))
+    if any(p.startswith("vec.") for p in prog.prims):
+        return True
+    return (any(f.body is not None and contains(f.body) for f in prog.fns.values())
+            or any(contains(c.expr) for f in prog.fns.values()
+                   for c in f.requires + f.ensures)
+            or any(contains(c.expr) for c in prog.consts.values()))
+
+
 def has_map_set(prog: ir.Program) -> bool:
     for p in prog.prims:
         if p.startswith("coll.") or p.startswith("map.") or p.startswith("set.") or p.startswith("json."):
@@ -257,7 +268,7 @@ def prim_time_mono_ms(): return time.monotonic_ns() // 1_000_000
 """
 
 
-def generate_embedded_runtime(prog: ir.Program) -> str:
+def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False) -> str:
     parts = [
         "class _It:",
         "\t@staticmethod",
@@ -265,6 +276,17 @@ def generate_embedded_runtime(prog: ir.Program) -> str:
         "_it = _It()",
         "",
     ]
+
+    if vec_literals or has_vec(prog):
+        parts.extend([
+            "# --- Embedded Vec runtime (from lm/vector.py, lm/vec_prims.py) ---",
+            clean_source((LM_DIR / "vector.py").read_text(encoding="utf-8")),
+            wrap_module((LM_DIR / "vec_prims.py").read_text(encoding="utf-8"), "vec_mod"),
+        ])
+        for prim in sorted(p for p in prog.prims if p.startswith("vec.")):
+            fn = prim.replace(".", "_").replace("-", "_")
+            parts.append(f"def prim_{fn}(*args): return vec_mod.VEC_PRIMS[{prim!r}](_it, *args)")
+        parts.append("")
 
     if has_map_set(prog):
         tree_src = clean_source((LM_DIR / "tree.py").read_text(encoding="utf-8"))

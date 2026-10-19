@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -58,6 +59,55 @@ class RuntimeFixtures(unittest.TestCase):
 
 
 class Cli(unittest.TestCase):
+    def test_run_warnings_go_to_stderr(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "src"
+            source.mkdir()
+            (source / "m.lm").write_text(
+                '(module m (purpose "Test run streams.") (use io list) '
+                '(fn main (purpose "Print and return.") (sig -> Int) '
+                '(eff io.out) (body (do (io.print "hello") 7))))\n',
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [str(ROOT / "bin/lm"), "run", "m.main",
+                 "--allow", "io.out"],
+                cwd=directory, capture_output=True, text=True,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "hello\n7\n")
+        diagnostics = [json.loads(line) for line in result.stderr.splitlines()]
+        self.assertIn("W-USE-UNUSED", [d["code"] for d in diagnostics])
+        self.assertIn("E-NONCANONICAL", [d["code"] for d in diagnostics])
+        self.assertTrue(all(d["severity"] == "warning" for d in diagnostics))
+        # Each static diagnostic is reported once, not again after argument checks.
+        self.assertEqual(len(diagnostics), len({json.dumps(d) for d in diagnostics}))
+
+    def test_run_arg_parse_error_goes_to_stderr(self):
+        rc, out, err = lm("run", "math.abs", "(")
+        self.assertEqual((rc, out), (1, ""))
+        diagnostic = json.loads(err)
+        self.assertEqual(diagnostic["code"], "E-PARSE")
+        self.assertEqual(diagnostic["file"], "<arg>")
+
+    def test_run_static_error_goes_to_stderr(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "src"
+            source.mkdir()
+            (source / "m.lm").write_text(
+                '(module m (purpose "Test static errors.") '
+                '(fn main (purpose "Wrong result.") '
+                '(sig -> Int) (body false)))\n',
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [str(ROOT / "bin/lm"), "run", "m.main"],
+                cwd=directory, capture_output=True, text=True,
+            )
+        self.assertEqual((result.returncode, result.stdout), (1, ""))
+        diagnostics = [json.loads(line) for line in result.stderr.splitlines()]
+        self.assertIn("E-TYPE", [d["code"] for d in diagnostics])
+
     def test_run_value_fail_contract_denied(self):
         self.assertEqual(lm("run", "billing.total", "(list 100 200)", '"MX"')[:2], (0, "348\n"))
         rc, _, out = lm("run", "billing.total", "(list 100)", '"XX"')
@@ -69,8 +119,9 @@ class Cli(unittest.TestCase):
         self.assertEqual(lm("run", "io.print", '"hi"', "--allow", "io.out")[:2], (0, "hi\nunit\n"))
 
     def test_run_arg_type_error_and_usage(self):
-        rc, out, _ = lm("run", "list.sum", '"x"')
-        d = json.loads(out)
+        rc, out, err = lm("run", "list.sum", '"x"')
+        self.assertEqual(out, "")
+        d = json.loads(err)
         self.assertEqual((rc, d["code"], d["file"], d["path"]), (1, "E-TYPE", "<arg>", "arg#0"))
         self.assertEqual(lm("run", "nomod.f")[0], 3)
         self.assertEqual(lm("run", "math.abs")[0], 3)
@@ -89,8 +140,9 @@ class Cli(unittest.TestCase):
         self.assertTrue(d["msg"].endswith("overflow cannot be caught."))
 
     def test_run_literal_out_of_range(self):
-        rc, out, _ = lm("run", "math.abs", "9223372036854775808")
-        d = json.loads(out)
+        rc, out, err = lm("run", "math.abs", "9223372036854775808")
+        self.assertEqual(out, "")
+        d = json.loads(err)
         self.assertEqual((rc, d["code"], d["file"]), (1, "E-OVERFLOW", "<arg>"))
 
     def test_run_pair_paste_back(self):

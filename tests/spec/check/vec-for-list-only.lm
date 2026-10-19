@@ -1,0 +1,8 @@
+(module vec-for-list-only
+  (purpose "for requires a List; Vec must be converted explicitly.")
+  (use io)
+  (fn bad
+    (purpose "A Vec is not an iterable collection for the for special form.")
+    (sig (v (Vec Str)) -> Unit)
+    (eff io.out)
+    (body (for (x v) (io.print x)))))

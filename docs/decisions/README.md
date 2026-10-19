@@ -81,3 +81,4 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-071](0071-float-fixed-and-dates.md) Backlog 18: `float.fixed` (exact half-even) and the pure `date` module (2026-10-19, agent consensus)
 - [ADR-072](0072-effect-mocking.md) Backlog 20: effect mocking, hermetic `(given ..)` examples on effectful fns, interpreter only (2026-10-19, agent consensus)
 - [ADR-073](0073-subprocesses-proposal.md) Backlog 25: subprocesses, effect `proc.run`, absolute argv, no inherited env, fixed limits (2026-10-19, agent consensus, owner approved)
+- [ADR-074](0074-persistent-vector.md) Backlog 17: persistent `(Vec a)`, 32-way trie, Opt access by default, nth/put with ADR-061 literal proofs (2026-10-19, agent consensus)

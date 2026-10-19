@@ -41,9 +41,10 @@ class PyExprMixin:
         return f"prelude_values[{pylit(e.op)}]"
 
     def x_Call(self, e):
-        if e.discharged and e.fid == "list.nth":
+        if e.discharged and e.fid in ("list.nth", "vec.nth", "vec.put"):
             a = self.args(e.args)
-            return f"safe_list_nth({a[0]}, {a[1]}, {self.site(e.site)})"
+            fn = e.fid.replace(".", "_")
+            return f"safe_{fn}({', '.join(a)}, {self.site(e.site)})"
         return f"{mangle(e.fid, 'F_')}({', '.join(self.args(e.args))})"
 
     def x_TailCall(self, e):
@@ -184,6 +185,10 @@ class PyExprMixin:
     def x_ListLit(self, e):
         a = self.args(e.items)
         return f"({', '.join(a) + (',' if len(a) == 1 else '')})" if a else "()"
+
+    def x_VecLit(self, e):
+        self.vec_literals = True
+        return f"Vec.from_iterable([{', '.join(self.args(e.items))}])"
 
     def x_MapLit(self, e):
         keys = f"({', '.join(self.expr(k) for k in e.keys) + (',' if len(e.keys) == 1 else '')})"

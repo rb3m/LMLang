@@ -1,0 +1,5 @@
+(module vec-arity
+  (purpose "The built-in Vec type takes exactly one argument.")
+  (type Bare Vec)
+  (type Empty (Vec))
+  (type Many (Vec Int Str)))

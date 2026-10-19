@@ -134,6 +134,11 @@ class ListLit:
 
 
 @dataclass
+class VecLit:
+    items: list
+
+
+@dataclass
 class MapLit:  # `(mapof ..)`: constant keys (Lits), values evaluated left to right (ADR-049)
     keys: list
     items: list
@@ -235,7 +240,7 @@ class Program:
 
 def children(e):
     """Direct sub-expressions of an IR expression (for generic walks)."""
-    if isinstance(e, (Call, TailCall, PrimOp, Construct, ListLit, MapLit, SetLit, And, Or, Fail, Do)):
+    if isinstance(e, (Call, TailCall, PrimOp, Construct, ListLit, VecLit, MapLit, SetLit, And, Or, Fail, Do)):
         return list(getattr(e, "args", None) or getattr(e, "items", []))
     if isinstance(e, Apply):
         return [e.fn, *e.args]
