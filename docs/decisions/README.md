@@ -74,3 +74,4 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-064](0064-backlog-9-measure-existing-outside-author-projects.md) Backlog 9: measure the existing outside-author projects (M9 ledger, Roadster Lander) (2026-10-18, agent consensus)
 - [ADR-065](0065-onboarding-outside-the-repo.md) Backlog 22: `lm guide`, command registry and `lm help`, `lm new` AGENTS.md, cold start outside the repo (2026-10-19, agent consensus)
 - [ADR-066](0066-public-export-from-private-repo.md) Public release: Apache-2.0, private history kept, scanned export script builds the public tree (2026-10-19, owner decisions + agent consensus)
+- [ADR-067](0067-scenario-validity-in-the-gate.md) Backlog 24: invalid scenarios fail check (E-SCENARIO) and guard; `index --stdlib --modules/--module` (2026-10-19, agent consensus)

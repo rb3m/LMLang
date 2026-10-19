@@ -1,7 +1,7 @@
 # LM guide
 
 ## Workflow
-1. Orient with `lm index` (`--stdlib` for the standard library) and `lm slice MOD.FN` before reading files.
+1. Orient with `lm index`; for the standard library use `lm index --stdlib --modules`, then `--module M`; use `lm slice MOD.FN` before reading files.
 2. Change code with `lm edit` ops (see `lm help edit`) rather than rewriting files.
 3. Loop `lm check` -> `lm test` until clean.
 4. Diagnostics are JSON lines with a code, a node path and often a `fix` you can pass to `lm edit apply`.
@@ -51,3 +51,5 @@ Each scenario file contains one `(scenarios ...)` form. Names are unique.
 Write arguments as separate LM constant expressions after the qualified function name, not as a single argument list. Module-defined variants, record/type names in `new`, and errors must be qualified even when they belong to the target module, including inside nested values. Prelude names (`Some`, `None`, `list`, `mapof`, `setof`, `DivZero`, `OutOfRange`) stay unqualified. Arguments and expectations are type-checked against the signature.
 
 Use exactly one of `(expect VALUE)`, `(expect-fail billing.BadRegion "US")`, or `(expect-out "text")`. For output expectations, add `(allow io.out)` before `run`. Proposed scenarios await human approval; review and approve them only as described in Workflow.
+
+A scenario must allow every effect its target declares, even on paths that do not use it, with one effect per clause: `(allow io.out) (allow fs.read)`.

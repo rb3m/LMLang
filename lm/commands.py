@@ -43,7 +43,8 @@ COMMANDS = {
         Command("bench", "bench [--tokenizer anthropic] | "
                 "bench --project PATH [--json]", "Measure toolchain metrics.",
                 "lm.cli_project:cmd_bench"),
-        Command("index", "index [PATH..] [--stdlib] [--exported]",
+        Command("index", "index [PATH..] [--stdlib] [--exported] "
+                "[--modules | --module M]",
                 "List module symbols and signatures.",
                 "lm.cli_query:cmd_index"),
         Command("slice", "slice SYM [--bodies] [--depth N] [--budget N]",

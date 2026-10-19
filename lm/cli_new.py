@@ -39,7 +39,7 @@ SCENARIOS = '''(scenarios
 AGENT_GUIDE = '''# AGENTS.md: {name} (an LM project)
 LM is a programming language for AI agents: s-expression syntax, every function declares purpose, signature, effects, failures and examples, and the toolchain answers structured queries. Run `lm guide` once before writing code (syntax, workflow, stdlib); `lm help CMD` for any command.
 ## Loop
-1. Orient: `lm index`, `lm index --stdlib`, `lm slice {name}.FN`.
+1. Orient: `lm index`; `lm index --stdlib --modules`, then `--module M`; `lm slice {name}.FN`.
 2. Change code with `lm edit` ops (`lm help edit`), not by rewriting files.
 3. `lm check` then `lm test` until both are clean; fix diagnostics by their code and path.
 4. `lm run {name}.main --allow io.in --allow io.out -- ARGS` to try it; `lm build {name}.main` for a native binary (needs Go) or `--target py`.

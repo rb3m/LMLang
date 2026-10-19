@@ -21,6 +21,7 @@ class Scenario:
         self.name = self.status = self.why = None
         self.allow, self.run, self.exp = [], None, None
         self.status_atom = None
+        seen = set()
         it = node.items if isinstance(node, SList) else ()
         if not (len(it) >= 2 and getattr(it[0], "value", None) == "scenario" and isinstance(it[1], Atom) and it[1].kind == "str"):
             self.name = f"<bad scenario at {file}:{getattr(node, 'line', 0)}>"
@@ -29,12 +30,24 @@ class Scenario:
         self.name = it[1].value
         for c in it[2:]:
             h = c.items[0].value if isinstance(c, SList) and c.items and isinstance(c.items[0], Atom) else None
+            if h in ("status", "why") and h in seen:
+                self.problem = f"unexpected or duplicate clause {flat(c)}"
+                continue
+            seen.add(h)
             if h == "status" and len(c.items) == 2:
                 self.status = getattr(c.items[1], "value", None)
                 self.status_atom = c.items[1] if isinstance(c.items[1], Atom) else None
             elif h == "why" and len(c.items) == 2 and isinstance(c.items[1], Atom) and c.items[1].kind == "str":
                 self.why = c.items[1].value
-            elif h == "allow" and len(c.items) == 2:
+            elif h == "allow":
+                if len(c.items) != 2:
+                    self.problem = "write one effect per clause: " + " ".join(
+                        f"(allow {flat(n)})" for n in c.items[1:])
+                    continue
+                if not (isinstance(c.items[1], Atom)
+                        and c.items[1].kind == "sym"):
+                    self.problem = "(allow EFF) needs one effect name"
+                    continue
                 self.allow.append(c.items[1].value)
             elif h == "run" and len(c.items) >= 2 and self.run is None:
                 self.run = c
@@ -51,6 +64,15 @@ class Scenario:
                 self.problem = "needs one (run ..) and one of (expect ..) (expect-fail ..) (expect-out ..)"
             elif not (isinstance(self.run.items[1], Atom) and self.run.items[1].kind == "sym" and "." in self.run.items[1].value):
                 self.problem = "(run module.fn args..) expects a qualified function name"
+            elif self.exp.items[0].value == "expect-out" and not (
+                    len(self.exp.items) == 2
+                    and isinstance(self.exp.items[1], Atom)
+                    and self.exp.items[1].kind == "str"):
+                self.problem = "expect-out needs exactly one string"
+            elif self.exp.items[0].value == "expect" and len(self.exp.items) != 2:
+                self.problem = "expect needs exactly one value"
+            elif self.exp.items[0].value == "expect-fail" and len(self.exp.items) < 2:
+                self.problem = "expect-fail needs an error name and its field arguments"
 
     @property
     def module(self):
@@ -202,6 +224,8 @@ def guard(scs, lock):
         elif s.problem is None and s.digest() != h:
             probs.append(f"CHANGED   {name}: content differs from accept.lock")
     for s in scs:
+        if s.problem:
+            probs.append(f"INVALID   {s.name}: {s.problem}")
         if s.status == "approved" and s.name not in lock:
             probs.append(f"UNBLESSED {s.name}: approved but not in accept.lock (human must run `lm accept --bless`)")
     return probs
@@ -252,30 +276,10 @@ def check_args(ck, m, f, raw_nodes):
 
 def execute(prog, ck, s):
     """Run one scenario. Returns (ok: bool, detail: str)."""
-    if s.problem:
-        return False, "invalid scenario: " + s.problem
-    m = prog.modules.get(s.module)
-    sym = s.run.items[1].value
-    f = m.fns.get(sym.split(".", 1)[1]) if m else None
-    if f is None:
-        return False, f"unknown function {sym}"
-    nodes = list(s.run.items[2:])
-    if len(nodes) != len(f.params):
-        return False, f"{sym} takes {len(f.params)} argument(s), scenario gives {len(nodes)}"
-    before = len(prog.diags)
-    nodes, ft = check_args(ck, m, f, nodes)
-    kind = s.exp.items[0].value
-    if kind == "expect":
-        exp_node = external_value(ck, m, s.exp.items[1], "expect")
-        ck.clear_facts()
-        t = ck.sandbox(m, "the expected value", lambda: ck.infer(m, exp_node, {}, "expect"))
-        ck.expect(m, ft[2], t, exp_node, "expect", "expected value")
-    elif kind == "expect-fail":
-        want_node = external_value(ck, m, SList((Atom("sym", "fail"),) + tuple(s.exp.items[1:])), "expect-fail")
-    new = prog.diags[before:]
-    del prog.diags[before:]
-    if new:
-        return False, "does not type-check: " + new[0].msg
+    prepared, problem = validate(prog, ck, s)
+    if problem:
+        return False, problem
+    m, f, nodes, kind, exp_node, want_node = prepared
     buf = io.StringIO()
     it = Interp(prog, allowed=s.allow, contracts=True, out=buf)
     fv = Named(f)
@@ -310,3 +314,10 @@ def execute(prog, ck, s):
     want = in_big_stack(lambda: it.ev(exp_node, {}, m))
     ok = k == "ok" and val == want and type(val) is type(want)
     return ok, ("" if ok else f"got {shown}")
+
+
+def validate(prog, ck, s):
+    """Validate without evaluation; return prepared inputs and a problem."""
+    from .accept_validate import validate as validate_scenario
+
+    return validate_scenario(prog, ck, s)

@@ -37,7 +37,9 @@ class SpecFixtures(unittest.TestCase):
         # E-EFFECT-DENIED needs CLI flags; E-PROOF-VIOLATED needs --no-contracts (ADR-061)
         later = {"E-EFFECT-DENIED", "E-PROOF-VIOLATED"}
         from lm.diag import CODES
-        self.assertEqual(sorted(set(CODES) - covered - later - {"E-NONCANONICAL"}), [])
+        # Acceptance files have fixtures in test_accept_validation.py.
+        separate = {"E-NONCANONICAL", "E-SCENARIO"}
+        self.assertEqual(sorted(set(CODES) - covered - later - separate), [])
 
 
 class StdlibAndDiagnostics(unittest.TestCase):

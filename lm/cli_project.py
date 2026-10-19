@@ -77,7 +77,22 @@ def cmd_check(args) -> int:
             sys.stderr.write(f"lm check: no such path: {p}\n")
             return 3
     prog = load(paths)
-    Checker(prog).run()
+    scenarios = not args and Path('tests/accept').is_dir()
+    if scenarios:
+        from .accept import load_scenarios
+
+        scs, _ = load_scenarios('tests/accept')
+        extra = sorted({s.module for s in scs
+                        if s.module in prog.available
+                        and s.module not in prog.modules})
+        if extra:
+            prog = load(paths, extra=extra)
+    ck = Checker(prog)
+    ck.run()
+    if scenarios:
+        from .accept_validate import scenario_diags
+
+        prog.diags.extend(scenario_diags(prog, ck))
     diags = sorted(prog.diags, key=lambda d: (d.file, d.line, d.col, d.code, d.path))
     for d in diags:
         print(d.to_json())

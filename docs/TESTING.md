@@ -18,6 +18,8 @@ Humans mostly do not read the code. The project owner (the human who approves sc
 
 ## Acceptance scenarios
 
+With no PATH arguments, `lm check` also validates tests/accept/*.accept without executing scenarios: file syntax and shape, target visibility, argument and expectation types, error fields, and known effect permissions covering every declared target effect. Problems are JSON E-SCENARIO errors with the file, line and scenario name; suggestions appear in the message rather than an inapplicable edit fix. `lm accept --guard` rejects every malformed scenario, proposed or approved, with `INVALID   NAME: problem`, without execution, in addition to the existing lock checks.
+
 Format (s-expr; the reader accepts one top-level form per file, so each `tests/accept/*.accept` file is `(scenarios (scenario ..) ..)`):
 ```
 (scenarios

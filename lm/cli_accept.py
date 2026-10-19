@@ -28,6 +28,19 @@ def cmd_accept(args) -> int:
         if bad:
             sys.stderr.write("lm accept --approve: refused due to bad scenario(s)\n")
             return 1
+        chosen = [s for s in scs if s.problem is None and s.digest() in pos]
+        if chosen:
+            mods = sorted({s.module for s in chosen})
+            prog, ck = _static([], extra=mods)
+            if any(d.severity == 'error' for d in prog.diags):
+                _report(prog.diags, lambda e, w: '')
+                sys.stderr.write('lm accept --approve: fix check errors first\n')
+                return 1
+            for s in chosen:
+                _, problem = A.validate(prog, ck, s)
+                if problem:
+                    sys.stderr.write(f'lm accept --approve: {s.name}: {problem}\n')
+                    return 1
         try:
             approved, already = A.approve(scs, lockf, pos, by_text)
         except ValueError as ex:
@@ -88,7 +101,8 @@ def cmd_accept(args) -> int:
                 rows.append(f"----  proposed  {name_col:<32} needs your OK")
                 if "--review" in flags:
                     rows.append(f"            why: {s.why}")
-                    rows.append(f"            case: {s.describe()}")
+                    if s.problem is None:
+                        rows.append(f"            case: {s.describe()}")
                     rows.append(f"            program today: {'matches' if ok else detail}")
             else:
                 rows.append(f"BAD   invalid   {name_col:<32} {detail}")

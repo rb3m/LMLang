@@ -29,13 +29,39 @@ def cmd_index(args) -> int:
     from .loader import STDLIB
 
     try:
-        flags, pos = _flags(args, {"--stdlib": False, "--exported": False})
+        flags, pos = _flags(args, {"--stdlib": False, "--exported": False,
+                                  "--modules": False, "--module": True})
     except ValueError as ex:
         sys.stderr.write(f"lm index: {ex}\n" + USAGE)
         return 3
+    scoped = '--modules' in flags or '--module' in flags
+    if scoped and ('--stdlib' not in flags or pos):
+        sys.stderr.write('lm index: --modules and --module require --stdlib '
+                         'and reject PATH arguments\n')
+        return 3
+    if '--modules' in flags and '--module' in flags:
+        sys.stderr.write('lm index: --modules and --module '
+                         'are mutually exclusive\n')
+        return 3
     paths = pos or [d for d in ("src", "examples") if Path(d).is_dir()]
     extra = sorted(f.stem for f in STDLIB.glob("*.lm")) if "--stdlib" in flags else []
+    if '--module' in flags:
+        name = flags['--module']
+        if name not in extra:
+            sys.stderr.write(f'lm index: unknown stdlib module {name}; '
+                             f'stdlib modules: {" ".join(extra)}\n')
+            return 3
+        extra = [name]
+    if scoped:
+        paths = []
     prog, idx = _open(paths, extra)
+    if scoped:
+        mods = [prog.modules[n] for n in extra]
+        lines = (idx.module_lines(mods) if '--modules' in flags
+                 else idx.index_lines(mods, '--exported' in flags))
+        for line in lines:
+            print(line)
+        return 0
     mods = [prog.modules[n] for n in prog.targets]
     for line in idx.index_lines(mods, "--exported" in flags):
         print(line)

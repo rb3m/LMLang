@@ -80,6 +80,13 @@ class Index:
         return None, f"module `{mn}` has no symbol `{nm}`; did you mean: {' '.join(suggest(text, cands) or sorted(cands)[:6])}"
 
     # ---- index -----------------------------------------------------------------------------------
+    def module_lines(self, mods):
+        out = []
+        for m in mods:
+            n = len(m.exported_fns) + len(m.exported_consts) + len(m.exported_caps)
+            out.append(f'{m.name}  {n} exports  {m.purpose or ""}')
+        return out
+
     def index_lines(self, mods, exported_only=False):
         out = []
         for m in mods:

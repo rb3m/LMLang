@@ -11,14 +11,14 @@ Run as `lm ...` via `bin/lm`, or `python3 -m lm ...` (Python >= 3.10; older inte
 ## Project
 - `new DIR`: scaffold a project that passes the gate.
 - `fmt [--check] [--stdout] [PATH..]`
-- `check [PATH..]`: defaults to src, examples; stdlib always loadable.
+- `check [PATH..]`: defaults to src, examples; stdlib always loadable. Without PATH arguments, also validates tests/accept/*.accept statically, reporting E-SCENARIO errors without executing scenarios.
 - `test [PATH..]`: check, then run all examples.
 - `run MOD.FN 'LM-expr'.. [--seed N] [--allow EFF] [--no-contracts] [-- PROGRAM-ARGS..]`: prints the return value (an entry's Int status too) and exits 0; a built binary exits with the returned Int.
 - `build MOD.FN [PATH..] [-o OUT] [--target go|py] [--os linux|darwin] [--arch amd64|arm64] [--no-contracts] [--keep-go DIR]`: entry has no params and returns Unit or Int exit status; default target is `go` (needs `go` on PATH or `$LM_GO`). Target `py` emits a standalone executable Python script (`<fn>.py` by default) with no external compiler requirement; `--os`, `--arch`, `--keep-go` are rejected with `--target py`.
 - `bench [--tokenizer anthropic] | bench --project PATH [--json]`: without `--project`, writes bench/results/summary.md; tasks in bench/tasks (optional `--tokenizer anthropic` adds a dev-only real-tokenizer S5 via bench/count_tokens.py, needs ANTHROPIC_API_KEY, never falls back). With `--project PATH`, measures S1 and S2 on the project at PATH without overwriting bench/results/, outputting a markdown table plus JSON (or JSON only with `--json`).
 
 ## Queries
-- `index [PATH..] [--stdlib] [--exported]`: one line per symbol.
+- `index [PATH..] [--stdlib] [--exported] [--modules | --module M]`: one line per symbol. `--stdlib --modules` prints one line per stdlib module: `MODULE  N exports  PURPOSE`. `--stdlib --module M` prints only M's symbols in the usual format. `--modules` and `--module` require `--stdlib`, are mutually exclusive, and reject PATH arguments (exit 3). An unknown M exits 3 and lists stdlib modules on stderr. Bare `--stdlib` output is unchanged.
 - `slice SYM [--bodies --depth N --budget T]`: root + callee signatures + type closure.
 - `callers SYM [PATH..]`, `deps SYM [--depth N]`, `hash SYM`
 - `explain SYM`: human-readable summary.
