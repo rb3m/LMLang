@@ -1,0 +1,7 @@
+(module system-env-undeclared
+  (purpose "Require every system capability.")
+  (use env)
+  (fn f
+    (purpose "Exercise effect checking.")
+    (sig (name Str) -> (Opt Str))
+    (body (env.lookup name))))

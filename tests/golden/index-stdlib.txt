@@ -4,6 +4,8 @@ module billing  -- Invoice totals.  (use list)
 module colsum  -- Sum a CSV column per key, keys ascending: colsum FILE KEY-COL VALUE-COL (zero-based).  (use fs io list map str)
 *fn colsum.main  -> Int  [eff fs.read io.in io.out]  -- Entry point: parse arguments, run, map I/O errors to exit status 1.
 *fn colsum.summarize  (rows (List Str)) (kcol Int) (vcol Int) -> Summary  -- Totals per key (a Map, so in ascending key order), and the number of unparsable rows.
+module env  -- Read-only environment access.
+*fn env.lookup  (name Str) -> (Opt Str)  [eff env.read]  -- Look up an environment variable; None for unset or invalid names.
 module file-lines  -- Count lines in a UTF-8 file named by the first program argument.  (use fs io list str)
 *fn file-lines.count  (text Str) -> Int  -- Count LF, CRLF, or CR text lines.
 *fn file-lines.main  -> Unit  [eff fs.read io.in io.out]  [fails fs.IoError]  -- Print the line count of the first file argument.
@@ -41,8 +43,14 @@ module float  -- Float helpers: conversions, rounding, constants, exp, logs, sqr
 *fn float.trunc  (x Float) -> Int  -- Int part of x, toward zero; outside the Int range is the fault E-OVERFLOW.
 module fs  -- UTF-8 file operations.
 *error fs.IoError  (path Str) (msg Str)
+*fn fs.append  (path Str) (text Str) -> Unit  [eff fs.write]  [fails IoError]  -- Append UTF-8 text, creating a missing file; no atomicity guarantee.
+*fn fs.entries  (path Str) -> (List Str)  [eff fs.read]  [fails IoError]  -- List UTF-8 entry names in ascending code-point order.
 *fn fs.exists  (path Str) -> Bool  [eff fs.read]  [fails IoError]  -- Test whether a filesystem path exists.
+*fn fs.is-dir  (path Str) -> Bool  [eff fs.read]  [fails IoError]  -- Test whether a path resolves to a directory.
+*fn fs.make-dir  (path Str) -> Unit  [eff fs.write]  [fails IoError]  -- Create one directory level; fail if any entry already exists.
 *fn fs.read  (path Str) -> Str  [eff fs.read]  [fails IoError]  -- Read a UTF-8 file.
+*fn fs.remove  (path Str) -> Unit  [eff fs.delete]  [fails IoError]  -- Remove a file, symlink or empty directory; never recurse.
+*fn fs.rename  (from Str) (to Str) -> Unit  [eff fs.delete fs.write]  [fails IoError]  -- Move a filesystem entry without overwriting; failures report from.
 *fn fs.write  (path Str) (text Str) -> Unit  [eff fs.write]  [fails IoError]  -- Replace a file with UTF-8 text.
 module io  -- Console input, output, and program arguments.
 *error io.IoError  (msg Str)

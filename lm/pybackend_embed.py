@@ -141,7 +141,7 @@ def has_json(prog: ir.Program) -> bool:
 
 
 def has_fs(prog: ir.Program) -> bool:
-    return any(p.startswith("fs.") for p in prog.prims)
+    return any(p.startswith(("fs.", "env.")) for p in prog.prims)
 
 
 def has_time(prog: ir.Program) -> bool:
@@ -243,6 +243,13 @@ def prim_json_print(j): return json_mod.print_json(_it, j)
 FS_HELPERS = """def prim_fs_read(path: str): return io_mod.fs_read(_it, path)
 def prim_fs_write(path: str, text: str): return io_mod.fs_write(_it, path, text)
 def prim_fs_exists(path: str): return io_mod.fs_exists(_it, path)
+def prim_env_lookup(name: str): return io_mod.env_lookup(_it, name)
+def prim_fs_append(path: str, text: str): return io_mod.fs_append(_it, path, text)
+def prim_fs_entries(path: str): return io_mod.fs_entries(_it, path)
+def prim_fs_is_dir(path: str): return io_mod.fs_is_dir(_it, path)
+def prim_fs_make_dir(path: str): return io_mod.fs_make_dir(_it, path)
+def prim_fs_remove(path: str): return io_mod.fs_remove(_it, path)
+def prim_fs_rename(source: str, target: str): return io_mod.fs_rename(_it, source, target)
 """
 
 TIME_HELPERS = """def prim_time_now_ms(): return time.time_ns() // 1_000_000

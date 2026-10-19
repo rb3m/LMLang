@@ -27,7 +27,7 @@ lm/
   values.py    runtime values (Var, Rec, Closure...), LM-syntax `show()`
   tree.py      Map/Set values: persistent AVL tree + `Coll` (ADR-049/050; Go twin runtime/go/coll.go)
   prims.py     Python implementations of stdlib `(prim "..")` bodies (PRIMS table); siblings by family: float_prims.py (Float),
-               str_prims.py (strings), io_prims.py (I/O), rand_prims.py (clock/random, SplitMix64), json_prims.py (JSON), coll_prims.py (map/set)
+               str_prims.py (strings), io_prims.py (I/O, filesystem and read-only environment), rand_prims.py (clock/random, SplitMix64), json_prims.py (JSON), coll_prims.py (map/set)
   interp.py    Interp: tree-walking evaluator, contracts, capability gating, checked 64-bit arithmetic, frame stack
   tailcall.py  shared source-level self tail-call sites + interpreter loop-transfer value (ADR-051 item 1)
   runtime_cases.py effectful runtime fixtures NAME.cases.json (ADR-051; docs/TESTING.md)
@@ -55,7 +55,7 @@ lm/
   pybackend_names.py shared Python name mangling and literal formatting
   build.py     `lm build`: target dispatch (`go` or `py`), entry check (ADR-031), write sources, invoke compiler/set executable; run_examples_go(), run_examples_py()
   runtime/go/  Go runtime copied next to the generated main.go: value.go (values, equality, show),
-               rt.go (fail/fault, checked Int ops, calls, stdout, entry/harness), prims.go (ONE func per prim; prims_text.go: M10 str prims),
+               rt.go (fail/fault, checked Int ops, calls, stdout, entry/harness), prims.go (ONE func per prim; prims_text.go: M10 str prims; prims_system.go: env and filesystem additions; link_darwin.go/link_other.go: hard links without following symlinks),
                float.go (checked Float ops without FMA, canonical text = Python repr, Float prims),
                coll.go (Map/Set AVL tree, mapOf/setOf, map/set prims), rand.go (clock/random), json.go (JSON)
   runtime/py/  Python runtime embedded into standalone Python build outputs: rt.py (values, checked Int/Float ops, calls, depth accounting, prims), entry.py (CLI entry/runner, diagnostics, seed)
@@ -93,13 +93,13 @@ Entry points: `sexpr` (Atom kinds int|str|sym|type; SList) -> `ast.canonicalize(
 - **Edit ops**: parse op args as s-expr, apply to the AST, reprint canonical, run check on touched modules, print diff-size and diagnostics. Never emit the whole file.
 - **Effects/fails**: accumulated during checking from each callee's *declared* signature, so check order never matters and recursion needs no fixpoint (ADR-018; see Error handling policy).
 - **Faults vs failures**: LM failures are `LmFail` (catchable by `try`, declared in `fails`); faults (Overflow, Violation, RecursionError) are other Python exceptions that `try` never catches. Interp frames are popped only on normal return (and truncated by `try` on a caught failure), so after a fault they still describe where it happened.
-- **Capability gating**: interpreter holds an `allowed` set; prims with effects check it.
+- **Capability gating**: interpreter holds an `allowed` set; calls require every declared effect, including `env.read` and `fs.delete`. The closed set in `prelude.EFFECTS` also validates scenario allow clauses.
 - **Contracts**: `requires` evaluated before body with params bound; `ensures` after with `result` bound.
 - **Self tail calls**: `tailcall.tail_sites` walks only the permitted body positions; the interpreter and lowering share the same node-identity decisions. `Interp.call_fn` consumes `TailArgs` in a loop with fresh environments and one frame. Lowering emits `ir.TailCall`; Go uses next-argument slots and fresh locals inside a loop. With contracts on and postconditions present, both keep argument histories on the heap and check them innermost first on exit; otherwise no history is allocated. Calls inside `try`, lambdas, contracts and examples are excluded.
 - **Determinism**: all listings sorted; no timestamps in outputs except `bench/results`.
 
 - **Native and script builds** (ADR-026/032/033/062): the interpreter is the oracle. `lower.py` makes every runtime decision of `interp.py` explicit (call kinds, captures, match tests, fail/try, contracts with sites); a backend is a printer plus a runtime. `gobackend` targets Go (`Value = any`, fail as panic caught by try's deferred recover, faults as panics caught by entry); `pybackend` targets Python (emits a standalone self-contained script with embedded runtime `lm/runtime/py/rt.py`). Both count LM call depth so runaway recursion is a fault (E-RECURSION-LIMIT) instead of an uncontrolled host stack crash.
-- **Adding a prim**: Python in `lm/prims.py` (PRIMS table), Go in `lm/runtime/go/prims.go` (`func prim_<name>(args Value..) Value`, `.`/`-` -> `_`), and Python backend runtime in `lm/runtime/py/rt.py` (`prim_<name>(*args)`); `tests/unit/test_gobackend.py` fails if the Go twin is missing.
+- **Adding a prim**: Python in `lm/prims.py` (PRIMS table), Go in `lm/runtime/go/prims.go` (`func prim_<name>(args Value..) Value`, `.`/`-` -> `_`), and Python backend runtime in `lm/runtime/py/rt.py` (`prim_<name>(*args)`) or an embedded source plus wrappers in `pybackend_embed.py` (filesystem and env share `io_prims.py`); `tests/unit/test_gobackend.py` fails if the Go twin is missing.
 
 ## Error handling policy
 

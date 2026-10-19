@@ -1,19 +1,55 @@
 (module fs
   (purpose "UTF-8 file operations.")
-  (export IoError exists read write)
+  (export IoError append entries exists is-dir make-dir read remove rename write)
   (error IoError (path Str) (msg Str))
+  (fn append
+    (purpose "Append UTF-8 text, creating a missing file; no atomicity guarantee.")
+    (sig (path Str) (text Str) -> Unit)
+    (eff fs.write)
+    (fails IoError)
+    (body (prim "fs.append")))
+  (fn entries
+    (purpose "List UTF-8 entry names in ascending code-point order.")
+    (sig (path Str) -> (List Str))
+    (eff fs.read)
+    (fails IoError)
+    (body (prim "fs.entries")))
   (fn exists
     (purpose "Test whether a filesystem path exists.")
     (sig (path Str) -> Bool)
     (eff fs.read)
     (fails IoError)
     (body (prim "fs.exists")))
+  (fn is-dir
+    (purpose "Test whether a path resolves to a directory.")
+    (sig (path Str) -> Bool)
+    (eff fs.read)
+    (fails IoError)
+    (body (prim "fs.is-dir")))
+  (fn make-dir
+    (purpose "Create one directory level; fail if any entry already exists.")
+    (sig (path Str) -> Unit)
+    (eff fs.write)
+    (fails IoError)
+    (body (prim "fs.make-dir")))
   (fn read
     (purpose "Read a UTF-8 file.")
     (sig (path Str) -> Str)
     (eff fs.read)
     (fails IoError)
     (body (prim "fs.read")))
+  (fn remove
+    (purpose "Remove a file, symlink or empty directory; never recurse.")
+    (sig (path Str) -> Unit)
+    (eff fs.delete)
+    (fails IoError)
+    (body (prim "fs.remove")))
+  (fn rename
+    (purpose "Move a filesystem entry without overwriting; failures report from.")
+    (sig (from Str) (to Str) -> Unit)
+    (eff fs.delete fs.write)
+    (fails IoError)
+    (body (prim "fs.rename")))
   (fn write
     (purpose "Replace a file with UTF-8 text.")
     (sig (path Str) (text Str) -> Unit)

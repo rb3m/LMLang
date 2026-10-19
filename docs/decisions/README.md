@@ -75,3 +75,4 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-065](0065-onboarding-outside-the-repo.md) Backlog 22: `lm guide`, command registry and `lm help`, `lm new` AGENTS.md, cold start outside the repo (2026-10-19, agent consensus)
 - [ADR-066](0066-public-export-from-private-repo.md) Public release: Apache-2.0, private history kept, scanned export script builds the public tree (2026-10-19, owner decisions + agent consensus)
 - [ADR-067](0067-scenario-validity-in-the-gate.md) Backlog 24: invalid scenarios fail check (E-SCENARIO) and guard; `index --stdlib --modules/--module` (2026-10-19, agent consensus)
+- [ADR-068](0068-system-access-env-and-fs.md) Backlog 14: `env.lookup`, fs append/entries/is-dir/make-dir/remove/rename, effects env.read and fs.delete (2026-10-19, agent consensus)

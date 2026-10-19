@@ -1,0 +1,8 @@
+(module system-remove-undeclared
+  (purpose "Require every system capability.")
+  (use fs)
+  (fn f
+    (purpose "Exercise effect checking.")
+    (sig (path Str) -> Unit)
+    (fails fs.IoError)
+    (body (fs.remove path))))

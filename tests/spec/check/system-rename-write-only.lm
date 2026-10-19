@@ -1,0 +1,9 @@
+(module system-rename-write-only
+  (purpose "Require every system capability.")
+  (use fs)
+  (fn f
+    (purpose "Exercise effect checking.")
+    (sig (path Str) -> Unit)
+    (eff fs.write)
+    (fails fs.IoError)
+    (body (fs.rename path "other"))))
