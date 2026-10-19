@@ -1,0 +1,39 @@
+(module proc
+  (purpose "Bounded POSIX subprocesses with explicit arguments and environment.")
+  (use fs str)
+  (export Exit ProcError Result run which)
+  (type Exit (sum (Exited (code Int)) (Signaled (signal Int))))
+  (type Result (rec (exit Exit) (stdout Str) (stderr Str)))
+  (error ProcError (msg Str))
+  (fn run
+    (purpose "Execute an absolute executable with explicit stdin, cwd and environment.")
+    (sig (argv (List Str)) (stdin Str) (cwd (Opt Str)) (env (List (Pair Str Str))) -> Result)
+    (eff proc.run)
+    (fails ProcError)
+    (body (prim "proc.run")))
+  (fn which
+    (purpose "Find a non-directory named entry in the supplied absolute directories.")
+    (sig (name Str) (dirs (List Str)) -> (Opt Str))
+    (eff fs.read)
+    (fails fs.IoError)
+    (body (if (or (= name "") (str.contains name "/")) None (which-in name dirs))))
+  (fn which-in
+    (purpose "Search remaining directories without reading the host PATH.")
+    (sig (name Str) (dirs (List Str)) -> (Opt Str))
+    (eff fs.read)
+    (fails fs.IoError)
+    (body
+      (match
+        dirs
+        ((list) None)
+        (
+          (cons directory remaining)
+          (if
+            (str.starts-with directory "/")
+            (let
+              ((path (str.concat (if (= directory "/") "" directory) (str.concat "/" name))))
+              (if
+                (and (fs.exists path) (not (fs.is-dir path)))
+                (Some path)
+                (which-in name remaining)))
+            (which-in name remaining)))))))

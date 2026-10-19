@@ -1,0 +1,14 @@
+(module mock-proc-duplicate-stdout
+  (purpose "Validate subprocess script metadata: duplicate-stdout.")
+  (use proc)
+  (fn f
+    (purpose "Invoke one scripted process.")
+    (sig (value Str) -> proc.Result)
+    (eff proc.run)
+    (fails proc.ProcError)
+    (example
+      ("x")
+      (given (proc (argv "/bin/x") (exited 0 (stdout "") (stdout ""))))
+      =>
+      (fail proc.ProcError "not-found"))
+    (body (proc.run (list "/bin/x") "" None (list)))))

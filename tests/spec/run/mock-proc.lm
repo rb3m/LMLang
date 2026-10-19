@@ -1,0 +1,51 @@
+(module mock-proc
+  (purpose "Hermetic scripted subprocess outcomes and exact requests.")
+  (use proc)
+  (fn invoke
+    (purpose "Return a scripted process result.")
+    (sig (argv (List Str)) (input Str) (cwd (Opt Str)) (env (List (Pair Str Str))) -> proc.Result)
+    (eff proc.run)
+    (fails proc.ProcError)
+    (example
+      ((list "/bin/x") "" None (list))
+      (given (proc (argv "/bin/x") (exited 7 (stdout "out") (stderr "err"))))
+      =>
+      (new proc.Result (exit (proc.Exited 7)) (stdout "out") (stderr "err")))
+    (example
+      ((list "/bin/x") "" None (list))
+      (given (proc (argv "/bin/x") (signaled 15)))
+      =>
+      (new proc.Result (exit (proc.Signaled 15)) (stdout "") (stderr "")))
+    (example
+      ((list "/bin/x") "" None (list))
+      (given (proc (argv "/bin/x") (error "not-found")))
+      =>
+      (fail proc.ProcError "not-found"))
+    (example
+      ((list "/bin/x" "arg") "input" (Some "/work") (list (pair "B" "2") (pair "A" "1")))
+      (given
+        (proc
+          (argv "/bin/x" "arg")
+          (stdin "input")
+          (cwd "/work")
+          (env "B" "2")
+          (env "A" "1")
+          (exited 0)))
+      =>
+      (new proc.Result (exit (proc.Exited 0)) (stdout "") (stderr "")))
+    (example ((list) "" None (list)) (given) => (fail proc.ProcError "invalid-request"))
+    (body (proc.run argv input cwd env)))
+  (fn twice
+    (purpose "Consume matching requests in declared order.")
+    (sig -> (List proc.Result))
+    (eff proc.run)
+    (fails proc.ProcError)
+    (example
+      ()
+      (given (proc (argv "/bin/x") (exited 1)) (proc (argv "/bin/x") (exited 2)))
+      =>
+      (list
+        (new proc.Result (exit (proc.Exited 1)) (stdout "") (stderr ""))
+        (new proc.Result (exit (proc.Exited 2)) (stdout "") (stderr ""))))
+    (body
+      (list (proc.run (list "/bin/x") "" None (list)) (proc.run (list "/bin/x") "" None (list))))))

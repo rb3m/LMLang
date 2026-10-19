@@ -1,0 +1,9 @@
+(module mock-proc-effect
+  (purpose "A process script requires the process effect.")
+  (use io)
+  (fn f
+    (purpose "Return arguments.")
+    (sig -> (List Str))
+    (eff io.in)
+    (example () (given (proc (argv "/bin/x") (exited 0))) => (list))
+    (body (io.args))))

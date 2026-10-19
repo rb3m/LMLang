@@ -151,6 +151,12 @@ module pat  -- Bounded Unicode text patterns with deterministic ordered matching
 *fn pat.replace-all  (s Str) (p Pat) (replacement Str) -> Str  -- Replace each match with literal replacement text.
 *fn pat.replace-with  (s Str) (p Pat) (replacement (Fn (Match) Str)) -> Str  -- Replace each match with the result of a pure callback.
 *fn pat.split  (s Str) (p Pat) -> (List Str)  -- Split on matches, retaining empty fields and omitting captures.
+module proc  -- Bounded POSIX subprocesses with explicit arguments and environment.  (use fs str)
+*type proc.Exit  (sum (Exited (code Int)) (Signaled (signal Int)))
+*type proc.Result  (rec (exit Exit) (stdout Str) (stderr Str))
+*error proc.ProcError  (msg Str)
+*fn proc.run  (argv (List Str)) (stdin Str) (cwd (Opt Str)) (env (List (Pair Str Str))) -> Result  [eff proc.run]  [fails ProcError]  -- Execute an absolute executable with explicit stdin, cwd and environment.
+*fn proc.which  (name Str) (dirs (List Str)) -> (Opt Str)  [eff fs.read]  [fails fs.IoError]  -- Find a non-directory named entry in the supplied absolute directories.
 module rand  -- Seedable SplitMix64 random numbers.
 *fn rand.float  -> Float  [eff rand]  -- Uniform random Float in [0, 1) using 53 random bits.
 *fn rand.int  (lo Int) (hi Int) -> Int  [eff rand]  -- Uniform random Int in the inclusive range lo..hi.

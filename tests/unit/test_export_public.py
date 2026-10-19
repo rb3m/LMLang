@@ -47,7 +47,10 @@ class ExportPublicTests(unittest.TestCase):
         return root
 
     def git(self, root, *args):
-        return subprocess.check_output(["git", "-C", str(root), *args], stderr=subprocess.STDOUT)
+        # Background maintenance can recreate .git files during temp cleanup.
+        return subprocess.check_output(
+            ["git", "-c", "maintenance.auto=false", "-c", "gc.auto=0",
+             "-C", str(root), *args], stderr=subprocess.STDOUT)
 
     def test_scan_checkout(self):
         result = self.run_export(ROOT, scan=True)

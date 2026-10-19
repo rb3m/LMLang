@@ -44,6 +44,8 @@ class FakeWorld:
         self.files = {}
         self.dirs = {'.', '/'}
         self.now_ms = 0
+        self.procs = []
+        self.proc_index = 0
         seed = 0
         for name, values in given:
             if name == 'args':
@@ -60,6 +62,8 @@ class FakeWorld:
                 self.now_ms = values[0]
             elif name == 'seed':
                 seed = values[0]
+            elif name == 'proc':
+                self.procs.append(values[0])
         self.rng = SplitMix64(seed)
 
     def call(self, name, it, args):
@@ -89,12 +93,38 @@ class FakeWorld:
             if not key or '=' in key or '\0' in key or key not in self.env:
                 return Var('', 'None')
             return Var('', 'Some', (self.env[key],))
+        if name == 'proc.run':
+            return self._proc(*args)
         # Consult the active primitive's declared effects, rather than a second
         # list that could silently omit a newly added host capability.
         fn = it.frames[-1][1]
         if fn.eff:
             raise Denied(sorted(fn.eff)[0], fn)
         return PRIMS[name](it, *args)
+
+    def _proc(self, argv, stdin, cwd, env):
+        from .proc_examples import ProcMismatch
+        from .proc_prims import validate_request
+
+        validate_request(argv, stdin, cwd, env)
+        index = self.proc_index
+        if index == len(self.procs):
+            raise ProcMismatch(f'proc.run call index {index + 1}: no script entry')
+        entry = self.procs[index]
+        if (tuple(argv), stdin, cwd, tuple(env)) != (
+                entry.argv, entry.stdin, entry.cwd, entry.env):
+            raise ProcMismatch(f'proc.run call index {index + 1}: request mismatch')
+        self.proc_index += 1
+        if isinstance(entry.outcome, str):
+            raise LmFail('proc.ProcError', (entry.outcome,))
+        return entry.outcome
+
+    def check_procs(self):
+        from .proc_examples import ProcMismatch
+
+        if self.proc_index != len(self.procs):
+            raise ProcMismatch(f'proc.run call index {self.proc_index + 1}: '
+                               'unconsumed script entry')
 
     def _fail(self, path, message):
         raise LmFail('fs.IoError', (path, message))

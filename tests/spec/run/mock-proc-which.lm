@@ -1,0 +1,17 @@
+(module mock-proc-which
+  (purpose "Executable discovery reads only the fake filesystem.")
+  (use fs proc)
+  (fn discover
+    (purpose "Search explicit directories for a named file.")
+    (sig (name Str) -> (Opt Str))
+    (eff fs.read)
+    (fails fs.IoError)
+    (example
+      ("tool")
+      (given (dir "/a") (dir "/a/tool") (dir "/b") (file "/b/tool" "fake"))
+      =>
+      (Some "/b/tool"))
+    (example ("tool") (given (file "tool" "ignored relative")) => None)
+    (example ("") (given) => None)
+    (example ("a/tool") (given) => None)
+    (body (proc.which name (list "relative" "/a" "/b")))))

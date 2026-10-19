@@ -1,0 +1,8 @@
+(module proc-invalid
+  (purpose "Invalid subprocess requests fail before starting a process.")
+  (use proc)
+  (fn probe
+    (purpose "Catch a subprocess request with no executable.")
+    (sig -> Str)
+    (eff proc.run)
+    (body (try (get (proc.run (list) "" None (list)) stdout) (catch proc.ProcError (msg) msg)))))

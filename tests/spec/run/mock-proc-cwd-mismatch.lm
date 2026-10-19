@@ -1,0 +1,14 @@
+(module mock-proc-cwd-mismatch
+  (purpose "Subprocess scripts detect cwd-mismatch.")
+  (use proc)
+  (fn f
+    (purpose "Invoke a subprocess under an unmatched script.")
+    (sig -> proc.Result)
+    (eff proc.run)
+    (fails proc.ProcError)
+    (example
+      ()
+      (given (proc (argv "/bin/x") (cwd "/work") (exited 0)))
+      =>
+      (new proc.Result (exit (proc.Exited 0)) (stdout "") (stderr "")))
+    (body (proc.run (list "/bin/x") "" None (list)))))

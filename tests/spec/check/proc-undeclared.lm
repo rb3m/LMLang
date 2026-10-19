@@ -1,0 +1,8 @@
+(module proc-undeclared
+  (purpose "Reject undeclared child process capability.")
+  (use proc)
+  (fn probe
+    (purpose "Omit the capability required by run.")
+    (sig -> proc.Result)
+    (fails proc.ProcError)
+    (body (proc.run (list "/bin/sh" "-c" "exit 0") "" None (list)))))

@@ -31,7 +31,7 @@ RESERVED_VALUES = SPECIAL | LITERALS | frozenset(VALUES) | {"result"}
 RESERVED_CAPS = frozenset(["Int", "Bool", "Str", "Unit", "Float", "List", "Vec", "Opt", "Map", "Set", "Fn", "Some", "None", "DivZero", "OutOfRange", "Pair"])
 EFFECTS = frozenset([
     "io.out", "io.in", "env.read", "fs.read", "fs.write", "fs.delete",
-    "net.http", "time.now", "rand",
+    "net.http", "proc.run", "time.now", "rand",
 ])
 
 

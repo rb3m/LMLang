@@ -1,0 +1,10 @@
+(module mock-proc-string-type
+  (purpose "Validate subprocess script metadata: string-type.")
+  (use proc)
+  (fn f
+    (purpose "Invoke one scripted process.")
+    (sig (value Str) -> proc.Result)
+    (eff proc.run)
+    (fails proc.ProcError)
+    (example ("x") (given (proc (argv 1) (exited 0))) => (fail proc.ProcError "not-found"))
+    (body (proc.run (list "/bin/x") "" None (list)))))

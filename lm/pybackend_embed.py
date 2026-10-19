@@ -360,6 +360,16 @@ def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False) -> s
             '',
         ])
 
+    if 'proc.run' in prog.prims:
+        proc_src = (LM_DIR / 'proc_prims.py').read_text(encoding='utf-8')
+        parts.extend([
+            '# --- Embedded subprocess runtime (from lm/proc_prims.py) ---',
+            wrap_module(proc_src, 'proc_mod'),
+            'def prim_proc_run(argv, stdin, cwd, env):',
+            '    return proc_mod.proc_run(None, argv, stdin, cwd, env)',
+            '',
+        ])
+
     if has_fs(prog):
         fs_src = (LM_DIR / "io_prims.py").read_text(encoding="utf-8")
         parts.extend([

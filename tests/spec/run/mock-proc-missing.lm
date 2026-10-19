@@ -1,0 +1,10 @@
+(module mock-proc-missing
+  (purpose "Subprocess scripts detect missing.")
+  (use proc)
+  (fn f
+    (purpose "Invoke a subprocess under an unmatched script.")
+    (sig -> proc.Result)
+    (eff proc.run)
+    (fails proc.ProcError)
+    (example () (given) => (new proc.Result (exit (proc.Exited 0)) (stdout "") (stderr "")))
+    (body (proc.run (list "/bin/x") "" None (list)))))

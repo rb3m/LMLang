@@ -1,0 +1,10 @@
+(module mock-proc-quoted-clause
+  (purpose "Validate subprocess script metadata: bad-category.")
+  (use proc)
+  (fn f
+    (purpose "Invoke one scripted process.")
+    (sig (value Str) -> proc.Result)
+    (eff proc.run)
+    (fails proc.ProcError)
+    (example ("x") (given (proc ("argv" "/bin/x") (exited 0))) => (fail proc.ProcError "not-found"))
+    (body (proc.run (list "/bin/x") "" None (list)))))

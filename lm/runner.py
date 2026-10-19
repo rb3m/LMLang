@@ -107,6 +107,7 @@ def test_program(prog):
 def _example(prog, f, k, c):
     from .examples import clause_values, example_parts
     from .fake_world import FakeWorld
+    from .proc_examples import ProcMismatch
 
     path = f"{f.mod.name}/{f.name}/example#{k}"
     m = f.mod
@@ -138,6 +139,7 @@ def _example(prog, f, k, c):
             matched = failed is None and got == want and type(got) is type(want)
         mismatches = [] if matched else [(expected, found)]
         if world is not None:
+            world.check_procs()
             mismatches.extend(_world_checks(prog, f, parts, world))
         if not mismatches:
             return None
@@ -147,6 +149,9 @@ def _example(prog, f, k, c):
         return make("E-EXAMPLE-FAILED", m.file, c.line, c.col,
                     f"{f.qual}{show_args(args)}: {detail}", path=path,
                     expected=expected, found=found)
+    except ProcMismatch as ex:
+        return make("E-EXAMPLE-FAILED", m.file, c.line, c.col,
+                    str(ex), path=path)
     except (Violation, Denied, RecursionError, Overflow, ProofViolation) as ex:
         d = runtime_diag(ex, context=f" (in {path})", it=it)
         if d.file == "":

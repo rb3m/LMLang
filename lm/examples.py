@@ -100,19 +100,23 @@ def check_example(ck, m, f, clause, path):
 
 
 GIVEN = {"args": None, "stdin": 1, "env": 2, "file": 2, "dir": 1,
-         "now-ms": 1, "seed": 1}
+         "now-ms": 1, "seed": 1, "proc": None}
 CHECKS = {"out": 1, "err": 1, "file": 2, "no-file": 1,
           "dir": 1, "no-dir": 1}
 FS = {"fs.read", "fs.write", "fs.delete"}
 EFFECTS = {"args": {"io.in"}, "stdin": {"io.in"}, "env": {"env.read"},
            "out": {"io.out"}, "err": {"io.out"},
-           "now-ms": {"time.now"}, "seed": {"rand"}}
+           "now-ms": {"time.now"}, "seed": {"rand"},
+           "proc": {"proc.run"}}
 
 
 def clause_values(prog, m, clause):
     """Evaluate checked closed expressions with a bounded pure evaluator."""
     from .consts import ConstEvaluator
 
+    if head(clause) == "proc":
+        from .proc_examples import proc_values
+        return proc_values(prog, m, clause)
     it = ConstEvaluator(prog)
     return tuple(it.ev(value, {}, m) for value in clause.items[1:])
 
@@ -159,6 +163,9 @@ class MetadataChecks:
         self.values(rows)
 
     def types(self, clause, path, name):
+        if name == "proc":
+            from .proc_examples import check_proc
+            return check_proc(self, clause, path)
         ck, m = self.ck, self.m
         start = len(ck.prog.diags)
 
