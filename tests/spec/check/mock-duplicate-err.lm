@@ -1,0 +1,9 @@
+(module mock-duplicate-err
+  (purpose "Effect example validation: duplicate-err.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) => unit (err "") (err ""))
+    (body (io.print ""))))

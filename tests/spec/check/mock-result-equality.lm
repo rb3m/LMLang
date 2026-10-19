@@ -1,0 +1,9 @@
+(module mock-result-equality
+  (purpose "Ordinary example value errors retain their existing diagnostic codes.")
+  (use io)
+  (fn f
+    (purpose "Return a Bool after output.")
+    (sig -> Bool)
+    (eff io.out)
+    (example () (given) => (= (lam ((n Int)) n) (lam ((n Int)) n)) (out "x\n"))
+    (body (do (io.print "x") true))))

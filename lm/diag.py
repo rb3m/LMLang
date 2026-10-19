@@ -21,6 +21,7 @@ CODES = {
     "E-FAILS-UNDECLARED": "error",
     "E-MATCH-NONEXHAUSTIVE": "error",
     "E-EXAMPLE-MISSING": "error",
+    "E-EXAMPLE": "error",
     "E-EXAMPLE-FAILED": "error",
     "E-REQUIRES-VIOLATED": "error",
     "E-ENSURES-VIOLATED": "error",

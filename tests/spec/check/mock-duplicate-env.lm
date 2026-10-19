@@ -1,0 +1,9 @@
+(module mock-duplicate-env
+  (purpose "Effect example validation: duplicate-env.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff env.read io.out)
+    (example () (given (env "K" "a") (env "K" "b")) => unit)
+    (body (io.print ""))))

@@ -1,0 +1,9 @@
+(module mock-duplicate-clock
+  (purpose "Effect example validation: duplicate-clock.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out time.now)
+    (example () (given (now-ms 1) (now-ms 2)) => unit)
+    (body (io.print ""))))

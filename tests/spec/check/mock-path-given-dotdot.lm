@@ -1,0 +1,9 @@
+(module mock-path-given-dotdot
+  (purpose "Effect example validation: path-given-dotdot.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.read io.out)
+    (example () (given (file "a/../b" "")) => unit)
+    (body (io.print ""))))

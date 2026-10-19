@@ -1,0 +1,25 @@
+(module effect-faults
+  (purpose "Fake worlds preserve contracts and uncatchable faults.")
+  (use io)
+  (error Stopped)
+  (fn overflow
+    (purpose "An expected recoverable failure cannot match an arithmetic fault.")
+    (sig -> Int)
+    (eff io.out)
+    (fails Stopped)
+    (example () (given) => (fail Stopped) (out "printed\n"))
+    (body (do (io.print "printed") (+ 9223372036854775807 1))))
+  (fn postcondition
+    (purpose "An example cannot disable a postcondition.")
+    (sig -> Bool)
+    (eff io.out)
+    (ensures result)
+    (example () (given) => false (out "printed\n"))
+    (body (do (io.print "printed") false)))
+  (fn precondition
+    (purpose "An example cannot disable a precondition.")
+    (sig (n Int) -> Unit)
+    (eff io.out)
+    (requires (> n 0))
+    (example (0) (given) => unit)
+    (body (io.print "unreachable"))))

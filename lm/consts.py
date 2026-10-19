@@ -59,7 +59,8 @@ class ConstEvaluator(Interp):
     """Interpreter with a step budget for check-time evaluation of module constants."""
 
     def __init__(self, prog: Program, ck=None, budget: int = STEP_BUDGET):
-        super().__init__(prog, allowed=(), contracts=True, out=io.StringIO(), stdin=io.BytesIO(), err=io.StringIO())
+        super().__init__(prog, allowed=(), contracts=True, seed=0,
+                         out=io.StringIO(), stdin=io.BytesIO(), err=io.StringIO())
         self.budget = budget
         self.steps = 0
         self.ck = ck

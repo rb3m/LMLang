@@ -1,0 +1,9 @@
+(module mock-malformed-given
+  (purpose "Given and arrow occupy fixed positions in an example.")
+  (use io)
+  (fn f
+    (purpose "Print a string.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) unit)
+    (body (io.print "x"))))

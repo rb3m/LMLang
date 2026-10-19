@@ -1,0 +1,9 @@
+(module mock-path-check-double-slash
+  (purpose "Effect example validation: path-check-double-slash.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.write io.out)
+    (example () (given) => unit (no-file "a//b"))
+    (body (io.print ""))))

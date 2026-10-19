@@ -1,0 +1,9 @@
+(module mock-unknown-check
+  (purpose "Effect example validation: unknown-check.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) => unit (unknown "x"))
+    (body (io.print ""))))

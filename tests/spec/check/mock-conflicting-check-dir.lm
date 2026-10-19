@@ -1,0 +1,9 @@
+(module mock-conflicting-check-dir
+  (purpose "Effect example validation: conflicting-check-dir.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.delete io.out)
+    (example () (given) => unit (dir "a") (no-dir "a"))
+    (body (io.print ""))))

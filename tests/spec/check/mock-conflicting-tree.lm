@@ -1,0 +1,9 @@
+(module mock-conflicting-tree
+  (purpose "Effect example validation: conflicting-tree.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.read io.out)
+    (example () (given (file "a" "") (dir "a")) => unit)
+    (body (io.print ""))))

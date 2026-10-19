@@ -1,0 +1,9 @@
+(module mock-conflicting-check-kind
+  (purpose "Effect example validation: conflicting-check-kind.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.write io.out)
+    (example () (given) => unit (file "a" "") (dir "a"))
+    (body (io.print ""))))

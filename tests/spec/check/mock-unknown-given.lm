@@ -1,0 +1,9 @@
+(module mock-unknown-given
+  (purpose "Effect example validation: unknown-given.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given (unknown "x")) => unit)
+    (body (io.print ""))))

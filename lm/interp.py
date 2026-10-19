@@ -75,13 +75,15 @@ class Interp:
     """Frames are [kind, obj, site, args] with kind fn|lam|cb|top. They are popped on normal return only,
     so after a fault `frames` still describes where it happened (lm/fault.py reads it)."""
 
-    def __init__(self, prog: Program, allowed=(), contracts=True, out=None, stdin=None, err=None, args=(), seed=None):
+    def __init__(self, prog: Program, allowed=(), contracts=True, out=None,
+                 stdin=None, err=None, args=(), seed=None, world=None):
         self.prog, self.allowed, self.contracts = prog, set(allowed), contracts
         self.out = out if out is not None else sys.stdout
         self.stdin = stdin if stdin is not None else sys.stdin
         self.err = err if err is not None else sys.stderr
         self.args = tuple(sanitize_arg(a) for a in args)
-        self.rng = SplitMix64(seed)
+        self.world = world
+        self.rng = world.rng if world is not None else SplitMix64(seed)
         self.frames: list = []
         self.tail_sites = {}  # fn id -> source node identities; cached for this checked program
         self.evaluating_consts = set()
@@ -123,7 +125,12 @@ class Interp:
                         raise Violation("E-REQUIRES-VIOLATED", c, f, f"requires#{k}", args)
             if saved is not None:
                 saved.append(args)
-            r = PRIMS[body.items[1].value](self, *args) if head(body) == "prim" else self.ev(body, env, f.mod)
+            if head(body) == "prim":
+                name = body.items[1].value
+                r = (self.world.call(name, self, args) if self.world is not None
+                     else PRIMS[name](self, *args))
+            else:
+                r = self.ev(body, env, f.mod)
             if not isinstance(r, TailArgs):
                 break
             args = r.args

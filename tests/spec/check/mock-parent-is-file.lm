@@ -1,0 +1,9 @@
+(module mock-parent-is-file
+  (purpose "Effect example validation: parent-is-file.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.read io.out)
+    (example () (given (file "a" "") (file "a/b" "")) => unit)
+    (body (io.print ""))))

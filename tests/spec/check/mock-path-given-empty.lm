@@ -1,0 +1,9 @@
+(module mock-path-given-empty
+  (purpose "Effect example validation: path-given-empty.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.read io.out)
+    (example () (given (file "" "")) => unit)
+    (body (io.print ""))))

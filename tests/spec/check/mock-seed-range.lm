@@ -1,0 +1,9 @@
+(module mock-seed-range
+  (purpose "Effect example validation: seed-range.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out rand)
+    (example () (given (seed 9223372036854775808)) => unit)
+    (body (io.print ""))))

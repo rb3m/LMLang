@@ -1,0 +1,9 @@
+(module mock-out-effect
+  (purpose "Effect example validation: out-effect.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> (List Str))
+    (eff io.in)
+    (example () (given) => (list) (out ""))
+    (body (io.args))))

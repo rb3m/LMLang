@@ -5,6 +5,7 @@ import math
 
 from .check_types import TypeChecksMixin
 from .consts import check_const, check_const_cycles, eval_all_consts
+from .examples import check_example
 from .facts import Binding, FactSet, LenTerm, extract_term
 from .forms import FormsMixin
 from .forms_coll import CollFormsMixin
@@ -36,6 +37,9 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
         check_const_cycles(self.prog, self)
         eval_all_consts(self.prog, self)
         self.check_examples()
+        for m in self.prog.modules.values():
+            if m.is_target or self.check_all:
+                self.check_uses(m)
 
     def check_module(self, m):
         for u in m.uses:
@@ -45,12 +49,28 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
             check_const(self, m, m.consts[nm])
         for nm in sorted(m.fns):
             self.check_fn(m, m.fns[nm])
+
+    def check_uses(self, m):
         for u in m.uses:
             if u.value in self.prog.modules and u.value not in m.used:
                 self.diag(m, "W-USE-UNUSED", u, f"{m.name}/use", f"module `{u.value}` is in (use ...) but never referenced",
                           fix=[{"op": "remove-use", "module": m.name, "use": u.value}])
 
     def check_examples(self):
+        for n in sorted(self.prog.modules):
+            m = self.prog.modules[n]
+            if not (m.is_target or self.check_all):
+                continue
+            for f in m.fns.values():
+                if not f.sig_ok:
+                    continue
+                self.cur_mod, self.cur_fn = m, f
+                self.clear_facts()
+                self.eq_checks = []
+                for k, c in enumerate(f.clauses.get("example", [])):
+                    check_example(self, m, f, c,
+                                  f"{m.name}/{f.name}/example#{k}")
+                self.check_eq(m)
         for n in sorted(self.prog.modules):
             m = self.prog.modules[n]
             if not (m.is_target or self.check_all):
@@ -142,8 +162,6 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
                 self.diag(m, "W-EFFECT-UNUSED", f.clauses["eff"][0], f"{fp}/eff", f"effect `{e}` is declared but never used")
             for fid in sorted(f.fails - set(self.frames[0])):
                 self.diag(m, "W-FAILS-UNUSED", f.clauses["fails"][0], f"{fp}/fails", f"failure `{fid}` is declared but cannot occur")
-        for k, c in enumerate(f.clauses.get("example", [])):
-            self.example(m, f, c, f"{fp}/example#{k}")
         self.check_eq(m)
 
     def contract(self, m, c, env, path):
@@ -159,32 +177,6 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
             finally:
                 self.facts = sf
         self.sandbox(m, "a contract", run)
-
-    def example(self, m, f, c, path):
-        it = c.items
-        if not (len(it) == 4 and isinstance(it[1], SList) and isinstance(it[2], Atom) and it[2].value == "=>"):
-            self.diag(m, "E-PARSE", c, path, "example must be (example (arg...) => expected)")
-            return
-        if f.eff:
-            self.diag(m, "E-TYPE", c, path, "examples are only allowed on pure functions in v0")
-            return
-        args = it[1].items
-        if not self.arity(m, f"fn `{f.name}`", len(f.params), len(args), c, path):
-            return
-        ft = self.fn_type(f)
-        self.note_keys(ft, c, path)
-
-        def run():
-            for i, (a, pt) in enumerate(zip(args, ft[1])):
-                self.expect(m, pt, self.infer(m, a, {}, f"{path}/1/{i}"), a, f"{path}/1/{i}", "example argument")
-            exp = it[3]
-            if head(exp) == "fail":
-                err = self.fail_check(m, exp, {}, path + "/3")
-                if err is not None and err.id not in f.fails:
-                    self.diag(m, "E-FAILS-UNDECLARED", exp, path + "/3", f"example expects failure `{err.id}` but fn `{f.name}` does not declare it", found=err.id)
-            else:
-                self.expect(m, ft[2], self.infer(m, exp, {}, path + "/3"), exp, path + "/3", "example result")
-        self.sandbox(m, "an example", run)
 
     # ---- expressions: atoms and calls -----------------------------------------------------------
     def infer(self, m, e, env, path):

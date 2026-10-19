@@ -43,7 +43,8 @@ def explain(prog, idx, f) -> str:
         L.append("Examples:")
         for c in exs:
             args = " ".join(flat(a) for a in c.items[1].items)
-            L.append(f"  {f.name}({args}) => {flat(c.items[3])}")
+            rest = " ".join(flat(a) for a in c.items[2:])
+            L.append(f"  {f.name}({args}) {rest}")
     else:
         L.append("Examples: none" + ("" if f.eff else "  (warning: pure function without examples)"))
     callers = sorted({o for o, _ in idx.callers(f.qual)})

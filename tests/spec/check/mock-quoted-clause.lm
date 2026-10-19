@@ -1,0 +1,9 @@
+(module mock-quoted-clause
+  (purpose "Example clause heads must be names, not string literals.")
+  (use io)
+  (fn f
+    (purpose "Print a line.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) => unit ("out" "x\n"))
+    (body (io.print "x"))))

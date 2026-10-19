@@ -69,7 +69,6 @@ def runtime_diag(ex, context="", it=None):
 
 def test_program(prog):
     """Run every example of every target module. Returns (diagnostics, stats)."""
-    it = Interp(prog, allowed=(), contracts=True)
     diags, stats = [], {"examples": 0, "failed": 0, "no_examples": []}
 
     def go():
@@ -83,7 +82,7 @@ def test_program(prog):
                     continue
                 for k, c in enumerate(exs):
                     stats["examples"] += 1
-                    d = _example(it, f, k, c)
+                    d = _example(prog, f, k, c)
                     if d is not None:
                         stats["failed"] += 1
                         diags.append(d)
@@ -100,37 +99,93 @@ def test_program(prog):
     return diags, stats
 
 
-def _example(it, f, k, c):
+def _example(prog, f, k, c):
+    from .examples import clause_values, example_parts
+    from .fake_world import FakeWorld
+
     path = f"{f.mod.name}/{f.name}/example#{k}"
     m = f.mod
-    exp = c.items[3]
-    it.reset()
-    it.rng = SplitMix64(0)
+    parts = example_parts(c)
+    world = None
+    if parts.given is not None:
+        clauses = [(head(clause), tuple(clause_values(prog, m, clause)))
+                   for clause in parts.given.items[1:]]
+        world = FakeWorld(clauses)
+    it = Interp(prog, allowed=f.eff, contracts=True, seed=0, world=world)
+    exp = parts.result
     try:
-        args = [it.ev(a, {}, m) for a in c.items[1].items]
+        args = [it.ev(a, {}, m) for a in parts.args.items]
         try:
             got, failed = it.call_fn(f, args), None
         except LmFail as x:
             got, failed = None, x
+        found = (f"(fail {failed.id}"
+                 + "".join(" " + show(a) for a in failed.args_) + ")"
+                 if failed else show(got))
         if head(exp) == "fail":
             want = it.fail_value(exp, {}, m)
-            if failed is not None and (failed.id, failed.args_) == (want.id, want.args_):
-                return None
-            found = f"(fail {failed.id}" + "".join(" " + show(a) for a in failed.args_) + ")" if failed else show(got)
             expected = f"(fail {want.id}" + "".join(" " + show(a) for a in want.args_) + ")"
+            matched = (failed is not None
+                       and (failed.id, failed.args_) == (want.id, want.args_))
         else:
             want = it.ev(exp, {}, m)
-            if failed is None and got == want and type(got) is type(want):
-                return None
-            found = f"(fail {failed.id}" + "".join(" " + show(a) for a in failed.args_) + ")" if failed else show(got)
             expected = show(want)
-        return make("E-EXAMPLE-FAILED", m.file, c.line, c.col, f"{f.qual}{show_args(args)}: expected {expected}, found {found}",
-                    path=path, expected=expected, found=found)
+            matched = failed is None and got == want and type(got) is type(want)
+        mismatches = [] if matched else [(expected, found)]
+        if world is not None:
+            mismatches.extend(_world_checks(prog, f, parts, world))
+        if not mismatches:
+            return None
+        expected, found = mismatches[0]
+        detail = "; ".join(f"expected {want}, found {got}"
+                           for want, got in mismatches)
+        return make("E-EXAMPLE-FAILED", m.file, c.line, c.col,
+                    f"{f.qual}{show_args(args)}: {detail}", path=path,
+                    expected=expected, found=found)
     except (Violation, Denied, RecursionError, Overflow, ProofViolation) as ex:
         d = runtime_diag(ex, context=f" (in {path})", it=it)
         if d.file == "":
             d.file, d.line, d.col, d.path = m.file, c.line, c.col, path
         return d
+
+
+def _world_checks(prog, f, parts, world):
+    from .examples import clause_values
+
+    mismatches, streams = [], set()
+    for _, clause in parts.checks:
+        name = head(clause)
+        values = clause_values(prog, f.mod, clause)
+        if name in ("out", "err"):
+            streams.add(name)
+            got = getattr(world, name).getvalue()
+            if got != values[0]:
+                mismatches.append((f"{name} {show(values[0])}",
+                                   f"{name} {show(got)}"))
+            continue
+        path = values[0]
+        is_file, is_dir = path in world.files, path in world.dirs
+        matched = {
+            "file": is_file and world.files.get(path) == values[-1],
+            "no-file": not is_file,
+            "dir": is_dir,
+            "no-dir": not is_dir,
+        }[name]
+        if matched:
+            continue
+        expected = "(" + name + " " + " ".join(show(v) for v in values) + ")"
+        found = ("(file " + show(path) + " " + show(world.files[path]) + ")"
+                 if is_file else "(dir " + show(path) + ")" if is_dir
+                 else "absent " + show(path))
+        mismatches.append((expected, found))
+    if "io.out" in f.eff:
+        for name in ("out", "err"):
+            if name in streams:
+                continue
+            got = getattr(world, name).getvalue()
+            if got:
+                mismatches.append((f'{name} ""', f"{name} {show(got)}"))
+    return mismatches
 
 
 def example_outcomes(prog, modules) -> dict:
@@ -154,6 +209,8 @@ def example_outcomes(prog, modules) -> dict:
         for mn in modules:
             m = prog.modules[mn]
             for name in sorted(m.fns):
+                if m.fns[name].eff:
+                    continue
                 for k, c in enumerate(m.fns[name].clauses.get("example", [])):
                     res[f"{mn}/{name}/example#{k}"] = one(m.fns[name], c)
 

@@ -1,0 +1,9 @@
+(module mock-check-tree-effect
+  (purpose "Effect example validation: check-tree-effect.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.read io.out)
+    (example () (given) => unit (file "a" "") (no-file "b") (dir "c") (no-dir "d"))
+    (body (io.print ""))))

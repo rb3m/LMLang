@@ -5,7 +5,7 @@ LM is a programming language and toolchain authored and read by AI agents. It fe
 Pipeline: `.lm` text -> reader -> AST (stable node paths) -> module graph -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go -> static native binary (`lm build`). Python reference impl, stdlib only; s-expression syntax.
 
 ## Current step
-- Backlog 3-6, 8, 9, 13, 14, 16, 18, 22-24 done (ADR-058..071). Public v0.5.0 (github.com/rb3m/LMLang): publish only via scripts/export-public.sh. Next: 20, 26; 15 (ADR-069 R1-R5) and 25 need the owner.
+- Backlog 3-6, 8, 9, 13, 14, 16, 18, 20, 22-24 done (ADR-058..072). Public v0.6.0 (github.com/rb3m/LMLang): publish only via scripts/export-public.sh. Next: 26, 17, 19; 15 (ADR-069 R1-R5) and 25 need the owner.
 - Blocker: S5 heuristic 1.28x vs 1.3x after ADR-061 (was 1.34x), still OPEN (ADR-025) until the real-tokenizer re-measure (needs ANTHROPIC_API_KEY). Never call it passed.
 
 ## Rules

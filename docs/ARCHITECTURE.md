@@ -19,6 +19,7 @@ lm/
   generics.py  declaration parameter scopes, schematic field/alias resolution, type applications, instantiated key validation
   generic_cycles.py declaration SCCs and regular recursive type checks before alias expansion
   check.py     Checker(CollFormsMixin, FormsMixin, Resolver): per-fn checking, contracts, examples, calls, effects/fails accumulation
+  examples.py  example syntax, module-local value checking and constant fake-world metadata validation
   forms.py     special forms: if let let? match lam list new get with and or fail try note prim
   forms_coll.py special forms mapof/setof (constant keys, duplicates) (ADR-049)
   index.py     Index over prog.refs: norm/find symbols, index lines, callers, deps, slice (collect/closure/budget), hash; `tokens()` heuristic
@@ -31,9 +32,10 @@ lm/
   prims.py     Python implementations of stdlib `(prim "..")` bodies (PRIMS table); siblings by family: float_prims.py (Float),
                str_prims.py (strings), io_prims.py (I/O, filesystem and read-only environment), rand_prims.py (clock/random, SplitMix64), json_prims.py (JSON), coll_prims.py (map/set)
   interp.py    Interp: tree-walking evaluator, contracts, capability gating, checked 64-bit arithmetic, frame stack
+  fake_world.py per-example hermetic inputs, captured output, frozen clocks, seeded random and file/directory tree
   tailcall.py  shared source-level self tail-call sites + interpreter loop-transfer value (ADR-051 item 1)
   runtime_cases.py effectful runtime fixtures NAME.cases.json (ADR-051; docs/TESTING.md)
-  runner.py    test_program (examples), runtime_diag, in_big_stack (512MB thread stack for deep recursion), FAULT_CODES
+  runner.py    test_program (pure and fake-world effectful examples), runtime_diag, in_big_stack (512MB thread stack for deep recursion), FAULT_CODES
   fault.py     E-OVERFLOW/E-FLOAT diagnostic from the Interp frame stack: frames, node path, `lm run` replay
   commands.py command registry and generated usage
   cli_help.py  help and bundled guide commands
@@ -97,6 +99,7 @@ Entry points: `sexpr` (Atom kinds int|str|sym|type; SList) -> `ast.canonicalize(
 - **Faults vs failures**: LM failures are `LmFail` (catchable by `try`, declared in `fails`); faults (Overflow, Violation, RecursionError) are other Python exceptions that `try` never catches. Interp frames are popped only on normal return (and truncated by `try` on a caught failure), so after a fault they still describe where it happened.
 - **Capability gating**: interpreter holds an `allowed` set; calls require every declared effect, including `env.read` and `fs.delete`. The closed set in `prelude.EFFECTS` also validates scenario allow clauses.
 - **Contracts**: `requires` evaluated before body with params bound; `ensures` after with `result` bound.
+- **Effectful examples**: `(example (ARGS...) (given ...) => RESULT CHECK...)` retains module-local value resolution. Checking validates clause shape, constant Str/Int values, path consistency and coverage by the function's declared effects (SPEC sections 5/12). `runner.test_program` gives each example a fresh fake world shared by nested interpreter calls and allows the function's declared effects; contracts remain enabled. Effect primitives dispatch to this world, so files, env, stdin, stdout/stderr, clocks and random never reach the host. Defaults are empty args/input/env/files, roots `.` and `/`, frozen wall/monotonic clocks 0, seed 0. Result comparison precedes final stream/tree checks, including after expected recoverable failures. Faults retain their ordinary diagnostics. The tree models regular files and directories only; symlinks, permissions, encoding failures, cross-device operations and races are out of scope. Both compiled differential harnesses exclude these examples; `NAME.cases.json` still tests real effects in the interpreter and both targets. Printer, slice and explain preserve their complete form; R-L6 still exempts effectful functions from required examples.
 - **Self tail calls**: `tailcall.tail_sites` walks only the permitted body positions; the interpreter and lowering share the same node-identity decisions. `Interp.call_fn` consumes `TailArgs` in a loop with fresh environments and one frame. Lowering emits `ir.TailCall`; Go uses next-argument slots and fresh locals inside a loop. With contracts on and postconditions present, both keep argument histories on the heap and check them innermost first on exit; otherwise no history is allocated. Calls inside `try`, lambdas, contracts and examples are excluded.
 - **Determinism**: all listings sorted; no timestamps in outputs except `bench/results`.
 
@@ -111,4 +114,4 @@ Phases never raise on user-program faults; they append `Diagnostic`. Exceptions 
 
 ## Future (not in v0)
 
-Content-addressed store (`.lm/store`, hash -> AST) with text as a rendered view; a Python backend over the M8 IR for the server (ADR-027); `lm serve` (JSON-RPC, keeps Program in memory); effect mocking in examples; alpha-normalized hashes.
+Content-addressed store (`.lm/store`, hash -> AST) with text as a rendered view; a Python backend over the M8 IR for the server (ADR-027); `lm serve` (JSON-RPC, keeps Program in memory); alpha-normalized hashes.

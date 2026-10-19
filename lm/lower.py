@@ -327,6 +327,8 @@ def lower_examples(prog: Program, modules):
         m = prog.modules[mn]
         for name in sorted(m.fns):
             f = m.fns[name]
+            if f.eff:
+                continue  # Fake-world examples execute only in the interpreter.
             for k, c in enumerate(f.clauses.get("example", [])):
                 p = f"{mn}/{name}/example#{k}"
                 args = [lo.ex(a, m, set(), f"{p}/1/{i}", f.qual) for i, a in enumerate(c.items[1].items)]

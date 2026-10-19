@@ -1,0 +1,35 @@
+(module effect-mismatch
+  (purpose "Report result, stream and filesystem mismatches as example failures.")
+  (use fs io)
+  (error Stopped)
+  (fn fail-check-mismatch
+    (purpose "An expected failure still checks the resulting fake files.")
+    (sig -> Unit)
+    (eff fs.write)
+    (fails Stopped fs.IoError)
+    (example () (given) => (fail Stopped) (file "x.txt" "wrong"))
+    (body (do (fs.write "x.txt" "saved") (fail Stopped))))
+  (fn result-mismatch
+    (purpose "Result comparisons still run for effectful examples.")
+    (sig -> Int)
+    (eff io.out)
+    (example () (given) => 2 (out "ok\n"))
+    (body (do (io.print "ok") 1)))
+  (fn silent-default
+    (purpose "Unexpected output fails when no out check is written.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) => unit)
+    (body (io.print "unexpected")))
+  (fn stderr-default
+    (purpose "Unexpected stderr also fails by default.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) => unit)
+    (body (io.eprint "unexpected")))
+  (fn stream-mismatch
+    (purpose "Output checks include print-added newlines.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) => unit (out "hello"))
+    (body (io.print "hello"))))

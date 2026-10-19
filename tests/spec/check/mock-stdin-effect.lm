@@ -1,0 +1,9 @@
+(module mock-stdin-effect
+  (purpose "Effect example validation: stdin-effect.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given (stdin "a")) => unit)
+    (body (io.print ""))))

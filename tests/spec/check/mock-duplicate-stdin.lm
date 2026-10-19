@@ -1,0 +1,9 @@
+(module mock-duplicate-stdin
+  (purpose "Effect example validation: duplicate-stdin.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.in io.out)
+    (example () (given (stdin "a") (stdin "b")) => unit)
+    (body (io.print ""))))

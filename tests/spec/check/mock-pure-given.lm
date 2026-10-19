@@ -1,0 +1,7 @@
+(module mock-pure-given
+  (purpose "Effect example validation: pure-given.")
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (example () (given) => unit)
+    (body unit)))

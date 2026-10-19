@@ -9,7 +9,7 @@ Humans mostly do not read the code. The project owner (the human who approves sc
 3. **Language-level tests**: `example`, `requires`, `ensures` inside LM code, run by `lm test`. Agent-owned.
 4. **Golden files** (`tests/golden`): fmt/index/slice/explain outputs. Agent-owned; regenerate only with `UPDATE_GOLDEN=1` and review the diff.
 5. **Acceptance scenarios** (`tests/accept/*.accept`): **human-owned oracle**. See below.
-6. **Compiled differential** (`tests/unit/test_gobackend.py`, M8(d)): every example compiled to Go must give the interpreter's outcome; `tests/spec/build/` fixtures pin built binaries (exit codes, stdout, stderr). Skips with a visible `SKIP:` line when Go is absent.
+6. **Compiled differential** (`tests/unit/test_gobackend.py`, `test_pybackend.py`): pure examples compiled to Go and Python must give the interpreter's outcome; effectful examples with `given` are excluded. Real-effect runtime cases remain included. `tests/spec/build/` fixtures pin built binaries (exit codes, stdout, stderr). Go tests skip with a visible `SKIP:` line when Go is absent.
 7. **Benchmark** (`bench/`): thesis metrics S1-S6 (`lm bench`). Agent runs; human reads `bench/results/summary.md`.
 
 ## Benchmark (`lm bench`)
@@ -78,15 +78,25 @@ Golden query commands run in a temporary project containing only the repository'
 programs cannot change these snapshots. Regenerate with `UPDATE_GOLDEN=1` and
 review the resulting diff.
 
+### Examples with effects
+
+Examples on functions declaring effects use `(example (ARGS...) (given CLAUSE...) => RESULT CHECK...)`; `given` is required, even when empty, and forbidden on a pure function. For example, a function that reads stdin and prints it may have `(example () (given (stdin "hello")) => unit (out "hello\n"))`. Example values resolve names in their own module, unlike external scenario values. Exported effectful functions still do not need examples (R-L6).
+
+`given` supports `args`, `stdin`, `env`, `file`, `dir`, `now-ms` and `seed`. Every example gets fresh empty args/stdin/env/files, roots `.` and `/`, both clocks frozen at 0, and seed 0; nested calls share this world. Declare parent directories for children; declarations may appear in any order. Paths use non-empty `/`-separated components, optionally an absolute `/` prefix, with no empty/`.`/`..` component, trailing `/` or NUL. `/` addresses the absolute root; `.` is only an implicit root, not a valid path. The fake tree models regular files and directories; symlinks, permissions, encoding failures, cross-device operations and races are outside its scope. No fake operation touches host files, environment, clocks or streams.
+
+After comparing the value or expected recoverable `(fail Error fields...)`, the runner checks exact `out`/`err` text and `file`, `no-file`, `dir`, `no-dir` state. For `io.out` functions, an omitted `out` or `err` asserts an empty stream. Captures include program-added newlines but exclude runner diagnostics and rendered results. Contracts stay enabled and faults cannot be expected. Mismatches are E-EXAMPLE-FAILED. See SPEC sections 5 and 12 for clause arities, constant types, effect coverage and E-EXAMPLE validation.
+
+`lm test` runs these examples only in the interpreter and includes them in example totals. They round-trip through fmt/slice/explain. Add check fixtures for each validation error, run fixtures for passing and failing outcomes, and unit coverage proving host files, environment and stdout remain untouched. Compiled differential enumeration excludes fake-world examples for both targets; it continues to cover ordinary pure examples and real-effect runtime cases below. Acceptance scenarios retain their existing human approval and real-effect execution rules.
+
 ### Effectful runtime fixtures (ADR-051)
 
-Pure LM examples remain the normal fixture mechanism; examples on effectful functions are rejected.
+Real-effect cases remain available independently of fake-world examples.
 A runtime fixture may add `NAME.cases.json` beside `NAME.lm`, mapping zero-argument function names
 to `{"expected": "LM value text"}` or `{"kind": "fault", "expected": "E-CODE"}`
 (`kind` defaults to `ok`; `fail` uses `(fail Err args...)` text).
 `lm test` runs these explicit cases with each function's declared effects and contracts enabled,
 a fresh interpreter and seed 0, and compares the outcome. A mismatch is E-EXAMPLE-FAILED.
-They are counted separately from examples. The Go differential harness includes the same cases,
+They are counted separately from examples. The Go and Python differential harnesses include the same cases,
 resetting seed 0 before every call and comparing their outcomes with the interpreter.
 `rand-runtime.lm` avoids colliding with stdlib `rand.lm` (ADR-047); its cases also test clocks using
 boolean sanity checks rather than comparing host timestamps.

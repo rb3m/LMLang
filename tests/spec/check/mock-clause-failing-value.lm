@@ -1,0 +1,9 @@
+(module mock-clause-failing-value
+  (purpose "Effect example validation: clause-failing-value.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) => unit (out (/ 1 0)))
+    (body (io.print ""))))

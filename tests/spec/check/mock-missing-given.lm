@@ -1,0 +1,9 @@
+(module mock-missing-given
+  (purpose "Effect example validation: missing-given.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () => unit)
+    (body (io.print ""))))

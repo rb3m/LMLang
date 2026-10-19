@@ -1,0 +1,9 @@
+(module mock-duplicate-args
+  (purpose "Effect example validation: duplicate-args.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.in io.out)
+    (example () (given (args "a") (args "b")) => unit)
+    (body (io.print ""))))

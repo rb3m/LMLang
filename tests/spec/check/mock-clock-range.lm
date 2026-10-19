@@ -1,0 +1,9 @@
+(module mock-clock-range
+  (purpose "Effect example validation: clock-range.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out time.now)
+    (example () (given (now-ms -9223372036854775809)) => unit)
+    (body (io.print ""))))

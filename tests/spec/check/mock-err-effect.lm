@@ -1,0 +1,9 @@
+(module mock-err-effect
+  (purpose "Effect example validation: err-effect.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> (List Str))
+    (eff io.in)
+    (example () (given) => (list) (err ""))
+    (body (io.args))))

@@ -1,0 +1,48 @@
+(module effect-world-tree
+  (purpose "Effectful examples use a private regular-file tree.")
+  (use fs)
+  (fn invalid
+    (purpose "Invalid fake paths fail rather than reaching the host.")
+    (sig (path Str) -> Bool)
+    (eff fs.read)
+    (example ("../x") (given) => true)
+    (example ("a//b") (given) => true)
+    (example ("a/") (given) => true)
+    (example ("") (given) => true)
+    (body (try (fs.exists path) (catch fs.IoError (p message) true))))
+  (fn roots
+    (purpose "Absolute and relative root trees are independent.")
+    (sig -> Str)
+    (eff fs.read fs.write)
+    (fails fs.IoError)
+    (example
+      ()
+      (given (file "/a" "absolute") (file "a" "relative"))
+      =>
+      "relative"
+      (file "/a" "absolute")
+      (file "a" "relative"))
+    (body (fs.read "a")))
+  (fn tree
+    (purpose "Move a complete subtree, append a file, and remove an empty directory.")
+    (sig -> (List Str))
+    (eff fs.delete fs.read fs.write)
+    (fails fs.IoError)
+    (example
+      ()
+      (given (dir "old") (dir "old/nested") (file "old/nested/a" "A"))
+      =>
+      (list "a" "z")
+      (file "new/nested/a" "AB")
+      (file "new/nested/z" "Z")
+      (no-dir "old")
+      (dir "new/nested")
+      (no-dir "empty"))
+    (body
+      (do
+        (fs.rename "old" "new")
+        (fs.append "new/nested/a" "B")
+        (fs.append "new/nested/z" "Z")
+        (fs.make-dir "empty")
+        (fs.remove "empty")
+        (fs.entries "new/nested")))))

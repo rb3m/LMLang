@@ -1,0 +1,126 @@
+(module effect-world-details
+  (purpose "Pin fake-world defaults, nested calls, constant metadata and tree operations.")
+  (use env fs io rand time)
+  (const payload (purpose "Module-local constant input.") (type Str) (value "hello"))
+  (fn clock-bounds
+    (purpose "Both clocks accept every signed Int64 instant without advancing.")
+    (sig -> (List Int))
+    (eff time.now)
+    (example
+      ()
+      (given (now-ms -9223372036854775808))
+      =>
+      (list -9223372036854775808 -9223372036854775808))
+    (example
+      ()
+      (given (now-ms 9223372036854775807))
+      =>
+      (list 9223372036854775807 9223372036854775807))
+    (body (list (time.now-ms) (time.mono-ms))))
+  (fn computed-metadata
+    (purpose "Metadata uses closed pure expressions and own module constants.")
+    (sig -> Unit)
+    (eff io.in io.out)
+    (fails io.IoError)
+    (example
+      ()
+      (given (stdin payload) (args (if true "a" "b")))
+      =>
+      unit
+      (out (if true "hello\n" "bad")))
+    (body (io.print (io.read-all))))
+  (fn delete-only
+    (purpose "Deletion checks need neither filesystem read nor write effects.")
+    (sig -> Unit)
+    (eff fs.delete)
+    (fails fs.IoError)
+    (example () (given (file "gone" "old")) => unit (no-file "gone") (no-dir "gone"))
+    (body (fs.remove "gone")))
+  (fn empty-env
+    (purpose "Empty environment values remain present and invalid names remain absent.")
+    (sig (key Str) -> (Opt Str))
+    (eff env.read)
+    (example ("K") (given (env "K" "")) => (Some ""))
+    (example ("K") (given) => None)
+    (example ("bad=key") (given (env "bad=key" "ignored")) => None)
+    (example ("") (given) => None)
+    (example ("bad\u{0}key") (given) => None)
+    (body (env.lookup key)))
+  (fn entries
+    (purpose "Entries are immediate children in code-point order; parents may be declared later.")
+    (sig -> (List Str))
+    (eff fs.read)
+    (fails fs.IoError)
+    (example
+      ()
+      (given
+        (dir "d/sub")
+        (file "d/Ω" "")
+        (file "d/z" "")
+        (file "d/é" "")
+        (file "d/a" "")
+        (dir "d")
+        (file "d/sub/nested" ""))
+      =>
+      (list "a" "sub" "z" "é" "Ω"))
+    (body (fs.entries "d")))
+  (fn fresh-files
+    (purpose "A new world is allocated for each example.")
+    (sig -> Bool)
+    (eff fs.read fs.write)
+    (fails fs.IoError)
+    (example () (given (file "x.txt" "old")) => true (file "x.txt" "new") (no-dir "x.txt"))
+    (example () (given) => false (file "x.txt" "new") (file "x.txt" "new") (no-dir "x.txt"))
+    (body (let ((before (fs.exists "x.txt"))) (do (fs.write "x.txt" "new") before))))
+  (fn input-sequence
+    (purpose "Read empty, terminated and final lines, then EOF and remaining text.")
+    (sig -> (List (Opt Str)))
+    (eff io.in)
+    (fails io.IoError)
+    (example
+      ()
+      (given (stdin "\u{d}\nx\nlast"))
+      =>
+      (list (Some "") (Some "x") (Some "last") None (Some "")))
+    (example () (given) => (list None None None None (Some "")))
+    (body (list (io.read-line) (io.read-line) (io.read-line) (io.read-line) (Some (io.read-all)))))
+  (fn lifecycle
+    (purpose "Write replaces, append creates, rename moves a file, and remove deletes it.")
+    (sig -> (List Bool))
+    (eff fs.delete fs.read fs.write)
+    (fails fs.IoError)
+    (example
+      ()
+      (given (dir "d") (file "d/a" "old"))
+      =>
+      (list true false false false true)
+      (file "d/b" "new+tail")
+      (no-file "d/a")
+      (dir "d")
+      (no-file "d")
+      (no-dir "d/b"))
+    (body
+      (do
+        (fs.write "d/a" "new")
+        (fs.append "d/a" "+tail")
+        (fs.rename "d/a" "d/b")
+        (fs.append "d/gone" "created")
+        (fs.remove "d/gone")
+        (list
+          (fs.is-dir "d")
+          (fs.is-dir "d/b")
+          (fs.is-dir "d/b/child")
+          (fs.exists "d/a")
+          (= (fs.read "d/b") "new+tail")))))
+  (fn nested-random
+    (purpose "Nested calls share one stream, freshly seeded for each example.")
+    (sig -> (List Int))
+    (eff rand)
+    (example () (given (seed (+ 0 0))) => (list 35 0 79))
+    (example () (given) => (list 35 0 79))
+    (body (list (next-draw) (next-draw) (rand.int 0 99))))
+  (fn next-draw
+    (purpose "Draw from the enclosing example's random stream.")
+    (sig -> Int)
+    (eff rand)
+    (body (rand.int 0 99))))

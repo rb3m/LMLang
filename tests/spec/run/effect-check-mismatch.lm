@@ -1,0 +1,31 @@
+(module effect-check-mismatch
+  (purpose "Every final filesystem predicate can fail an example.")
+  (use fs)
+  (fn missing-dir
+    (purpose "Dir rejects an absent path.")
+    (sig -> Unit)
+    (eff fs.write)
+    (fails fs.IoError)
+    (example () (given) => unit (dir "absent"))
+    (body (fs.write "x" "saved")))
+  (fn missing-file
+    (purpose "File rejects a directory at the same path.")
+    (sig -> Unit)
+    (eff fs.write)
+    (fails fs.IoError)
+    (example () (given) => unit (file "d" ""))
+    (body (fs.make-dir "d")))
+  (fn no-dir
+    (purpose "No-dir rejects an existing directory.")
+    (sig -> Unit)
+    (eff fs.write)
+    (fails fs.IoError)
+    (example () (given) => unit (no-dir "d"))
+    (body (fs.make-dir "d")))
+  (fn no-file
+    (purpose "No-file rejects an existing regular file.")
+    (sig -> Unit)
+    (eff fs.write)
+    (fails fs.IoError)
+    (example () (given) => unit (no-file "x"))
+    (body (fs.write "x" "saved"))))

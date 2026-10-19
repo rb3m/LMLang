@@ -1,0 +1,9 @@
+(module mock-nonconstant
+  (purpose "Example metadata has no access to function parameters.")
+  (use io)
+  (fn f
+    (purpose "Print the supplied string.")
+    (sig (text Str) -> Unit)
+    (eff io.out)
+    (example ("x") (given) => unit (out text))
+    (body (io.print text))))

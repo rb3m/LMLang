@@ -1,0 +1,9 @@
+(module mock-duplicate-seed
+  (purpose "Effect example validation: duplicate-seed.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out rand)
+    (example () (given (seed 1) (seed 2)) => unit)
+    (body (io.print ""))))

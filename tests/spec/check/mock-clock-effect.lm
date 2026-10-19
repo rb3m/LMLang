@@ -1,0 +1,9 @@
+(module mock-clock-effect
+  (purpose "Effect example validation: clock-effect.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given (now-ms 1)) => unit)
+    (body (io.print ""))))

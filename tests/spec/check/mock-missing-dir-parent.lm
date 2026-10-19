@@ -1,0 +1,9 @@
+(module mock-missing-dir-parent
+  (purpose "Effect example validation: missing-dir-parent.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff fs.read io.out)
+    (example () (given (dir "a/b")) => unit)
+    (body (io.print ""))))

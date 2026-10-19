@@ -1,0 +1,10 @@
+(module mock-conflicting-check-content
+  (purpose "A file cannot have two different contents in the final world.")
+  (use fs)
+  (fn f
+    (purpose "Write a file.")
+    (sig -> Unit)
+    (eff fs.write)
+    (fails fs.IoError)
+    (example () (given) => unit (file "a" "A") (file "a" "B"))
+    (body (fs.write "a" "A"))))

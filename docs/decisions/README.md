@@ -79,3 +79,4 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-069](0069-http-client-proposal.md) Backlog 15: HTTP client design; PROPOSED, owner decisions R1-R5 pending (2026-10-19)
 - [ADR-070](0070-user-defined-generic-types.md) Backlog 16: user-defined generic types `(type (Tree a) ..)`, regular recursion, erased at runtime (2026-10-19, agent consensus)
 - [ADR-071](0071-float-fixed-and-dates.md) Backlog 18: `float.fixed` (exact half-even) and the pure `date` module (2026-10-19, agent consensus)
+- [ADR-072](0072-effect-mocking.md) Backlog 20: effect mocking, hermetic `(given ..)` examples on effectful fns, interpreter only (2026-10-19, agent consensus)

@@ -1,0 +1,7 @@
+(module mock-pure-check
+  (purpose "Pure examples cannot carry fake-world checks.")
+  (fn f
+    (purpose "Return unit.")
+    (sig -> Unit)
+    (example () => unit (out ""))
+    (body unit)))

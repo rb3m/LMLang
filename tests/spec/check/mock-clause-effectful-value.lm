@@ -1,0 +1,9 @@
+(module mock-clause-effectful-value
+  (purpose "Effect example validation: clause-effectful-value.")
+  (use io)
+  (fn f
+    (purpose "Pin invalid example metadata.")
+    (sig -> Unit)
+    (eff io.out)
+    (example () (given) => unit (out (do (io.print "bad") "bad")))
+    (body (io.print ""))))

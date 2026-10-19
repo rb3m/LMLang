@@ -1,0 +1,9 @@
+(module mock-computed-overflow
+  (purpose "Computed example seeds must also fit signed Int64.")
+  (use rand)
+  (fn f
+    (purpose "Draw a number.")
+    (sig -> Int)
+    (eff rand)
+    (example () (given (seed (+ 9223372036854775807 1))) => 0)
+    (body (rand.int 0 99))))
