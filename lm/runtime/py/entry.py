@@ -2,6 +2,8 @@
 
 DIAG_KEYS = ("code", "severity", "file", "line", "col", "path", "msg", "expected", "found", "fix", "data")
 random_seed = None
+# Python < 3.11 spends C stack on every Python call, so max_depth nested calls need far more room.
+THREAD_STACK = (64 if sys.version_info >= (3, 11) else 1024) * 1024 * 1024
 
 def diag_json(d: dict) -> str:
     """Serialize a diagnostic exactly like lm/diag.py and the Go runtime: field order, compact, data only if set."""
@@ -43,7 +45,7 @@ def run_main(entry, site: int):
                                   "expected": "", "found": "", "fix": []})
         except BaseException as ex: box["ex"] = ex
     try:
-        threading.stack_size(64 * 1024 * 1024); sys.setrecursionlimit(550000)
+        threading.stack_size(THREAD_STACK); sys.setrecursionlimit(550000)
     except (ValueError, RuntimeError): pass
     t = threading.Thread(target=target); t.start(); t.join()
     try: sys.stdout.flush()
@@ -68,7 +70,7 @@ def run_main(entry, site: int):
 def run_cases(cases):
     seed_from_env()
     try:
-        threading.stack_size(64 * 1024 * 1024); sys.setrecursionlimit(550000)
+        threading.stack_size(THREAD_STACK); sys.setrecursionlimit(550000)
     except (ValueError, RuntimeError): pass
     def run_one(fn):
         try: return "ok", show(fn())
