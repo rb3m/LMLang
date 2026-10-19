@@ -1,0 +1,17 @@
+(module http
+  (purpose "Bounded HTTP requests with verified TLS and loopback plaintext.")
+  (export HttpError Response fetch request)
+  (type Response (rec (status Int) (headers (List (Pair Str Str))) (body Str)))
+  (error HttpError (url Str) (msg Str))
+  (fn fetch
+    (purpose "Fetch a URL using GET, no caller headers and an empty body.")
+    (sig (url Str) -> Response)
+    (eff net.http)
+    (fails HttpError)
+    (body (request "GET" url (list) "")))
+  (fn request
+    (purpose "Send one HTTP request; non-2xx responses are ordinary results.")
+    (sig (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) -> Response)
+    (eff net.http)
+    (fails HttpError)
+    (body (prim "http.request"))))

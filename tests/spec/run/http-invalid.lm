@@ -1,0 +1,9 @@
+(module http-invalid
+  (purpose "Invalid requests fail before accessing the network.")
+  (use http)
+  (fn probe
+    (purpose "Catch a disallowed plaintext destination.")
+    (sig -> Str)
+    (eff net.http)
+    (body
+      (try (get (http.fetch "http://example.invalid/") body) (catch http.HttpError (url msg) msg)))))

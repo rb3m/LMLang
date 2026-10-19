@@ -75,6 +75,11 @@ module fs  -- UTF-8 file operations.
 *fn fs.remove  (path Str) -> Unit  [eff fs.delete]  [fails IoError]  -- Remove a file, symlink or empty directory; never recurse.
 *fn fs.rename  (from Str) (to Str) -> Unit  [eff fs.delete fs.write]  [fails IoError]  -- Move a filesystem entry without overwriting; failures report from.
 *fn fs.write  (path Str) (text Str) -> Unit  [eff fs.write]  [fails IoError]  -- Replace a file with UTF-8 text.
+module http  -- Bounded HTTP requests with verified TLS and loopback plaintext.
+*type http.Response  (rec (status Int) (headers (List (Pair Str Str))) (body Str))
+*error http.HttpError  (url Str) (msg Str)
+*fn http.fetch  (url Str) -> Response  [eff net.http]  [fails HttpError]  -- Fetch a URL using GET, no caller headers and an empty body.
+*fn http.request  (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) -> Response  [eff net.http]  [fails HttpError]  -- Send one HTTP request; non-2xx responses are ordinary results.
 module io  -- Console input, output, and program arguments.
 *error io.IoError  (msg Str)
 *fn io.args  -> (List Str)  [eff io.in]  -- Program arguments after the command separator.

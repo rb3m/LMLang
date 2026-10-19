@@ -1,0 +1,7 @@
+(module http-undeclared
+  (purpose "Network calls require the capability.")
+  (use http)
+  (fn probe
+    (purpose "Catch failures without hiding network effects.")
+    (sig -> Int)
+    (body (try (get (http.fetch "http://localhost/") status) (catch http.HttpError (url msg) 0)))))

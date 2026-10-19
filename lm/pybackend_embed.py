@@ -310,6 +310,16 @@ def generate_embedded_runtime(prog: ir.Program) -> str:
             "",
         ])
 
+    if 'http.request' in prog.prims:
+        http_src = (LM_DIR / 'http_prims.py').read_text(encoding='utf-8')
+        parts.extend([
+            '# --- Embedded HTTP runtime (from lm/http_prims.py) ---',
+            wrap_module(http_src, 'http_mod'),
+            'def prim_http_request(method, url, headers, body):',
+            '    return http_mod.http_request(None, method, url, headers, body)',
+            '',
+        ])
+
     if has_fs(prog):
         fs_src = (LM_DIR / "io_prims.py").read_text(encoding="utf-8")
         parts.extend([

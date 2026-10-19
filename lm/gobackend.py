@@ -168,7 +168,9 @@ class GoGen(GoExprMixin):
             decls.append(f"\t{mangle(c, 'N_')} Value = &Variant{{{mangle(c, 'C_')}, nil}}")
         for r in sorted(self.prog.records):
             fields = ", ".join(golit(x) for x in self.prog.records[r])
-            decls.append(f"\t{mangle(r, 'R_')} = &RecType{{{golit(r)}, []string{{{fields}}}}}")
+            value = ("httpResponseType" if r == "http.Response" else
+                     f"&RecType{{{golit(r)}, []string{{{fields}}}}}")
+            decls.append(f"\t{mangle(r, 'R_')} = {value}")
         for cid in self.prog.const_order:
             decls.append(f"\t{mangle(cid, 'K_')} Value")
         if decls:

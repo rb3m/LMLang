@@ -6,7 +6,7 @@ from io import StringIO
 from .io_prims import io_read_all, io_read_line
 from .prims import PRIMS
 from .rand_prims import SplitMix64
-from .values import UNIT, LmFail, Var
+from .values import UNIT, Denied, LmFail, Var
 
 
 def valid_path(path):
@@ -64,7 +64,9 @@ class FakeWorld:
 
     def call(self, name, it, args):
         """Route effects here and delegate pure primitives normally."""
-        if name.startswith('fs.'):
+        if name in ('fs.read', 'fs.write', 'fs.exists', 'fs.append',
+                    'fs.entries', 'fs.is-dir', 'fs.make-dir', 'fs.remove',
+                    'fs.rename'):
             return self._fs(name[3:], *args)
         if name in ('time.now-ms', 'time.mono-ms'):
             return self.now_ms
@@ -87,6 +89,11 @@ class FakeWorld:
             if not key or '=' in key or '\0' in key or key not in self.env:
                 return Var('', 'None')
             return Var('', 'Some', (self.env[key],))
+        # Consult the active primitive's declared effects, rather than a second
+        # list that could silently omit a newly added host capability.
+        fn = it.frames[-1][1]
+        if fn.eff:
+            raise Denied(sorted(fn.eff)[0], fn)
         return PRIMS[name](it, *args)
 
     def _fail(self, path, message):

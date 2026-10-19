@@ -46,6 +46,10 @@ def example_parts(clause):
 
 
 def check_example(ck, m, f, clause, path):
+    if 'net.http' in f.eff:
+        ck.diag(m, "E-EXAMPLE", clause, path,
+                "network mocking is not supported yet")
+        return
     parts = example_parts(clause)
     if parts is None:
         ck.diag(m, "E-EXAMPLE" if f.eff else "E-PARSE", clause, path,

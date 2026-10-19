@@ -1,0 +1,7 @@
+(module http-effect
+  (purpose "Recognize the HTTP capability.")
+  (fn probe
+    (purpose "Declare network access.")
+    (sig -> Int)
+    (eff net.http)
+    (body 0)))

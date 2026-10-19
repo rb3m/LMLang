@@ -82,7 +82,7 @@ review the resulting diff.
 
 Examples on functions declaring effects use `(example (ARGS...) (given CLAUSE...) => RESULT CHECK...)`; `given` is required, even when empty, and forbidden on a pure function. For example, a function that reads stdin and prints it may have `(example () (given (stdin "hello")) => unit (out "hello\n"))`. Example values resolve names in their own module, unlike external scenario values. Exported effectful functions still do not need examples (R-L6).
 
-`given` supports `args`, `stdin`, `env`, `file`, `dir`, `now-ms` and `seed`. Every example gets fresh empty args/stdin/env/files, roots `.` and `/`, both clocks frozen at 0, and seed 0; nested calls share this world. Declare parent directories for children; declarations may appear in any order. Paths use non-empty `/`-separated components, optionally an absolute `/` prefix, with no empty/`.`/`..` component, trailing `/` or NUL. `/` addresses the absolute root; `.` is only an implicit root, not a valid path. The fake tree models regular files and directories; symlinks, permissions, encoding failures, cross-device operations and races are outside its scope. No fake operation touches host files, environment, clocks or streams.
+`given` supports `args`, `stdin`, `env`, `file`, `dir`, `now-ms` and `seed`. Every example gets fresh empty args/stdin/env/files, roots `.` and `/`, both clocks frozen at 0, and seed 0; nested calls share this world. Declare parent directories for children; declarations may appear in any order. Paths use non-empty `/`-separated components, optionally an absolute `/` prefix, with no empty/`.`/`..` component, trailing `/` or NUL. `/` addresses the absolute root; `.` is only an implicit root, not a valid path. The fake tree models regular files and directories; symlinks, permissions, encoding failures, cross-device operations and races are outside its scope. No fake operation touches host files, environment, clocks, streams or network. An example on a function declaring `net.http` is E-EXAMPLE (`network mocking is not supported yet`); unknown effectful primitive routes fault instead of reaching the host.
 
 After comparing the value or expected recoverable `(fail Error fields...)`, the runner checks exact `out`/`err` text and `file`, `no-file`, `dir`, `no-dir` state. For `io.out` functions, an omitted `out` or `err` asserts an empty stream. Captures include program-added newlines but exclude runner diagnostics and rendered results. Contracts stay enabled and faults cannot be expected. Mismatches are E-EXAMPLE-FAILED. See SPEC sections 5 and 12 for clause arities, constant types, effect coverage and E-EXAMPLE validation.
 
@@ -100,6 +100,16 @@ They are counted separately from examples. The Go and Python differential harnes
 resetting seed 0 before every call and comparing their outcomes with the interpreter.
 `rand-runtime.lm` avoids colliding with stdlib `rand.lm` (ADR-047); its cases also test clocks using
 boolean sanity checks rather than comparing host timestamps.
+
+### HTTP loopback differential tests (ADR-069)
+
+HTTP tests compare the interpreter, standalone Python output and Go binary against offline servers bound to loopback. A threaded `http.server`/`socketserver` fixture covers ordinary requests and a raw-socket fixture pins duplicate-header arrival order, chunked and truncated bodies, oversized headers/bodies, slow responses, invalid UTF-8 and 3xx responses without redirect following. HEAD and empty bodies are explicit cases; truncated bodies must fail with category `connect`. A self-signed loopback HTTPS server must fail `tls`. No test contacts the internet.
+
+Complementary host-free wire tests feed in-memory sockets to the interpreter and emitted Python runtime, while Go uses `net.Pipe`. These pin framing, header-byte and field-count boundaries, duplicate ordering, UTF-8, fixed error categories and deadlines without a listening socket. Aggregate header limits include informational blocks, final headers and trailers; only final response headers are returned. These tests complement the real loopback suite and can run where binding a server socket is unavailable.
+
+Request validation is exercised before host access: schemes, hosts, ports, methods, forbidden headers, header injection and size limits. Tests also pin localhost's direct loopback connection, ignored proxy settings, verified system TLS trust, no automatic decompression and category-only error messages. Network mocks in examples remain unsupported; a spec fixture pins the check-time E-EXAMPLE and unit tests pin fail-closed fake-world dispatch.
+
+Production limits remain 5 seconds to connect and a 30-second total deadline including DNS, TLS and body reading. Fast deadline tests may rewrite constants only in temporary test source copies or generated test outputs. No deadline override is exposed to LM code or through the environment of a built binary. Go cases skip visibly when the Go toolchain is unavailable.
 
 ## Fixture layout and commands
 

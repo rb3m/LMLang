@@ -1,0 +1,8 @@
+(module mock-http
+  (purpose "Network examples cannot reach the host.")
+  (fn probe
+    (purpose "Reject even an unused declared network effect in examples.")
+    (sig -> Int)
+    (eff net.http)
+    (example () (given) => 0)
+    (body 0)))

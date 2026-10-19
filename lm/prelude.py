@@ -29,7 +29,10 @@ SPECIAL = frozenset(["if", "let", "let?", "do", "match", "lam", "list", "new", "
 LITERALS = frozenset(["true", "false", "unit"])
 RESERVED_VALUES = SPECIAL | LITERALS | frozenset(VALUES) | {"result"}
 RESERVED_CAPS = frozenset(["Int", "Bool", "Str", "Unit", "Float", "List", "Opt", "Map", "Set", "Fn", "Some", "None", "DivZero", "OutOfRange", "Pair"])
-EFFECTS = frozenset(["io.out", "io.in", "env.read", "fs.read", "fs.write", "fs.delete", "time.now", "rand"])
+EFFECTS = frozenset([
+    "io.out", "io.in", "env.read", "fs.read", "fs.write", "fs.delete",
+    "net.http", "time.now", "rand",
+])
 
 
 def form_method(prefix: str, form: str) -> str:
