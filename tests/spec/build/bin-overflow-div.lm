@@ -1,0 +1,14 @@
+(module bin-overflow-div
+  (purpose "Overflow of / is the fault E-OVERFLOW (exit 70), even with --no-contracts.")
+  (use io)
+  (fn calc
+    (purpose "Overflowing arithmetic.")
+    (sig (a Int) (b Int) -> Int)
+    (fails DivZero)
+    (body (/ a b)))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff io.out)
+    (fails DivZero)
+    (body (let ((u (io.print "before"))) (calc -9223372036854775808 -1)))))

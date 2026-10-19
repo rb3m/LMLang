@@ -1,0 +1,7 @@
+(module effect-undeclared
+  (purpose "p")
+  (use io)
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Unit)
+    (body (io.print "x"))))

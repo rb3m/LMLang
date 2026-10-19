@@ -1,0 +1,7 @@
+io.print - Write a line of text to standard output.
+Takes:    s: Str
+Returns:  Unit
+Can fail: never
+Effects:  io.out
+Examples: none
+Used by:  colsum.print-all, file-lines.main

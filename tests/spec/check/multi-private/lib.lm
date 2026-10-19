@@ -1,0 +1,12 @@
+(module lib
+  (purpose "p")
+  (export shown)
+  (fn hidden
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body a))
+  (fn shown
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (example (1) => 1)
+    (body (hidden a))))

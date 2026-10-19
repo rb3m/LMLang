@@ -1,0 +1,4 @@
+(module const-fails
+  (purpose "Const with fail.")
+  (error Bad)
+  (const bad (purpose "bad") (type Int) (value (fail Bad))))

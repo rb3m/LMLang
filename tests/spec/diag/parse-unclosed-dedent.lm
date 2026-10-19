@@ -1,0 +1,5 @@
+(module m
+  (fn first
+    (body
+      (+ 1 2)
+  (fn second (body 2)))

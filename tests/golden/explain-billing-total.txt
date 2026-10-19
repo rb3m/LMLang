@@ -1,0 +1,11 @@
+billing.total - Sum item prices and add Mexican VAT.
+Takes:    items: (List Cents); region: Str
+Returns:  Cents
+Can fail: billing.BadRegion(region: Str)
+Effects:  none (pure)
+Requires: (> (len items) 0)
+Ensures:  (>= result 0)
+Examples:
+  total((list 100 200) "MX") => 348
+  total((list 100) "XX") => (fail BadRegion "XX")
+Used by:  nothing in this project

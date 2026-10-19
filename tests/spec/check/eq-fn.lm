@@ -1,0 +1,24 @@
+(module eq-fn
+  (purpose "p")
+  (use list)
+  (type Holder (rec (f (Fn (Int) Int))))
+  (fn as-value
+    (purpose "p")
+    (sig (fs (List (Fn (Int) Int))) -> (List Bool))
+    (body (list.map2 fs fs =)))
+  (fn direct
+    (purpose "p")
+    (sig -> Bool)
+    (body (= + +)))
+  (fn fine
+    (purpose "p")
+    (sig (xs (List Int)) -> Bool)
+    (body (= xs (list 1))))
+  (fn in-list
+    (purpose "p")
+    (sig (xs (List (Fn (Int) Int))) -> Bool)
+    (body (!= xs xs)))
+  (fn in-rec
+    (purpose "p")
+    (sig (h Holder) -> Bool)
+    (body (= h h))))

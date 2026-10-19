@@ -1,0 +1,6 @@
+(module dup-pair-param
+  (purpose "Parameter named pair collides with prelude name and suggests p.")
+  (fn f
+    (purpose "p")
+    (sig (pair Int) -> Int)
+    (body pair)))

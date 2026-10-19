@@ -1,0 +1,6 @@
+(module floats
+  (purpose "Float literals print in canonical text (Python repr).")
+  (fn values
+    (purpose "p")
+    (sig -> (List Float))
+    (body (list 1.50 -0.0 1E5 100.000 0.0001 0.00001 1e16 9999999999999999.0 2.5e-3 0.1e1 1e-400 4.9e-324 1.5E+300 -12.0e0))))

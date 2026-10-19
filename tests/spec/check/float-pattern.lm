@@ -1,0 +1,6 @@
+(module float-pattern
+  (purpose "Float literals are not allowed in match patterns; use comparisons.")
+  (fn is-one
+    (purpose "p")
+    (sig (x Float) -> Bool)
+    (body (match x (1.0 true) (_ false)))))

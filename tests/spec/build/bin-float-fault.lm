@@ -1,0 +1,12 @@
+(module bin-float-fault
+  (purpose "Float division by zero is the fault E-FLOAT (exit 70), even with --no-contracts.")
+  (use io)
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff io.out)
+    (body (do (io.print "before") (ratio 1.0 0.0) 0)))
+  (fn ratio
+    (purpose "Divide.")
+    (sig (a Float) (b Float) -> Unit)
+    (body (if (> (/ a b) 0.0) unit unit))))

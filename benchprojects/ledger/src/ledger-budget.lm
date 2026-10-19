@@ -1,0 +1,313 @@
+(module ledger-budget
+  (purpose "Evaluate category spending against budget rules and identify unbudgeted expenses.")
+  (use ledger-model ledger-summary list)
+  (export
+    count-over-budget
+    evaluate-all-budgets
+    evaluate-budget-rule
+    evaluate-full-budget
+    find-rule-for-category
+    has-rule-for-category
+    total-budget-limit
+    total-budget-remaining
+    total-budget-spent
+    unbudgeted-categories)
+  (fn count-over-budget
+    (purpose "Count how many BudgetStatus entries are strictly over their limit.")
+    (sig (statuses (List ledger-model.BudgetStatus)) -> Int)
+    (ensures (>= result 0))
+    (example
+      (
+        (list
+          (new
+            ledger-model.BudgetStatus
+            (category "food")
+            (limit 30000)
+            (spent 35000)
+            (remaining -5000)
+            (over true)
+            (pct 116))
+          (new
+            ledger-model.BudgetStatus
+            (category "rent")
+            (limit 100000)
+            (spent 100000)
+            (remaining 0)
+            (over false)
+            (pct 100))))
+      =>
+      1)
+    (body (len (list.filter statuses (lam ((s ledger-model.BudgetStatus)) (get s over))))))
+  (fn evaluate-all-budgets
+    (purpose "Evaluate each BudgetRule against the category totals from transactions.")
+    (sig
+      (rules (List ledger-model.BudgetRule))
+      (cats (List ledger-model.CategoryTotal))
+      ->
+      (List ledger-model.BudgetStatus))
+    (example
+      (
+        (list (new ledger-model.BudgetRule (category "food") (limit 40000)))
+        (list
+          (new
+            ledger-model.CategoryTotal
+            (category "food")
+            (net -25000)
+            (expenses 25000)
+            (income 0)
+            (count 3))))
+      =>
+      (list
+        (new
+          ledger-model.BudgetStatus
+          (category "food")
+          (limit 40000)
+          (spent 25000)
+          (remaining 15000)
+          (over false)
+          (pct 62))))
+    (body (list.map rules (lam ((r ledger-model.BudgetRule)) (evaluate-budget-rule r cats)))))
+  (fn evaluate-budget-rule
+    (purpose "Compute BudgetStatus for a single BudgetRule against category totals.")
+    (sig
+      (rule ledger-model.BudgetRule)
+      (cats (List ledger-model.CategoryTotal))
+      ->
+      ledger-model.BudgetStatus)
+    (example
+      (
+        (new ledger-model.BudgetRule (category "dining") (limit 20000))
+        (list
+          (new
+            ledger-model.CategoryTotal
+            (category "dining")
+            (net -24000)
+            (expenses 24000)
+            (income 0)
+            (count 4))))
+      =>
+      (new
+        ledger-model.BudgetStatus
+        (category "dining")
+        (limit 20000)
+        (spent 24000)
+        (remaining -4000)
+        (over true)
+        (pct 120)))
+    (body
+      (let
+        (
+          (cat (get rule category))
+          (lim (get rule limit))
+          (sp (ledger-summary.category-expenses cats cat))
+          (rem (- lim sp))
+          (is-over (> sp lim))
+          (p (ledger-model.percent-used sp lim)))
+        (new
+          ledger-model.BudgetStatus
+          (category cat)
+          (limit lim)
+          (spent sp)
+          (remaining rem)
+          (over is-over)
+          (pct p)))))
+  (fn evaluate-full-budget
+    (purpose "Evaluate rules and also append 0-limit entries for unbudgeted expense categories.")
+    (sig
+      (rules (List ledger-model.BudgetRule))
+      (cats (List ledger-model.CategoryTotal))
+      ->
+      (List ledger-model.BudgetStatus))
+    (example
+      (
+        (list (new ledger-model.BudgetRule (category "food") (limit 50000)))
+        (list
+          (new
+            ledger-model.CategoryTotal
+            (category "food")
+            (net -30000)
+            (expenses 30000)
+            (income 0)
+            (count 2))
+          (new
+            ledger-model.CategoryTotal
+            (category "games")
+            (net -6000)
+            (expenses 6000)
+            (income 0)
+            (count 1))))
+      =>
+      (list
+        (new
+          ledger-model.BudgetStatus
+          (category "food")
+          (limit 50000)
+          (spent 30000)
+          (remaining 20000)
+          (over false)
+          (pct 60))
+        (new
+          ledger-model.BudgetStatus
+          (category "games")
+          (limit 0)
+          (spent 6000)
+          (remaining -6000)
+          (over true)
+          (pct 100))))
+    (body
+      (let
+        (
+          (planned (evaluate-all-budgets rules cats))
+          (unplanned-cats (unbudgeted-categories rules cats))
+          (unplanned-statuses
+            (list.map
+              unplanned-cats
+              (lam
+                ((c ledger-model.CategoryTotal))
+                (let
+                  ((sp (get c expenses)))
+                  (new
+                    ledger-model.BudgetStatus
+                    (category (get c category))
+                    (limit 0)
+                    (spent sp)
+                    (remaining (- 0 sp))
+                    (over (> sp 0))
+                    (pct (ledger-model.percent-used sp 0))))))))
+        (list.concat planned unplanned-statuses))))
+  (fn find-rule-for-category
+    (purpose "Find the first BudgetRule matching category cat, if any.")
+    (sig (rules (List ledger-model.BudgetRule)) (cat Str) -> (Opt ledger-model.BudgetRule))
+    (example
+      ((list (new ledger-model.BudgetRule (category "food") (limit 40000))) "food")
+      =>
+      (Some (new ledger-model.BudgetRule (category "food") (limit 40000))))
+    (example ((list) "food") => None)
+    (body
+      (match
+        rules
+        ((list) None)
+        ((cons h t) (if (= (get h category) cat) (Some h) (find-rule-for-category t cat))))))
+  (fn has-rule-for-category
+    (purpose "True when rules contains a BudgetRule for category cat.")
+    (sig (rules (List ledger-model.BudgetRule)) (cat Str) -> Bool)
+    (example ((list (new ledger-model.BudgetRule (category "food") (limit 40000))) "food") => true)
+    (example
+      ((list (new ledger-model.BudgetRule (category "food") (limit 40000))) "travel")
+      =>
+      false)
+    (body (list.any rules (lam ((r ledger-model.BudgetRule)) (= (get r category) cat)))))
+  (fn total-budget-limit
+    (purpose "Sum of all budget limits across a list of BudgetStatus items.")
+    (sig (statuses (List ledger-model.BudgetStatus)) -> ledger-model.Cents)
+    (example
+      (
+        (list
+          (new
+            ledger-model.BudgetStatus
+            (category "a")
+            (limit 10000)
+            (spent 5000)
+            (remaining 5000)
+            (over false)
+            (pct 50))
+          (new
+            ledger-model.BudgetStatus
+            (category "b")
+            (limit 20000)
+            (spent 25000)
+            (remaining -5000)
+            (over true)
+            (pct 125))))
+      =>
+      30000)
+    (body (list.sum (list.map statuses (lam ((s ledger-model.BudgetStatus)) (get s limit))))))
+  (fn total-budget-remaining
+    (purpose "Net remaining budget (total limit minus total spent) across BudgetStatus items.")
+    (sig (statuses (List ledger-model.BudgetStatus)) -> ledger-model.Cents)
+    (example
+      (
+        (list
+          (new
+            ledger-model.BudgetStatus
+            (category "a")
+            (limit 10000)
+            (spent 4000)
+            (remaining 6000)
+            (over false)
+            (pct 40))))
+      =>
+      6000)
+    (body (list.sum (list.map statuses (lam ((s ledger-model.BudgetStatus)) (get s remaining))))))
+  (fn total-budget-spent
+    (purpose "Sum of all spent amounts across a list of BudgetStatus items.")
+    (sig (statuses (List ledger-model.BudgetStatus)) -> ledger-model.Cents)
+    (example
+      (
+        (list
+          (new
+            ledger-model.BudgetStatus
+            (category "a")
+            (limit 10000)
+            (spent 4000)
+            (remaining 6000)
+            (over false)
+            (pct 40))
+          (new
+            ledger-model.BudgetStatus
+            (category "b")
+            (limit 20000)
+            (spent 7500)
+            (remaining 12500)
+            (over false)
+            (pct 37))))
+      =>
+      11500)
+    (body (list.sum (list.map statuses (lam ((s ledger-model.BudgetStatus)) (get s spent))))))
+  (fn unbudgeted-categories
+    (purpose "Return CategoryTotal entries that have positive expenses but no matching BudgetRule.")
+    (sig
+      (rules (List ledger-model.BudgetRule))
+      (cats (List ledger-model.CategoryTotal))
+      ->
+      (List ledger-model.CategoryTotal))
+    (example
+      (
+        (list (new ledger-model.BudgetRule (category "food") (limit 50000)))
+        (list
+          (new
+            ledger-model.CategoryTotal
+            (category "food")
+            (net -20000)
+            (expenses 20000)
+            (income 0)
+            (count 1))
+          (new
+            ledger-model.CategoryTotal
+            (category "salary")
+            (net 200000)
+            (expenses 0)
+            (income 200000)
+            (count 1))
+          (new
+            ledger-model.CategoryTotal
+            (category "hobbies")
+            (net -4500)
+            (expenses 4500)
+            (income 0)
+            (count 1))))
+      =>
+      (list
+        (new
+          ledger-model.CategoryTotal
+          (category "hobbies")
+          (net -4500)
+          (expenses 4500)
+          (income 0)
+          (count 1))))
+    (body
+      (list.filter
+        cats
+        (lam
+          ((c ledger-model.CategoryTotal))
+          (and (> (get c expenses) 0) (not (has-rule-for-category rules (get c category)))))))))

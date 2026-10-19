@@ -1,0 +1,11 @@
+(module bin-float-trunc
+  (purpose "Converting 2^63 to Int is E-OVERFLOW; the largest Float below 2^63 converts.")
+  (use float io math str)
+  (fn main
+    (purpose "Entry.")
+    (sig -> Unit)
+    (eff io.out)
+    (body
+      (do
+        (io.print (str.from-int (float.floor 9.223372036854775e+18)))
+        (io.print (str.from-int (float.ceil (float.from-int (math.int-max)))))))))

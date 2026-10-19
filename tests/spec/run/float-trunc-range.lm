@@ -1,0 +1,8 @@
+(module float-trunc-range
+  (purpose "Rounding to Int checks the integer against Int bounds: 2^63 is E-OVERFLOW.")
+  (use float)
+  (fn conv
+    (purpose "p")
+    (sig (x Float) -> Int)
+    (example (9.223372036854776e+18) => 0)
+    (body (float.trunc x))))

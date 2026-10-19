@@ -1,0 +1,15 @@
+(module int-literal-range
+  (purpose "p")
+  (fn big
+    (purpose "p")
+    (sig -> Int)
+    (body 9223372036854775808))
+  (fn edge
+    (purpose "p")
+    (sig -> Int)
+    (body (+ 9223372036854775807 -9223372036854775808)))
+  (fn small
+    (purpose "p")
+    (sig (n Int) -> Bool)
+    (example (-9223372036854775809) => false)
+    (body (match n (-99999999999999999999 true) (_ false)))))

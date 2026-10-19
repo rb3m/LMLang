@@ -1,0 +1,12 @@
+(module bin-overflow-mul
+  (purpose "Overflow of * is the fault E-OVERFLOW (exit 70), even with --no-contracts.")
+  (use io)
+  (fn calc
+    (purpose "Overflowing arithmetic.")
+    (sig (a Int) (b Int) -> Int)
+    (body (* a b)))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff io.out)
+    (body (let ((u (io.print "before"))) (calc 4294967296 4294967296)))))

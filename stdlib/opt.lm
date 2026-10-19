@@ -1,0 +1,21 @@
+(module opt
+  (purpose "Optional values: defaults, mapping, tests.")
+  (export is-some map unwrap-or)
+  (fn is-some
+    (purpose "True for (Some _), false for None.")
+    (sig (o (Opt a)) -> Bool)
+    (example ((Some 1)) => true)
+    (example (None) => false)
+    (body (match o ((Some _) true) (None false))))
+  (fn map
+    (purpose "Apply f to the payload of a Some; None stays None.")
+    (sig (o (Opt a)) (f (Fn (a) b)) -> (Opt b))
+    (example ((Some 2) (lam ((x Int)) (* x 10))) => (Some 20))
+    (example (None (lam ((x Int)) (* x 10))) => None)
+    (body (match o ((Some x) (Some (f x))) (None None))))
+  (fn unwrap-or
+    (purpose "The payload of a Some, else the default d (evaluated eagerly, like every argument).")
+    (sig (o (Opt a)) (d a) -> a)
+    (example ((Some 3) 0) => 3)
+    (example (None 0) => 0)
+    (body (match o ((Some x) x) (None d)))))

@@ -1,0 +1,49 @@
+(module bin-io
+  (purpose "Arguments, stdin lines, files and parsing in a binary.")
+  (use fs io list str)
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff fs.read fs.write io.in io.out)
+    (fails fs.IoError io.IoError)
+    (body
+      (match
+        (io.args)
+        (
+          (cons dir rest)
+          (let
+            (
+              (nums (read-nums (list)))
+              (path (str.concat dir "/report.txt"))
+              (missing (str.concat dir "/nope"))
+              (good (list.filter nums (lam ((n (Opt Int))) (!= n None)))))
+            (do
+              (fs.write
+                path
+                (str.join
+                  (list "lines" (str.from-int (len nums)) "words" (str.from-int (len rest)))
+                  " "))
+              (io.print (fs.read path))
+              (io.print (if (fs.exists path) "exists" "missing"))
+              (io.print (if (fs.exists missing) "exists" "missing"))
+              (io.print
+                (try (fs.read missing) (catch fs.IoError (p msg) (if (= p missing) "caught" "?"))))
+              (io.print (str.from-int (list.sum (list.map nums value-or-zero))))
+              (- (len nums) (len good)))))
+        ((list) (do (io.eprint "usage: bin-io DIR") 2)))))
+  (fn read-nums
+    (purpose "Parse every remaining stdin line (trimmed) as an Int.")
+    (sig (acc (List (Opt Int))) -> (List (Opt Int)))
+    (eff io.in)
+    (fails io.IoError)
+    (body
+      (match
+        (io.read-line)
+        ((Some l) (read-nums (list.concat acc (list (str.to-int (str.trim l))))))
+        (None acc))))
+  (fn value-or-zero
+    (purpose "The parsed value, or 0.")
+    (sig (o (Opt Int)) -> Int)
+    (example ((Some 3)) => 3)
+    (example (None) => 0)
+    (body (match o ((Some n) n) (None 0)))))

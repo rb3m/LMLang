@@ -1,0 +1,13 @@
+(module app
+  (purpose "App using lib with default exports.")
+  (use lib)
+  (fn run
+    (purpose "Run.")
+    (sig (p lib.Point) (m lib.Mode) -> Int)
+    (eff io.out)
+    (body
+      (do
+        (lib.log-msg "hi")
+        (match m
+          ((lib.High lvl) (+ lvl lib.max-level))
+          (lib.Low (lib.add-one (get p x))))))))

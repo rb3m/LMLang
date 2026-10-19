@@ -1,0 +1,158 @@
+(module backend
+  (purpose "Forms and values the compiled backends must reproduce exactly (differential test).")
+  (use float list str)
+  (type Box (rec (a Int) (b Str) (c Bool)))
+  (type Tree (sum (Leaf (v Int)) (Node (l Tree) (r Tree)) Nil))
+  (error Bad (code Int) (why Str))
+  (error Other)
+  (const half-pi (purpose "Computed float const.") (type Float) (value (float.asin 1.0)))
+  (const
+    sample-box
+    (purpose "Record const.")
+    (type Box)
+    (value (new Box (a 42) (b "const-str") (c true))))
+  (const sample-list (purpose "List const.") (type (List Int)) (value (list 10 20 30)))
+  (fn add3
+    (purpose "p")
+    (sig (x Int) (y Int) (z Int) -> Int)
+    (example (1 2 3) => 6)
+    (example (-1 1 0) => 0)
+    (body (+ x (+ y z))))
+  (fn apply3
+    (purpose "p")
+    (sig (f (Fn (Int Int Int) Int)) -> Int)
+    (example (add3) => 60)
+    (body (f 10 20 30)))
+  (fn classify
+    (purpose "p")
+    (sig (t Tree) -> Str)
+    (example ((Leaf 0)) => "zero")
+    (example ((Leaf 5)) => "leaf")
+    (example ((Node (Leaf 1) Nil)) => "left-one")
+    (example ((Node Nil Nil)) => "node")
+    (example (Nil) => "nil")
+    (body
+      (match
+        t
+        ((Leaf 0) "zero")
+        ((Leaf _) "leaf")
+        ((Node (Leaf 1) _) "left-one")
+        ((Node _ _) "node")
+        (Nil "nil"))))
+  (fn edits
+    (purpose "p")
+    (sig (x Box) -> Box)
+    (example ((new Box (a 1) (b "x") (c false))) => (new Box (a 2) (b "q\"\n\t\\") (c true)))
+    (body (with x (c (not (get x c))) (b "q\"\n\t\\") (a (+ (get x a) 1)))))
+  (fn floor-ops
+    (purpose "p")
+    (sig -> (List Int))
+    (example () => (list -4 -4 3 1 -1 -1 3 0))
+    (body (list (/ -7 2) (/ 7 -2) (/ -7 -2) (mod -7 2) (mod 7 -2) (mod -7 -2) (/ 7 2) (mod 6 3))))
+  (fn get-box
+    (purpose "Return box const.")
+    (sig -> Box)
+    (example () => (new Box (a 42) (b "const-str") (c true)))
+    (body sample-box))
+  (fn get-half-pi
+    (purpose "Return half-pi.")
+    (sig -> Float)
+    (example () => 1.5707963267948966)
+    (body half-pi))
+  (fn get-list
+    (purpose "Return list const.")
+    (sig -> (List Int))
+    (example () => (list 10 20 30))
+    (body sample-list))
+  (fn int-edges
+    (purpose "p")
+    (sig -> (List Int))
+    (example () => (list 9223372036854775807 -9223372036854775808 -9223372036854775807 0))
+    (body
+      (list
+        (+ 9223372036854775806 1)
+        (- -9223372036854775807 1)
+        (* -1 9223372036854775807)
+        (mod -9223372036854775808 -1))))
+  (fn mixed
+    (purpose "p")
+    (sig (b Bool) (s Str) -> Int)
+    (example (true "a") => 1)
+    (example (true "zz") => 1)
+    (example (false "a") => 2)
+    (example (false "zz") => 3)
+    (body (match b (true 1) (false (match s ("a" 2) (_ 3))))))
+  (fn nested-try
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (fails Other)
+    (example (1) => 10)
+    (example (2) => (fail Other))
+    (example (3) => 3)
+    (example (4) => 4)
+    (body (try (try (raise n) (catch Bad (c w) (* c 10))) (catch Other () (fail Other)))))
+  (fn prelude-values
+    (purpose "p")
+    (sig -> (List Bool))
+    (example () => (list true false true false))
+    (body
+      (list
+        (list.all (list.map2 (list 1 2) (list 2 3) <) (lam ((x Bool)) x))
+        (list.any (list.map (list true true) not) (lam ((x Bool)) x))
+        (=
+          (list.fold
+            (list (list 1) (list) (list 2 3))
+            0
+            (lam ((acc Int) (xs (List Int))) (+ acc (len xs))))
+          3)
+        (= (list.map (list 1 2) (lam ((x Int)) (cons x (list)))) (list (list 1) (list 2 3))))))
+  (fn raise
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (fails Bad Other)
+    (example (1) => (fail Bad 1 "one"))
+    (example (2) => (fail Other))
+    (example (5) => 5)
+    (body (if (= n 1) (fail Bad 1 "one") (if (= n 2) (fail Other) n))))
+  (fn shows
+    (purpose "p")
+    (sig -> (List (Opt Tree)))
+    (example () => (list (Some (Node (Leaf -1) Nil)) None))
+    (body (list (Some (Node (Leaf -1) Nil)) None)))
+  (fn strings
+    (purpose "p")
+    (sig -> (List Int))
+    (example () => (list 5 1 0 2))
+    (body
+      (list
+        (str.length "héllo")
+        (match (list.index-of (list "b" "a") "a") ((Some i) i) (None -1))
+        (len (list.filter (list "x") (lam ((s Str)) (> s "y"))))
+        (len (list.reverse (list.concat (list "") (list "é")))))))
+  (fn thunk
+    (purpose "p")
+    (sig -> Int)
+    (example () => 42)
+    (body (let ((k (lam () 42)) (t (and true (or false true) (not false)))) (if t (k) 0))))
+  (fn untyped-lambdas
+    (purpose "Untyped lambda inference and evaluation in backend.")
+    (sig -> (List Int))
+    (example () => (list 20 60 7 15))
+    (body
+      (let
+        (
+          (m2 (list.map2 (list 2 3) (list 10 20) (lam (a b) (* a b))))
+          (s (list.map (list "hello" "world") (lam (s) (str.concat s "!"))))
+          (f (list.fold (list 1.5 2.5 3.0) 0.0 (lam (acc x) (+ acc x))))
+          (factor 5)
+          (scaled (list.map (list 1 2 3) (lam (x) (* x factor)))))
+        (list
+          (match (list.at m2 0) ((Some n) n) (None 0))
+          (match (list.at m2 1) ((Some n) n) (None 0))
+          (float.round f)
+          (match (list.at scaled 2) ((Some n) n) (None 0))))))
+  (fn use-const
+    (purpose "Use const as example arg.")
+    (sig (f Float) (b Box) (xs (List Int)) -> Bool)
+    (example (half-pi sample-box sample-list) => true)
+    (body (and (= f half-pi) (= b sample-box) (= xs sample-list)))))

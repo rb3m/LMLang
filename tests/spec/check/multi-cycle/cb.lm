@@ -1,0 +1,9 @@
+(module cb
+  (purpose "p")
+  (use ca)
+  (export f)
+  (fn f
+    (purpose "p")
+    (sig -> Int)
+    (example () => 1)
+    (body (ca.f))))

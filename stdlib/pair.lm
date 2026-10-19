@@ -1,0 +1,18 @@
+(module pair
+  (purpose "Pair operations: accessors and swap.")
+  (export first second swap)
+  (fn first
+    (purpose "First element of a pair.")
+    (sig (p (Pair a b)) -> a)
+    (example ((pair 1 "a")) => 1)
+    (body (match p ((pair x _) x))))
+  (fn second
+    (purpose "Second element of a pair.")
+    (sig (p (Pair a b)) -> b)
+    (example ((pair 1 "a")) => "a")
+    (body (match p ((pair _ y) y))))
+  (fn swap
+    (purpose "Swap elements of a pair.")
+    (sig (p (Pair a b)) -> (Pair b a))
+    (example ((pair 1 "a")) => (pair "a" 1))
+    (body (match p ((pair x y) (pair y x))))))

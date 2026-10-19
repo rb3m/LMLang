@@ -1,0 +1,8 @@
+(module float-round-range
+  (purpose "float.round of a value below -2^63 is E-OVERFLOW.")
+  (use float)
+  (fn conv
+    (purpose "p")
+    (sig (x Float) -> Int)
+    (example (-9.223372036854778e+18) => 0)
+    (body (float.round x))))

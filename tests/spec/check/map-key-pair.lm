@@ -1,0 +1,10 @@
+(module map-key-pair
+  (purpose "Pair as a Map key or Set element is E-TYPE suggesting a Str key or nested maps.")
+  (fn key-pair
+    (purpose "Map with Pair key.")
+    (sig (m (Map (Pair Int Int) Str)) -> Str)
+    (body "x"))
+  (fn set-pair
+    (purpose "Set with Pair element.")
+    (sig (s (Set (Pair Int Str))) -> Int)
+    (body 0)))

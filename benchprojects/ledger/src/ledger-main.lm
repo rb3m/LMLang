@@ -1,0 +1,165 @@
+(module ledger-main
+  (purpose "CLI entry point for the personal-finance ledger application.")
+  (use fs io ledger-parse ledger-report ledger-summary str)
+  (export
+    Command
+    main
+    parse-args
+    print-lines
+    print-warnings
+    run-budget
+    run-summary
+    run-top
+    usage-lines)
+  (type
+    Command
+    (sum
+      (CmdSummary (tx-file Str))
+      (CmdBudget (tx-file Str) (budget-file Str))
+      (CmdTop (tx-file Str) (n Int))
+      (CmdInvalid (reason Str))))
+  (fn main
+    (purpose
+      "Parse program arguments, execute the requested ledger command, and return exit status.")
+    (sig -> Int)
+    (eff fs.read io.in io.out)
+    (body
+      (match
+        (parse-args (io.args))
+        (
+          (CmdSummary tx-file)
+          (try
+            (run-summary tx-file)
+            (catch
+              fs.IoError
+              (p msg)
+              (do (io.eprint (str.join (list "ledger: error reading" p ":" msg) " ")) 1))))
+        (
+          (CmdBudget tx-file budget-file)
+          (try
+            (run-budget tx-file budget-file)
+            (catch
+              fs.IoError
+              (p msg)
+              (do (io.eprint (str.join (list "ledger: error reading" p ":" msg) " ")) 1))))
+        (
+          (CmdTop tx-file n)
+          (try
+            (run-top tx-file n)
+            (catch
+              fs.IoError
+              (p msg)
+              (do (io.eprint (str.join (list "ledger: error reading" p ":" msg) " ")) 1))))
+        (
+          (CmdInvalid reason)
+          (do (io.eprint (str.concat "ledger: " reason)) (print-warnings (usage-lines)) 2)))))
+  (fn parse-args
+    (purpose "Parse CLI argument list into a typed Command variant.")
+    (sig (args (List Str)) -> Command)
+    (example ((list "summary" "tx.csv")) => (CmdSummary "tx.csv"))
+    (example ((list "budget" "tx.csv" "budget.csv")) => (CmdBudget "tx.csv" "budget.csv"))
+    (example ((list "top" "tx.csv" "5")) => (CmdTop "tx.csv" 5))
+    (example ((list "top" "tx.csv" "0")) => (CmdInvalid "top count N must be a positive integer"))
+    (example ((list "top" "tx.csv" "abc")) => (CmdInvalid "top count N must be a positive integer"))
+    (example ((list)) => (CmdInvalid "missing command"))
+    (example
+      ((list "unknown" "tx.csv"))
+      =>
+      (CmdInvalid "unknown command or wrong number of arguments"))
+    (body
+      (match
+        args
+        ((list) (CmdInvalid "missing command"))
+        (
+          (list cmd file)
+          (if
+            (= cmd "summary")
+            (CmdSummary file)
+            (CmdInvalid "unknown command or wrong number of arguments")))
+        (
+          (list cmd file arg2)
+          (if
+            (= cmd "budget")
+            (CmdBudget file arg2)
+            (if
+              (= cmd "top")
+              (match
+                (str.to-int (str.trim arg2))
+                (None (CmdInvalid "top count N must be a positive integer"))
+                (
+                  (Some n)
+                  (if (> n 0) (CmdTop file n) (CmdInvalid "top count N must be a positive integer"))))
+              (CmdInvalid "unknown command or wrong number of arguments"))))
+        (_ (CmdInvalid "unknown command or wrong number of arguments")))))
+  (fn print-lines
+    (purpose "Print each line in xs to stdout in order.")
+    (sig (xs (List Str)) -> Unit)
+    (eff io.out)
+    (body (match xs ((list) unit) ((cons h t) (do (io.print h) (print-lines t))))))
+  (fn print-warnings
+    (purpose "Print each warning or usage line in xs to stderr in order.")
+    (sig (xs (List Str)) -> Unit)
+    (eff io.out)
+    (body (match xs ((list) unit) ((cons h t) (do (io.eprint h) (print-warnings t))))))
+  (fn run-budget
+    (purpose
+      "Read transaction and budget files, print budget report to stdout and row errors to stderr.")
+    (sig (tx-file Str) (budget-file Str) -> Int)
+    (eff fs.read io.out)
+    (fails fs.IoError)
+    (body
+      (let
+        (
+          (tx-text (fs.read tx-file))
+          (budget-text (fs.read budget-file))
+          (outcome (ledger-parse.parse-tx-text tx-text))
+          (rules (ledger-parse.parse-budget-text budget-text))
+          (summary (ledger-summary.build-summary outcome))
+          (lines (ledger-report.render-budget-report rules summary))
+          (err-lines (ledger-report.render-error-lines (get outcome errors))))
+        (do (print-lines lines) (print-warnings err-lines) 0))))
+  (fn run-summary
+    (purpose "Read transaction file, print summary report to stdout and row errors to stderr.")
+    (sig (tx-file Str) -> Int)
+    (eff fs.read io.out)
+    (fails fs.IoError)
+    (body
+      (let
+        (
+          (tx-text (fs.read tx-file))
+          (outcome (ledger-parse.parse-tx-text tx-text))
+          (summary (ledger-summary.build-summary outcome))
+          (lines (ledger-report.render-summary-report summary))
+          (err-lines (ledger-report.render-error-lines (get outcome errors))))
+        (do (print-lines lines) (print-warnings err-lines) 0))))
+  (fn run-top
+    (purpose
+      "Read transaction file, print top N expenses report to stdout and row errors to stderr.")
+    (sig (tx-file Str) (n Int) -> Int)
+    (eff fs.read io.out)
+    (fails fs.IoError)
+    (body
+      (let
+        (
+          (tx-text (fs.read tx-file))
+          (outcome (ledger-parse.parse-tx-text tx-text))
+          (lines (ledger-report.render-top-report (get outcome txs) n))
+          (err-lines (ledger-report.render-error-lines (get outcome errors))))
+        (do (print-lines lines) (print-warnings err-lines) 0))))
+  (fn usage-lines
+    (purpose "Return CLI usage help lines.")
+    (sig -> (List Str))
+    (example
+      ()
+      =>
+      (list
+        "usage:"
+        "  ledger summary FILE"
+        "  ledger budget FILE BUDGETFILE"
+        "  ledger top FILE N"))
+    (body
+      (list
+        "usage:"
+        "  ledger summary FILE"
+        "  ledger budget FILE BUDGETFILE"
+        "  ledger top FILE N"))))

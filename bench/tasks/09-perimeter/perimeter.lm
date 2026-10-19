@@ -1,0 +1,29 @@
+(module perimeter
+  (purpose "Perimeters of simple shapes.")
+  (use list)
+  (type
+    Shape
+    (sum
+      (Circle (r Int))
+      (Rect (w Int) (h Int))
+      (Square (s Int))
+      (Triangle (a Int) (b Int) (c Int))))
+  (fn of
+    (purpose "Perimeter of one shape; circles use 6 as 2*pi.")
+    (sig (sh Shape) -> Int)
+    (example ((Circle 2)) => 12)
+    (example ((Rect 2 3)) => 10)
+    (example ((Square 4)) => 16)
+    (example ((Triangle 3 4 5)) => 12)
+    (body
+      (match
+        sh
+        ((Circle r) (* 6 r))
+        ((Rect w h) (* 2 (+ w h)))
+        ((Square s) (* 4 s))
+        ((Triangle a b c) (+ a (+ b c))))))
+  (fn total
+    (purpose "Sum of the perimeters.")
+    (sig (shapes (List Shape)) -> Int)
+    (example ((list (Square 1) (Rect 1 1))) => 8)
+    (body (list.sum (list.map shapes of)))))

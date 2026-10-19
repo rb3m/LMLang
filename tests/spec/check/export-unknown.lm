@@ -1,0 +1,3 @@
+(module export-unknown
+  (purpose "p")
+  (export ghost))

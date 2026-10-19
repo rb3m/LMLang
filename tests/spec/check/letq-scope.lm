@@ -1,0 +1,6 @@
+(module letq-scope
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (x (Opt Int)) -> (Opt Int))
+    (body (let? ((y (Some z)) (z x)) (Some y)))))

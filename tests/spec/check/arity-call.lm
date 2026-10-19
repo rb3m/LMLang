@@ -1,0 +1,6 @@
+(module arity-call
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body (+ a))))

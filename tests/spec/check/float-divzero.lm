@@ -1,0 +1,10 @@
+(module float-divzero
+  (purpose "Int / still fails DivZero; Float / never does (division by zero is the fault E-FLOAT).")
+  (fn fdiv
+    (purpose "p")
+    (sig (a Float) (b Float) -> Float)
+    (body (/ a b)))
+  (fn idiv
+    (purpose "p")
+    (sig (a Int) (b Int) -> Int)
+    (body (/ a b))))

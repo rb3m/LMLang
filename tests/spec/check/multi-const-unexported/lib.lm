@@ -1,0 +1,4 @@
+(module lib
+  (purpose "Library module.")
+  (export)
+  (const secret (purpose "Secret value.") (type Int) (value 42)))

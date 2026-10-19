@@ -1,0 +1,2 @@
+(module billing (fn total (body (let ((s (list.sum items))) (+ s (/ (* s 16) 100)))) (example ((list 100 200) "MX") => 348) (ensures (>= result 0)) (requires (> (len items) 0)) (fails BadRegion) (eff) (sig (items (List Cents)) (region Str) -> Cents) (purpose "Sum item prices and add tax."))
+  (error BadRegion (region Str)) (type Cents Int) (export total) (use money list) (purpose "Invoice totals."))

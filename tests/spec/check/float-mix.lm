@@ -1,0 +1,10 @@
+(module float-mix
+  (purpose "Int and Float never mix: convert with float.from-int or float.round.")
+  (fn add
+    (purpose "p")
+    (sig (n Int) (x Float) -> Float)
+    (body (+ n x)))
+  (fn less
+    (purpose "p")
+    (sig (n Int) -> Bool)
+    (body (< n 1.0))))

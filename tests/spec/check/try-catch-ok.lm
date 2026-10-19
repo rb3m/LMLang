@@ -1,0 +1,12 @@
+(module try-catch-ok
+  (purpose "p")
+  (error Neg (n Int))
+  (fn root
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (fails Neg)
+    (body (if (< n 0) (fail Neg n) n)))
+  (fn safe
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (body (try (root n) (catch Neg (k) k)))))

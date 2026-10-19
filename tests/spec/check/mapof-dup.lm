@@ -1,0 +1,10 @@
+(module mapof-dup
+  (purpose "Duplicate constant keys are E-DUP-NAME, also for Floats with different text.")
+  (fn m
+    (purpose "p")
+    (sig -> (Map Str Int))
+    (body (mapof ("a" 1) ("a" 2))))
+  (fn s
+    (purpose "p")
+    (sig -> (Set Float))
+    (body (setof 1.0 1.0))))

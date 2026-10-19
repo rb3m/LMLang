@@ -1,0 +1,7 @@
+(module type-record-missing
+  (purpose "p")
+  (type Item (rec (name Str) (price Int)))
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Item)
+    (body (new Item (name "a")))))

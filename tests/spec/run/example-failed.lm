@@ -1,0 +1,7 @@
+(module example-failed
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (example (1) => 2)
+    (body a)))

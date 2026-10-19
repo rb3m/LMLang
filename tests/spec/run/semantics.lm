@@ -1,0 +1,239 @@
+(module semantics
+  (purpose "Runtime semantics checked through examples.")
+  (use list math str)
+  (type Item (rec (name Str) (price Int)))
+  (type Shape (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty))
+  (error Neg (n Int))
+  (fn abs-test
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (-9) => 9)
+    (body (math.abs n)))
+  (fn area
+    (purpose "p")
+    (sig (s Shape) -> Int)
+    (example ((Rect 2 3)) => 6)
+    (example ((Circle 2)) => 12)
+    (example (Empty) => 0)
+    (body (match s ((Circle r) (* 3 (* r r))) ((Rect w h) (* w h)) (Empty 0))))
+  (fn bool-not
+    (purpose "p")
+    (sig (b Bool) -> Bool)
+    (example (true) => false)
+    (body (not b)))
+  (fn bump
+    (purpose "p")
+    (sig (i Item) -> Item)
+    (example ((new Item (name "a") (price 1))) => (new Item (name "a") (price 2)))
+    (body (with i (price (+ (get i price) 1)))))
+  (fn capture
+    (purpose "p")
+    (sig (k Int) -> (List Int))
+    (example (10) => (list 11 12))
+    (body (list.map (list 1 2) (lam ((x Int)) (+ x k)))))
+  (fn check-pos
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (fails Neg)
+    (example (-3) => (fail Neg -3))
+    (example (4) => 4)
+    (body (if (< n 0) (fail Neg n) n)))
+  (fn clamp-test
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (99) => 10)
+    (example (-5) => 0)
+    (body (math.min (math.max n 0) 10)))
+  (fn consing
+    (purpose "p")
+    (sig (x Int) (xs (List Int)) -> (List Int))
+    (example (1 (list 2)) => (list 1 2))
+    (body (cons x xs)))
+  (fn deep
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (3000) => 3000)
+    (body (if (= n 0) 0 (+ 1 (deep (- n 1))))))
+  (fn do-seq
+    (purpose "p")
+    (sig (x Int) -> Int)
+    (example (5) => 6)
+    (body (do (note "step 1") (note "step 2") (+ x 1))))
+  (fn fact
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (20) => 2432902008176640000)
+    (body (if (<= n 1) 1 (* n (fact (- n 1))))))
+  (fn floor-div
+    (purpose "p")
+    (sig (a Int) (b Int) -> Int)
+    (fails DivZero)
+    (example (-7 2) => -4)
+    (example (7 -2) => -4)
+    (example (1 0) => (fail DivZero))
+    (body (/ a b)))
+  (fn floor-mod
+    (purpose "p")
+    (sig (a Int) (b Int) -> Int)
+    (fails DivZero)
+    (example (-7 2) => 1)
+    (example (7 -2) => -1)
+    (example (5 0) => (fail DivZero))
+    (body (mod a b)))
+  (fn fold-str
+    (purpose "p")
+    (sig -> Str)
+    (example () => "abc")
+    (body (list.fold (list "a" "b" "c") "" str.concat)))
+  (fn for-loop-test
+    (purpose "For loop stopping on escaping failure.")
+    (sig (xs (List Int)) -> Int)
+    (example ((list 1 2 3 4)) => 3)
+    (example ((list 1 2)) => 0)
+    (body (try (do (for (x xs) (if (= x 3) (fail Neg x) unit)) 0) (catch Neg (n) n))))
+  (fn int-add
+    (purpose "p")
+    (sig (a Int) (b Int) -> Int)
+    (example (9223372036854775806 1) => 9223372036854775807)
+    (example (-9223372036854775807 -1) => -9223372036854775808)
+    (example (9223372036854775807 -9223372036854775808) => -1)
+    (body (+ a b)))
+  (fn int-bounds
+    (purpose "p")
+    (sig -> (List Int))
+    (example () => (list -9223372036854775808 9223372036854775807))
+    (body (list (math.int-min) (math.int-max))))
+  (fn int-div
+    (purpose "p")
+    (sig (a Int) -> (List Int))
+    (example (-9223372036854775808) => (list -9223372036854775808 4611686018427387904 0))
+    (example (9223372036854775807) => (list 9223372036854775807 -4611686018427387904 0))
+    (body (list (/ a 1) (/ a -2) (mod a -1))))
+  (fn int-mul
+    (purpose "p")
+    (sig (a Int) (b Int) -> Int)
+    (example (-4611686018427387904 2) => -9223372036854775808)
+    (example (3037000499 3037000499) => 9223372030926249001)
+    (example (-1 9223372036854775807) => -9223372036854775807)
+    (body (* a b)))
+  (fn int-neg
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (example (9223372036854775807) => -9223372036854775807)
+    (example (-9223372036854775807) => 9223372036854775807)
+    (body (/ a -1)))
+  (fn int-sub
+    (purpose "p")
+    (sig (a Int) (b Int) -> Int)
+    (example (-1 9223372036854775807) => -9223372036854775808)
+    (example (0 -9223372036854775807) => 9223372036854775807)
+    (example (-9223372036854775808 -9223372036854775808) => 0)
+    (body (- a b)))
+  (fn joined
+    (purpose "p")
+    (sig -> Str)
+    (example () => "a-b-c")
+    (body (str.join (list "a" "b" "c") "-")))
+  (fn lazy-and
+    (purpose "p")
+    (sig (z Int) -> Bool)
+    (example (0) => false)
+    (example (1) => true)
+    (body (and (!= z 0) (= (/ 10 z) 10))))
+  (fn lazy-or
+    (purpose "p")
+    (sig (z Int) -> Bool)
+    (fails DivZero)
+    (example (0) => true)
+    (body (or (= z 0) (= (/ 1 z) 1))))
+  (fn let-seq
+    (purpose "p")
+    (sig -> Int)
+    (example () => 8)
+    (body (let ((a 1) (b (+ a 1)) (c (+ b 3))) (+ a (+ b c)))))
+  (fn list-match
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (example ((list)) => 0)
+    (example ((list 9)) => 9)
+    (example ((list 2 5)) => 25)
+    (example ((list 3 4 5)) => 103)
+    (body
+      (match
+        xs
+        ((list) 0)
+        ((list a) a)
+        ((list a b) (+ (* a 10) b))
+        ((cons h t) (+ (* (len t) 50) h)))))
+  (fn list-sum-rec
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (example ((list)) => 0)
+    (example ((list 10 20 30)) => 60)
+    (body (match xs ((list) 0) ((cons h t) (+ h (list-sum-rec t))))))
+  (fn nested
+    (purpose "p")
+    (sig (o (Opt Shape)) -> Int)
+    (example ((Some (Circle 2))) => 2)
+    (example ((Some Empty)) => 0)
+    (example (None) => -1)
+    (body (match o ((Some (Circle r)) r) ((Some _) 0) (None -1))))
+  (fn note-test
+    (purpose "p")
+    (sig -> Int)
+    (example () => 1)
+    (body (do (note "hi") 1)))
+  (fn nth-one
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (fails OutOfRange)
+    (example ((list 1)) => (fail OutOfRange))
+    (example ((list 7 8)) => 8)
+    (body (list.nth xs 1)))
+  (fn opt-or
+    (purpose "p")
+    (sig (o (Opt Int)) (d Int) -> Int)
+    (example ((Some 3) 9) => 3)
+    (example (None 9) => 9)
+    (body (match o ((Some x) x) (None d))))
+  (fn pipeline
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (5) => 20)
+    (body
+      (list.sum
+        (list.map
+          (list.filter (list.range 0 n) (lam ((x Int)) (= (mod x 2) 0)))
+          (lam ((x Int)) (* x x))))))
+  (fn recover
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (-3) => 3)
+    (example (4) => 4)
+    (body (try (check-pos n) (catch Neg (k) (- 0 k)))))
+  (fn rev
+    (purpose "p")
+    (sig (xs (List Int)) -> (List Int))
+    (example ((list 1 2 3)) => (list 3 2 1))
+    (body (list.reverse xs)))
+  (fn strcmp
+    (purpose "p")
+    (sig (a Str) (b Str) -> Bool)
+    (example ("a" "b") => true)
+    (example ("b" "a") => false)
+    (body (< a b)))
+  (fn text
+    (purpose "p")
+    (sig (n Int) -> Str)
+    (example (12) => "n=12 len=2")
+    (body
+      (str.concat
+        "n="
+        (str.concat
+          (str.from-int n)
+          (str.concat " len=" (str.from-int (str.length (str.from-int n))))))))
+  (fn variant-eq
+    (purpose "p")
+    (sig -> Bool)
+    (example () => true)
+    (body (= (Circle 1) (Circle 1)))))

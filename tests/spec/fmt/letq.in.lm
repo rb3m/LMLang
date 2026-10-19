@@ -1,0 +1,4 @@
+(module letq (purpose "Canonical let? printing.") (use list)
+ (fn pick (purpose "p") (sig (xs (List Int)) -> (Opt Int))
+  (example ((list 1 2)) => (Some 3))
+  (body (let? ((a (list.at xs 0))   (b (list.at xs 1))) (Some (+ a b))))))

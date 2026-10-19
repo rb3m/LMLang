@@ -1,0 +1,13 @@
+(module deep
+  (purpose "Deep non-tail recursion works in binaries (the goroutine stack grows).")
+  (use io str)
+  (fn count
+    (purpose "Depth-n recursion.")
+    (sig (n Int) -> Int)
+    (example (3) => 3)
+    (body (if (= n 0) 0 (+ 1 (count (- n 1))))))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Unit)
+    (eff io.out)
+    (body (io.print (str.from-int (count 300000))))))

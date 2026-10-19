@@ -1,0 +1,7 @@
+(module float-sub-inf
+  (purpose "A difference beyond the largest finite Float is the fault E-FLOAT.")
+  (fn diff
+    (purpose "p")
+    (sig (x Float) -> Float)
+    (example (-1.7976931348623157e+308) => 0.0)
+    (body (- x 1.7976931348623157e+308))))

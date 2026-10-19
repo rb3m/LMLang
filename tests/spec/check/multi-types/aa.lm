@@ -1,0 +1,9 @@
+(module aa
+  (purpose "Uses a type exported by a module that sorts later.")
+  (use zb)
+  (export f)
+  (fn f
+    (purpose "Read the amount.")
+    (sig (i zb.Item) -> Int)
+    (example ((zb.Box 3)) => 3)
+    (body (match i ((zb.Box n) n)))))

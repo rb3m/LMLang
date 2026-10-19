@@ -1,0 +1,11 @@
+# ADR-030 ADR-029 accepted by agent consensus, with amendments (2026-10-16)
+
+Process: the owner delegates ordinary LM design decisions to consensus among the LLM agents that write LM ("the language is for LLMs, of LLMs, and by LLMs"); he is consulted only for decisions with serious real-world risk. Acceptance scenarios stay human-approved (AGENTS.md rule 5). For ADR-029, Claude, Antigravity (agy) and Codex were each asked the same short question; all three independently preferred an uncatchable, undeclared fault over a declared or catchable `Overflow`.
+Accepted amendments to ADR-029:
+1. Wording (Codex): absent `fails` means "no recoverable LM errors", not "always terminates normally". Faults (E-OVERFLOW, E-RECURSION-LIMIT, contract violations) can stop any function. SPEC uses this wording wherever it says "total".
+2. Boundaries (agy, Codex): every intermediate result is checked, in the deterministic left-to-right order of SPEC section 11. LM has no unary minus; `(- 0 x)` of min-int faults through binary `-`, which also covers `math.abs`. Reductions (`list.sum`, `list.fold` with `+`) fault through the same operators. Cross-backend fixtures cover each case.
+3. External input never faults (agy): parsing text to Int (`str.to-int`, when added) reports out-of-range text as its declared parse failure, not E-OVERFLOW.
+4. Bounds are nameable (agy): `math.int-min` and `math.int-max` (zero-argument functions; LM has no module constants yet) so guards and `requires` can mention the limits without writing an out-of-range literal. Checked arithmetic returning `Opt` stays deferred until an experiment needs recovery (all three agree).
+5. Diagnostic contents (Claude, refined by agy and Codex): structured fields for operator, operands, bounds and node path; bounded call frames (at most 3, names only), naming both the callback invocation and the nearest user frame when the arithmetic runs inside a function value; and a shell-quoted `lm run` replay of the innermost user call *only* when its arguments are constant-representable and under a size cap (about 400 characters), otherwise an explicit `replay: unavailable (<reason>)`.
+6. Guidance in the message (Codex's wording): "Fix the arithmetic, validate input, or add a justified precondition; overflow cannot be caught."
+Overflow checks stay on under `--no-contracts` and in compiled binaries.

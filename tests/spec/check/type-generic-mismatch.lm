@@ -1,0 +1,7 @@
+(module type-generic-mismatch
+  (purpose "p")
+  (use list)
+  (fn f
+    (purpose "p")
+    (sig -> (List Int))
+    (body (list.concat (list 1) (list "a")))))

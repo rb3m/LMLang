@@ -1,0 +1,6 @@
+(module type-if
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body (if a 1 2))))

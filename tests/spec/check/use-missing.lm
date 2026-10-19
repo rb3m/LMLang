@@ -1,0 +1,6 @@
+(module use-missing
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (body (list.sum xs))))

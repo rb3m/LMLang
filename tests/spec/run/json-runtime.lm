@@ -1,0 +1,114 @@
+(module json-runtime
+  (purpose "JSON grammar, variants and canonical rendering.")
+  (use json)
+  (fn canonical
+    (purpose "Render compact JSON with sorted keys and canonical escapes.")
+    (sig (s Str) -> Str)
+    (fails json.BadJson)
+    (example (" {\"z\":0,\"a\":1} ") => "{\"a\":1,\"z\":0}")
+    (example ("-0") => "0")
+    (example ("-0.0") => "0.0")
+    (example ("\"\\u0061\\/🚀\"") => "\"a/🚀\"")
+    (example ("[1e0, true, null]") => "[1.0,true,null]")
+    (example ("\"\\b\\f\\n\\r\\t\\u001f\"") => "\"\\b\\f\\n\\r\\t\\u001F\"")
+    (body (json.print (json.parse s))))
+  (fn decode
+    (purpose "Decode every JSON variant and numeric boundary.")
+    (sig (s Str) -> json.Json)
+    (fails json.BadJson)
+    (example ("null") => json.JNull)
+    (example ("true") => (json.JBool true))
+    (example ("false") => (json.JBool false))
+    (example ("42") => (json.JInt 42))
+    (example ("-9223372036854775808") => (json.JInt -9223372036854775808))
+    (example ("9223372036854775807") => (json.JInt 9223372036854775807))
+    (example ("9223372036854775808") => (json.JFloat 9.223372036854776e+18))
+    (example ("-9223372036854775809") => (json.JFloat -9.223372036854776e+18))
+    (example ("1.0") => (json.JFloat 1.0))
+    (example ("1e0") => (json.JFloat 1.0))
+    (example ("-0") => (json.JInt 0))
+    (example ("-0.0") => (json.JFloat 0.0))
+    (example ("\"abc\"") => (json.JStr "abc"))
+    (example ("[]") => (json.JArr (list)))
+    (example ("{}") => (json.JObj (mapof)))
+    (example
+      ("[null,true,2,3.5,\"x\",[],{}]")
+      =>
+      (json.JArr
+        (list
+          json.JNull
+          (json.JBool true)
+          (json.JInt 2)
+          (json.JFloat 3.5)
+          (json.JStr "x")
+          (json.JArr (list))
+          (json.JObj (mapof)))))
+    (example
+      ("{\"z\":[null],\"a\":{\"b\":false}}")
+      =>
+      (json.JObj
+        (mapof
+          ("a" (json.JObj (mapof ("b" (json.JBool false)))))
+          ("z" (json.JArr (list json.JNull))))))
+    (example ("\"\\uD83D\\uDE80\"") => (json.JStr "🚀"))
+    (example ("1e-400") => (json.JFloat 0.0))
+    (body (json.parse s)))
+  (fn invalid
+    (purpose "Reject overflow, duplicate keys, trailing data and lone surrogates.")
+    (sig (s Str) -> json.Json)
+    (fails json.BadJson)
+    (example ("1e400") => (fail json.BadJson 5 "number out of range"))
+    (example ("{\"a\":0,\"a\":1}") => (fail json.BadJson 10 "duplicate key"))
+    (example ("null x") => (fail json.BadJson 5 "trailing data"))
+    (example ("\"\\ud800\"") => (fail json.BadJson 7 "unpaired surrogate"))
+    (body (json.parse s)))
+  (fn lookup
+    (purpose "Distinguish null, absent fields and non-objects.")
+    (sig (j json.Json) (key Str) -> (Opt json.Json))
+    (example ((json.JObj (mapof ("x" json.JNull))) "x") => (Some json.JNull))
+    (example ((json.JObj (mapof)) "x") => None)
+    (example (json.JNull "x") => None)
+    (body (json.field j key)))
+  (fn round-trip
+    (purpose "All Json values survive printing and parsing.")
+    (sig (j json.Json) -> Bool)
+    (fails json.BadJson)
+    (example (json.JNull) => true)
+    (example ((json.JBool true)) => true)
+    (example ((json.JBool false)) => true)
+    (example ((json.JInt 42)) => true)
+    (example ((json.JInt -9223372036854775808)) => true)
+    (example ((json.JInt 9223372036854775807)) => true)
+    (example ((json.JFloat 9.223372036854776e+18)) => true)
+    (example ((json.JFloat -9.223372036854776e+18)) => true)
+    (example ((json.JFloat 1.0)) => true)
+    (example ((json.JFloat 1.0)) => true)
+    (example ((json.JInt 0)) => true)
+    (example ((json.JFloat 0.0)) => true)
+    (example ((json.JStr "abc")) => true)
+    (example ((json.JArr (list))) => true)
+    (example ((json.JObj (mapof))) => true)
+    (example
+      (
+        (json.JArr
+          (list
+            json.JNull
+            (json.JBool true)
+            (json.JInt 2)
+            (json.JFloat 3.5)
+            (json.JStr "x")
+            (json.JArr (list))
+            (json.JObj (mapof)))))
+      =>
+      true)
+    (example
+      (
+        (json.JObj
+          (mapof
+            ("a" (json.JObj (mapof ("b" (json.JBool false)))))
+            ("z" (json.JArr (list json.JNull))))))
+      =>
+      true)
+    (example ((json.JStr "🚀")) => true)
+    (example ((json.JFloat 0.0)) => true)
+    (body (= j (json.parse (json.print j))))))

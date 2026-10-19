@@ -1,0 +1,10 @@
+(module own-qualified
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body (own-qualified.helper a)))
+  (fn helper
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body a)))

@@ -1,0 +1,6 @@
+(module match-int
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (n Int) -> Str)
+    (body (match n (1 "a")))))

@@ -1,0 +1,7 @@
+(module float-div-zero
+  (purpose "Float division by zero is the fault E-FLOAT, not DivZero.")
+  (fn ratio
+    (purpose "p")
+    (sig (a Float) (b Float) -> Float)
+    (example (1.0 0.0) => 0.0)
+    (body (/ a b))))

@@ -1,0 +1,21 @@
+(module cmp-order
+  (purpose "Comparison operands evaluate left to right, even where a backend swaps them.")
+  (use io str)
+  (error Stop (at Int))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff io.out)
+    (fails Stop)
+    (body (if (> (say 1) (stop 2)) 1 0)))
+  (fn say
+    (purpose "Print n and return it.")
+    (sig (n Int) -> Int)
+    (eff io.out)
+    (body (do (io.print (str.from-int n)) n)))
+  (fn stop
+    (purpose "Print n, then fail.")
+    (sig (n Int) -> Int)
+    (eff io.out)
+    (fails Stop)
+    (body (do (io.print (str.from-int n)) (fail Stop n)))))

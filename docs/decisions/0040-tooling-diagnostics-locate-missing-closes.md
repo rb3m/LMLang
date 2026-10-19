@@ -1,0 +1,3 @@
+# ADR-040 Tooling diagnostics locate missing closes (2026-10-16)
+
+A missing close can let later closes consume inner forms, leaving only the module open at EOF. The reader remembers the innermost open form at the first line-leading opening parenthesis at the same or lower column, and uses its start if EOF has unclosed forms; otherwise it uses the deepest EOF-open form. Columns count whitespace characters (including tabs) as the reader already does. This is a best-effort location heuristic, not indentation-sensitive syntax, and never rejects balanced input. Unexpected closing parentheses retain their own position. Position fixtures supplement diagnostic-code fixtures in tests/spec/diag.

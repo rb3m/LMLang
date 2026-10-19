@@ -1,0 +1,34 @@
+(module bin-float
+  (purpose "Floats in a binary: no fused multiply-add, canonical text, parsing, rounding, -0.0.")
+  (use float io list str)
+  (fn fma-probe
+    (purpose "a*b+c rounds the product first: 0.1*10.0 rounds to 1.0, so the result is 0.0.")
+    (sig (a Float) (b Float) (c Float) -> Float)
+    (example (0.1 10.0 -1.0) => 0.0)
+    (body (+ (* a b) c)))
+  (fn main
+    (purpose "Entry: print computed values and parsed arguments.")
+    (sig -> Unit)
+    (eff io.in io.out)
+    (body
+      (do
+        (io.print (str.from-float (fma-probe 0.1 10.0 -1.0)))
+        (io.print
+          (str.from-float
+            (list.fold (list 0.1 0.2 0.3) 0.0 (lam ((s Float) (x Float)) (+ (* x 1.0) s)))))
+        (io.print
+          (str.join (list.map (list 100.0 0.0001 1e-05 1e+16 5e-324 -2.5) str.from-float) " "))
+        (io.print (str.from-float (* -1.0 0.0)))
+        (io.print (str.from-int (float.trunc (float.from-int 9007199254740993))))
+        (io.print (str.join (list.map (list 2.5 -2.5 0.49999999999999994) round-text) " "))
+        (io.print (str.join (list.map (io.args) parse-text) " ")))))
+  (fn parse-text
+    (purpose "Parsed argument in canonical text, or none.")
+    (sig (s Str) -> Str)
+    (example ("1e3") => "1000.0")
+    (body (match (str.to-float s) ((Some x) (str.from-float x)) (None "none"))))
+  (fn round-text
+    (purpose "float.round as text.")
+    (sig (x Float) -> Str)
+    (example (2.5) => "3")
+    (body (str.from-int (float.round x)))))

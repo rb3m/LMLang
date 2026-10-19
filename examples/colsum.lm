@@ -1,0 +1,121 @@
+(module colsum
+  (purpose "Sum a CSV column per key, keys ascending: colsum FILE KEY-COL VALUE-COL (zero-based).")
+  (use fs io list map str)
+  (export main summarize)
+  (type Summary (rec (totals (Map Str Int)) (bad Int)))
+  (type Total (rec (key Str) (amount Int)))
+  (fn field
+    (purpose "The i-th element of xs, if present.")
+    (sig (xs (List Str)) (i Int) -> (Opt Str))
+    (example ((list "a" "b") 1) => (Some "b"))
+    (example ((list "a") 3) => None)
+    (body (match xs ((list) None) ((cons h t) (if (= i 0) (Some h) (field t (- i 1)))))))
+  (fn main
+    (purpose "Entry point: parse arguments, run, map I/O errors to exit status 1.")
+    (sig -> Int)
+    (eff fs.read io.in io.out)
+    (body
+      (match
+        (io.args)
+        (
+          (list path kc vc)
+          (match
+            (str.to-int kc)
+            (None (usage))
+            (
+              (Some k)
+              (match
+                (str.to-int vc)
+                (None (usage))
+                (
+                  (Some v)
+                  (try
+                    (run path k v)
+                    (catch
+                      fs.IoError
+                      (p msg)
+                      (do (io.eprint (str.join (list "colsum:" p msg) " ")) 1))))))))
+        (_ (usage)))))
+  (fn parse-row
+    (purpose "Key and value of one CSV line, or None if a column is missing or not an integer.")
+    (sig (line Str) (kcol Int) (vcol Int) -> (Opt Total))
+    (example ("north, 12" 0 1) => (Some (new Total (key "north") (amount 12))))
+    (example ("north,x" 0 1) => None)
+    (example ("north" 0 1) => None)
+    (body
+      (let
+        ((cells (str.split line ",")))
+        (match
+          (field cells kcol)
+          (None None)
+          (
+            (Some k)
+            (match
+              (field cells vcol)
+              (None None)
+              (
+                (Some v)
+                (match
+                  (str.to-int (str.trim v))
+                  (None None)
+                  ((Some n) (Some (new Total (key (str.trim k)) (amount n))))))))))))
+  (fn print-all
+    (purpose "Print each line to stdout.")
+    (sig (lines (List Str)) -> Unit)
+    (eff io.out)
+    (body (match lines ((list) unit) ((cons l rest) (do (io.print l) (print-all rest))))))
+  (fn render
+    (purpose "One output line: key, tab, total.")
+    (sig (k Str) (n Int) -> Str)
+    (example ("a" 4) => "a\t4")
+    (body (str.join (list k (str.from-int n)) "\t")))
+  (fn report
+    (purpose "Print every total in key order, then the skipped-row count on stderr if any; exit 0.")
+    (sig (s Summary) -> Int)
+    (eff io.out)
+    (body
+      (do
+        (print-all (list.map2 (map.keys (get s totals)) (map.values (get s totals)) render))
+        (if
+          (> (get s bad) 0)
+          (io.eprint (str.concat "skipped rows: " (str.from-int (get s bad))))
+          unit)
+        0)))
+  (fn run
+    (purpose "Read the file and report its totals, skipping the header line.")
+    (sig (path Str) (kcol Int) (vcol Int) -> Int)
+    (eff fs.read io.out)
+    (fails fs.IoError)
+    (body
+      (match
+        (str.lines (fs.read path))
+        ((list) (report (summarize (list) kcol vcol)))
+        ((cons header rows) (report (summarize rows kcol vcol))))))
+  (fn summarize
+    (purpose
+      "Totals per key (a Map, so in ascending key order), and the number of unparsable rows.")
+    (sig (rows (List Str)) (kcol Int) (vcol Int) -> Summary)
+    (example
+      ((list "b,2" "a,1" "oops" "b,3") 0 1)
+      =>
+      (new Summary (totals (mapof ("a" 1) ("b" 5))) (bad 1)))
+    (body
+      (list.fold
+        rows
+        (new Summary (totals (mapof)) (bad 0))
+        (lam
+          ((acc Summary) (row Str))
+          (match
+            (parse-row row kcol vcol)
+            (None (with acc (bad (+ (get acc bad) 1))))
+            (
+              (Some t)
+              (with
+                acc
+                (totals
+                  (map.update (get acc totals) (get t key) 0 (lam ((n Int)) (+ n (get t amount))))))))))))
+  (fn usage
+    (purpose "Print usage on stderr; exit status 2.")
+    (sig -> Int)
+    (eff io.out)
+    (body (do (io.eprint "usage: colsum FILE KEY-COL VALUE-COL   (columns are zero-based)") 2))))

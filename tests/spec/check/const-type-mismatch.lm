@@ -1,0 +1,3 @@
+(module const-type-mismatch
+  (purpose "Type mismatch in const.")
+  (const bad (purpose "bad") (type Int) (value "not an int")))

@@ -1,0 +1,8 @@
+(module const-example-cycle
+  (purpose "Example referencing const does not create an E-CYCLE.")
+  (const c (purpose "Base const.") (type Int) (value (double 10)))
+  (fn double
+    (purpose "Double an integer.")
+    (sig (x Int) -> Int)
+    (example (c) => 40)
+    (body (* x 2))))

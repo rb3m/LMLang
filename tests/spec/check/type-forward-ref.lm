@@ -1,0 +1,7 @@
+(module type-forward-ref
+  (purpose "Types and errors may mention record, sum and alias types declared after them.")
+  (type Alpha (rec (items (List Beta)) (pick Gamma) (cost Zeta)))
+  (type Beta (rec (k Str) (cost Zeta)))
+  (type Gamma (sum (One (b Beta)) Two))
+  (type Zeta Int)
+  (error Bad (item Beta) (cost Zeta)))

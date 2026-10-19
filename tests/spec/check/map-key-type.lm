@@ -1,0 +1,11 @@
+(module map-key-type
+  (purpose "Map keys and Set elements must be Int, Float, Str or Bool.")
+  (type Pt (rec (x Int)))
+  (fn by-list
+    (purpose "p")
+    (sig (m (Map (List Int) Int)) -> Int)
+    (body 0))
+  (fn by-rec
+    (purpose "p")
+    (sig (s (Set Pt)) -> Int)
+    (body 0)))

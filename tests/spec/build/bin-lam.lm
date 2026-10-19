@@ -1,0 +1,21 @@
+(module bin-lam
+  (purpose "Native build testing untyped lambdas with inference and captures.")
+  (use io list str)
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff io.out)
+    (body
+      (let
+        (
+          (m2 (list.map2 (list 2 3) (list 10 20) (lam (a b) (* a b))))
+          (ms (list.map (list "hello" "world") (lam (s) (str.concat s "!"))))
+          (sum (list.fold (list 1.5 2.5) 0.0 (lam (acc x) (+ acc x))))
+          (factor 3)
+          (scaled (list.map (list 1 2 3) (lam (x) (* x factor)))))
+        (do
+          (io.print (str.join (list.map m2 str.from-int) " "))
+          (io.print (str.join ms " "))
+          (io.print (str.from-float sum))
+          (io.print (str.join (list.map scaled str.from-int) " "))
+          0)))))

@@ -1,0 +1,1 @@
+[{"args": ["b=3", "a=1", "bad", "c= 2", "d=x", "e=1"], "exit": 4, "stdout": "a e c b\ngot 7\nparsed\n7\nnone\ngot x\nnone\n"}, {"args": [], "exit": 0, "stdout": "\ngot 7\nparsed\n7\nnone\ngot x\nnone\n"}]

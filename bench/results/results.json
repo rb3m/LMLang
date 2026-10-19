@@ -1,0 +1,651 @@
+{
+ "equivalence": [
+  {
+   "cases": 5,
+   "disagree": [],
+   "task": "01-cart"
+  },
+  {
+   "cases": 4,
+   "disagree": [],
+   "task": "02-fizz"
+  },
+  {
+   "cases": 5,
+   "disagree": [],
+   "task": "03-stats"
+  },
+  {
+   "cases": 5,
+   "disagree": [],
+   "task": "04-primes"
+  },
+  {
+   "cases": 3,
+   "disagree": [],
+   "task": "05-collatz"
+  },
+  {
+   "cases": 5,
+   "disagree": [],
+   "task": "06-search"
+  },
+  {
+   "cases": 5,
+   "disagree": [],
+   "task": "07-bank"
+  },
+  {
+   "cases": 6,
+   "disagree": [],
+   "task": "08-grades"
+  },
+  {
+   "cases": 4,
+   "disagree": [],
+   "task": "09-perimeter"
+  },
+  {
+   "cases": 4,
+   "disagree": [],
+   "task": "10-roman"
+  },
+  {
+   "cases": 3,
+   "disagree": [],
+   "task": "11-dot"
+  },
+  {
+   "cases": 4,
+   "disagree": [],
+   "task": "12-gcd"
+  },
+  {
+   "cases": 3,
+   "disagree": [],
+   "task": "13-greet"
+  }
+ ],
+ "logic": [
+  {
+   "category": "wrong-constant",
+   "caught": false,
+   "caught_by_test": true,
+   "codes": [],
+   "id": "cart:wrong-constant"
+  },
+  {
+   "category": "off-by-one",
+   "caught": false,
+   "caught_by_test": true,
+   "codes": [],
+   "id": "primes:off-by-one"
+  },
+  {
+   "category": "swapped-word",
+   "caught": false,
+   "caught_by_test": true,
+   "codes": [],
+   "id": "fizz:swapped-word"
+  }
+ ],
+ "s1_s2": {
+  "functions": 37,
+  "s1_max": 0.07408458699971615,
+  "s1_median": 0.04428044280442804,
+  "s1_module_max": 1.298780487804878,
+  "s1_module_median": 0.5602240896358543,
+  "s2_max": 0.27898550724637683,
+  "s2_median": 0.10365853658536585,
+  "whole_tokens": 3523
+ },
+ "s3": [
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "cart:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "cart:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "fizz:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "fizz:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "stats:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "stats:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "primes:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "search:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "dot:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "bank:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "bank:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "grades:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "roman:unknown-fn"
+  },
+  {
+   "category": "unknown-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "greet:unknown-fn"
+  },
+  {
+   "category": "unknown-prelude",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "greet:unknown-prelude"
+  },
+  {
+   "category": "unknown-prelude",
+   "caught": true,
+   "codes": [
+    "E-FAILS-UNDECLARED",
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "stats:unknown-prelude"
+  },
+  {
+   "category": "unknown-prelude",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "search:unknown-prelude"
+  },
+  {
+   "category": "unknown-prelude",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "gcd:unknown-prelude"
+  },
+  {
+   "category": "unknown-prelude",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "dot:unknown-prelude"
+  },
+  {
+   "category": "unknown-module",
+   "caught": false,
+   "codes": [],
+   "id": "cart:unknown-module"
+  },
+  {
+   "category": "missing-use",
+   "caught": true,
+   "codes": [
+    "E-USE-MISSING"
+   ],
+   "id": "stats:missing-use"
+  },
+  {
+   "category": "missing-use",
+   "caught": true,
+   "codes": [
+    "E-USE-MISSING"
+   ],
+   "id": "fizz:missing-use"
+  },
+  {
+   "category": "unknown-field",
+   "caught": true,
+   "codes": [
+    "E-TYPE"
+   ],
+   "id": "cart:unknown-field"
+  },
+  {
+   "category": "unknown-field",
+   "caught": true,
+   "codes": [
+    "E-TYPE"
+   ],
+   "id": "bank:unknown-field"
+  },
+  {
+   "category": "unknown-type",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "cart:unknown-type"
+  },
+  {
+   "category": "unknown-variant",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "grades:unknown-variant"
+  },
+  {
+   "category": "unknown-variant",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "search:unknown-variant"
+  },
+  {
+   "category": "unknown-variant",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "perimeter:unknown-variant"
+  },
+  {
+   "category": "non-exhaustive",
+   "caught": true,
+   "codes": [
+    "E-MATCH-NONEXHAUSTIVE"
+   ],
+   "id": "grades:non-exhaustive"
+  },
+  {
+   "category": "unknown-error",
+   "caught": true,
+   "codes": [
+    "E-FAILS-UNDECLARED",
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "bank:unknown-error"
+  },
+  {
+   "category": "arity",
+   "caught": true,
+   "codes": [
+    "E-ARITY"
+   ],
+   "id": "bank:arity"
+  },
+  {
+   "category": "arity",
+   "caught": true,
+   "codes": [
+    "E-ARITY"
+   ],
+   "id": "cart:arity"
+  },
+  {
+   "category": "undeclared-fail",
+   "caught": true,
+   "codes": [
+    "E-FAILS-UNDECLARED"
+   ],
+   "id": "collatz:undeclared-fail"
+  },
+  {
+   "category": "undeclared-fail",
+   "caught": true,
+   "codes": [
+    "E-FAILS-UNDECLARED"
+   ],
+   "id": "bank:undeclared-fail"
+  },
+  {
+   "category": "undeclared-effect",
+   "caught": true,
+   "codes": [
+    "E-USE-MISSING"
+   ],
+   "id": "fizz:undeclared-effect"
+  },
+  {
+   "category": "undeclared-effect",
+   "caught": true,
+   "codes": [
+    "E-EFFECT-UNDECLARED"
+   ],
+   "id": "greet:undeclared-effect"
+  },
+  {
+   "category": "unknown-effect",
+   "caught": true,
+   "codes": [
+    "E-EFFECT-UNDECLARED",
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "greet:unknown-effect"
+  },
+  {
+   "category": "float",
+   "caught": true,
+   "codes": [
+    "E-TYPE"
+   ],
+   "id": "primes:float"
+  },
+  {
+   "category": "unknown-local-fn",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "roman:unknown-local-fn"
+  },
+  {
+   "category": "type-mismatch",
+   "caught": true,
+   "codes": [
+    "E-TYPE"
+   ],
+   "id": "cart:type-mismatch"
+  },
+  {
+   "category": "type-mismatch",
+   "caught": true,
+   "codes": [
+    "E-TYPE"
+   ],
+   "id": "fizz:type-mismatch"
+  },
+  {
+   "category": "type-mismatch",
+   "caught": true,
+   "codes": [
+    "E-TYPE"
+   ],
+   "id": "bank:type-mismatch"
+  },
+  {
+   "category": "unexported",
+   "caught": true,
+   "codes": [
+    "E-NAME-UNRESOLVED"
+   ],
+   "id": "stats:unexported"
+  }
+ ],
+ "s4": [
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "01-cart"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "02-fizz"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "03-stats"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "04-primes"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "05-collatz"
+  },
+  {
+   "first_try_errors": [
+    "E-USE-MISSING",
+    "E-USE-MISSING"
+   ],
+   "green_first_try": false,
+   "green_now": true,
+   "task": "06-search"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "07-bank"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "08-grades"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "09-perimeter"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "10-roman"
+  },
+  {
+   "first_try_errors": [
+    "E-USE-MISSING",
+    "E-USE-MISSING"
+   ],
+   "green_first_try": false,
+   "green_now": true,
+   "task": "11-dot"
+  },
+  {
+   "first_try_errors": [],
+   "green_first_try": true,
+   "green_now": true,
+   "task": "12-gcd"
+  },
+  {
+   "first_try_errors": [
+    "E-USE-MISSING"
+   ],
+   "green_first_try": false,
+   "green_now": true,
+   "task": "13-greet"
+  }
+ ],
+ "s5": [
+  {
+   "lm": 351,
+   "lm_merged": 289,
+   "py_bare": 108,
+   "py_full": 271,
+   "py_full_merged": 209,
+   "task": "01-cart"
+  },
+  {
+   "lm": 232,
+   "lm_merged": 197,
+   "py_bare": 88,
+   "py_full": 189,
+   "py_full_merged": 162,
+   "task": "02-fizz"
+  },
+  {
+   "lm": 297,
+   "lm_merged": 246,
+   "py_bare": 75,
+   "py_full": 207,
+   "py_full_merged": 168,
+   "task": "03-stats"
+  },
+  {
+   "lm": 283,
+   "lm_merged": 244,
+   "py_bare": 99,
+   "py_full": 213,
+   "py_full_merged": 185,
+   "task": "04-primes"
+  },
+  {
+   "lm": 167,
+   "lm_merged": 138,
+   "py_bare": 57,
+   "py_full": 130,
+   "py_full_merged": 108,
+   "task": "05-collatz"
+  },
+  {
+   "lm": 287,
+   "lm_merged": 248,
+   "py_bare": 103,
+   "py_full": 244,
+   "py_full_merged": 205,
+   "task": "06-search"
+  },
+  {
+   "lm": 444,
+   "lm_merged": 368,
+   "py_bare": 177,
+   "py_full": 404,
+   "py_full_merged": 304,
+   "task": "07-bank"
+  },
+  {
+   "lm": 357,
+   "lm_merged": 295,
+   "py_bare": 139,
+   "py_full": 314,
+   "py_full_merged": 256,
+   "task": "08-grades"
+  },
+  {
+   "lm": 272,
+   "lm_merged": 218,
+   "py_bare": 136,
+   "py_full": 321,
+   "py_full_merged": 238,
+   "task": "09-perimeter"
+  },
+  {
+   "lm": 276,
+   "lm_merged": 230,
+   "py_bare": 145,
+   "py_full": 202,
+   "py_full_merged": 157,
+   "task": "10-roman"
+  },
+  {
+   "lm": 164,
+   "lm_merged": 137,
+   "py_bare": 53,
+   "py_full": 131,
+   "py_full_merged": 108,
+   "task": "11-dot"
+  },
+  {
+   "lm": 267,
+   "lm_merged": 221,
+   "py_bare": 83,
+   "py_full": 205,
+   "py_full_merged": 175,
+   "task": "12-gcd"
+  },
+  {
+   "lm": 126,
+   "lm_merged": 106,
+   "py_bare": 41,
+   "py_full": 84,
+   "py_full_merged": 66,
+   "task": "13-greet"
+  }
+ ],
+ "s6": {
+  "approved": 6,
+  "fail": 0,
+  "guard": "OK",
+  "pass": 6,
+  "proposed": 0
+ },
+ "tasks": 13
+}

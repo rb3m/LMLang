@@ -1,0 +1,36 @@
+(module ok-basic
+  (purpose "Positive case exercising most features.")
+  (use list math)
+  (export area clamp classify safe-div total)
+  (type Item (rec (name Str) (price Int)))
+  (type Shape (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty))
+  (error Bad (why Str))
+  (fn area
+    (purpose "Area of a shape.")
+    (sig (s Shape) -> Int)
+    (example ((Rect 2 3)) => 6)
+    (example (Empty) => 0)
+    (body (match s ((Circle r) (* 3 (* r r))) ((Rect w h) (* w h)) (Empty 0))))
+  (fn clamp
+    (purpose "Limit to 0..10.")
+    (sig (n Int) -> Int)
+    (example (15) => 10)
+    (body (math.min (math.max n 0) 10)))
+  (fn classify
+    (purpose "Sign as text.")
+    (sig (n Int) -> Str)
+    (example (-4) => "neg")
+    (example (0) => "zero")
+    (example (3) => "pos")
+    (body (if (< n 0) "neg" (if (= n 0) "zero" "pos"))))
+  (fn safe-div
+    (purpose "Divide, 0 when divisor is zero.")
+    (sig (a Int) (b Int) -> Int)
+    (example (6 3) => 2)
+    (example (1 0) => 0)
+    (body (try (/ a b) (catch DivZero () 0))))
+  (fn total
+    (purpose "Sum item prices.")
+    (sig (items (List Item)) -> Int)
+    (example ((list (new Item (name "a") (price 5)) (new Item (name "b") (price 7)))) => 12)
+    (body (list.sum (list.map items (lam ((i Item)) (get i price)))))))

@@ -1,0 +1,1 @@
+[{"fn":"maximum","args":[[-5,-2,-9]],"want":-2},{"fn":"minimum","args":[[4]],"want":4},{"fn":"mean","args":[[-1,-2]],"want":-2},{"fn":"mean","args":[[10,20,31]],"want":20},{"fn":"spread","args":[[5,5]],"want":0}]

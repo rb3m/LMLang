@@ -1,0 +1,6 @@
+(module lambda-unresolved
+  (purpose "Untyped lambda whose types stay unresolved outside default-to-Int is E-TYPE.")
+  (fn test-unresolved
+    (purpose "p")
+    (sig -> Int)
+    (body (let ((f (lam (x) x))) 42))))

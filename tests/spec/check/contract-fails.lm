@@ -1,0 +1,8 @@
+(module contract-fails
+  (purpose "p")
+  (use list)
+  (fn f
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (list.nth xs 0) 0))
+    (body 1)))

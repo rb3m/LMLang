@@ -1,0 +1,624 @@
+(module ledger-summary
+  (purpose "Aggregate ledger transactions by category and month, and rank top expenses.")
+  (use ledger-model list)
+  (export
+    add-tx-to-categories
+    add-tx-to-months
+    build-summary
+    category-expenses
+    filter-by-category
+    filter-by-month
+    filter-expenses
+    filter-income
+    insert-tx-by-expense
+    sort-expenses-desc
+    sum-expenses
+    sum-income
+    sum-net
+    take-txs
+    top-expenses)
+  (fn add-tx-to-categories
+    (purpose "Update or append a CategoryTotal entry for transaction t.")
+    (sig
+      (cats (List ledger-model.CategoryTotal))
+      (t ledger-model.Tx)
+      ->
+      (List ledger-model.CategoryTotal))
+    (example
+      (
+        (list)
+        (new
+          ledger-model.Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Lunch")
+          (category "food")
+          (amount -1200)))
+      =>
+      (list
+        (new
+          ledger-model.CategoryTotal
+          (category "food")
+          (net -1200)
+          (expenses 1200)
+          (income 0)
+          (count 1))))
+    (example
+      (
+        (list
+          (new
+            ledger-model.CategoryTotal
+            (category "food")
+            (net -1200)
+            (expenses 1200)
+            (income 0)
+            (count 1)))
+        (new
+          ledger-model.Tx
+          (date "2026-01-02")
+          (month "2026-01")
+          (description "Dinner")
+          (category "food")
+          (amount -2500)))
+      =>
+      (list
+        (new
+          ledger-model.CategoryTotal
+          (category "food")
+          (net -3700)
+          (expenses 3700)
+          (income 0)
+          (count 2))))
+    (body
+      (let
+        (
+          (cat (get t category))
+          (amt (get t amount))
+          (exp (if (< amt 0) (- 0 amt) 0))
+          (inc (if (> amt 0) amt 0)))
+        (match
+          cats
+          (
+            (list)
+            (list
+              (new
+                ledger-model.CategoryTotal
+                (category cat)
+                (net amt)
+                (expenses exp)
+                (income inc)
+                (count 1))))
+          (
+            (cons head tail)
+            (if
+              (= (get head category) cat)
+              (cons
+                (new
+                  ledger-model.CategoryTotal
+                  (category cat)
+                  (net (+ (get head net) amt))
+                  (expenses (+ (get head expenses) exp))
+                  (income (+ (get head income) inc))
+                  (count (+ (get head count) 1)))
+                tail)
+              (cons head (add-tx-to-categories tail t))))))))
+  (fn add-tx-to-months
+    (purpose "Update or append a MonthTotal entry for transaction t.")
+    (sig
+      (months (List ledger-model.MonthTotal))
+      (t ledger-model.Tx)
+      ->
+      (List ledger-model.MonthTotal))
+    (example
+      (
+        (list)
+        (new
+          ledger-model.Tx
+          (date "2026-02-10")
+          (month "2026-02")
+          (description "Salary")
+          (category "income")
+          (amount 200000)))
+      =>
+      (list
+        (new
+          ledger-model.MonthTotal
+          (month "2026-02")
+          (net 200000)
+          (expenses 0)
+          (income 200000)
+          (count 1))))
+    (body
+      (let
+        (
+          (m (get t month))
+          (amt (get t amount))
+          (exp (if (< amt 0) (- 0 amt) 0))
+          (inc (if (> amt 0) amt 0)))
+        (match
+          months
+          (
+            (list)
+            (list
+              (new
+                ledger-model.MonthTotal
+                (month m)
+                (net amt)
+                (expenses exp)
+                (income inc)
+                (count 1))))
+          (
+            (cons head tail)
+            (if
+              (= (get head month) m)
+              (cons
+                (new
+                  ledger-model.MonthTotal
+                  (month m)
+                  (net (+ (get head net) amt))
+                  (expenses (+ (get head expenses) exp))
+                  (income (+ (get head income) inc))
+                  (count (+ (get head count) 1)))
+                tail)
+              (cons head (add-tx-to-months tail t))))))))
+  (fn build-summary
+    (purpose "Build a full SummaryReport from a ParseOutcome.")
+    (sig (outcome ledger-model.ParseOutcome) -> ledger-model.SummaryReport)
+    (example
+      (
+        (new
+          ledger-model.ParseOutcome
+          (txs
+            (list
+              (new
+                ledger-model.Tx
+                (date "2026-01-01")
+                (month "2026-01")
+                (description "Pay")
+                (category "salary")
+                (amount 100000))
+              (new
+                ledger-model.Tx
+                (date "2026-01-02")
+                (month "2026-01")
+                (description "Tacos")
+                (category "food")
+                (amount -1500))))
+          (errors (list))
+          (skipped-headers 1)))
+      =>
+      (new
+        ledger-model.SummaryReport
+        (by-category
+          (list
+            (new
+              ledger-model.CategoryTotal
+              (category "salary")
+              (net 100000)
+              (expenses 0)
+              (income 100000)
+              (count 1))
+            (new
+              ledger-model.CategoryTotal
+              (category "food")
+              (net -1500)
+              (expenses 1500)
+              (income 0)
+              (count 1))))
+        (by-month
+          (list
+            (new
+              ledger-model.MonthTotal
+              (month "2026-01")
+              (net 98500)
+              (expenses 1500)
+              (income 100000)
+              (count 2))))
+        (total-net 98500)
+        (total-expenses 1500)
+        (total-income 100000)
+        (tx-count 2)
+        (bad-rows 0)))
+    (body
+      (let
+        (
+          (txs (get outcome txs))
+          (cats (list.fold txs (list) add-tx-to-categories))
+          (months (list.fold txs (list) add-tx-to-months))
+          (net (sum-net txs))
+          (exp (sum-expenses txs))
+          (inc (sum-income txs)))
+        (new
+          ledger-model.SummaryReport
+          (by-category cats)
+          (by-month months)
+          (total-net net)
+          (total-expenses exp)
+          (total-income inc)
+          (tx-count (len txs))
+          (bad-rows (len (get outcome errors)))))))
+  (fn category-expenses
+    (purpose "Look up total positive expenses in cents for a given category name.")
+    (sig (cats (List ledger-model.CategoryTotal)) (cat Str) -> ledger-model.Cents)
+    (example
+      (
+        (list
+          (new
+            ledger-model.CategoryTotal
+            (category "food")
+            (net -2500)
+            (expenses 2500)
+            (income 0)
+            (count 1)))
+        "food")
+      =>
+      2500)
+    (example ((list) "travel") => 0)
+    (body
+      (match
+        cats
+        ((list) 0)
+        ((cons h t) (if (= (get h category) cat) (get h expenses) (category-expenses t cat))))))
+  (fn filter-by-category
+    (purpose "Keep only transactions matching the given category.")
+    (sig (txs (List ledger-model.Tx)) (cat Str) -> (List ledger-model.Tx))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "A")
+            (category "food")
+            (amount -100))
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "B")
+            (category "rent")
+            (amount -500)))
+        "food")
+      =>
+      (list
+        (new
+          ledger-model.Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "A")
+          (category "food")
+          (amount -100))))
+    (body (list.filter txs (lam ((t ledger-model.Tx)) (= (get t category) cat)))))
+  (fn filter-by-month
+    (purpose "Keep only transactions in the given YYYY-MM month.")
+    (sig (txs (List ledger-model.Tx)) (m Str) -> (List ledger-model.Tx))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "A")
+            (category "food")
+            (amount -100))
+          (new
+            ledger-model.Tx
+            (date "2026-02-01")
+            (month "2026-02")
+            (description "B")
+            (category "food")
+            (amount -200)))
+        "2026-02")
+      =>
+      (list
+        (new
+          ledger-model.Tx
+          (date "2026-02-01")
+          (month "2026-02")
+          (description "B")
+          (category "food")
+          (amount -200))))
+    (body (list.filter txs (lam ((t ledger-model.Tx)) (= (get t month) m)))))
+  (fn filter-expenses
+    (purpose "Keep only expense transactions (amount < 0).")
+    (sig (txs (List ledger-model.Tx)) -> (List ledger-model.Tx))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "Salary")
+            (category "income")
+            (amount 50000))
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "Coffee")
+            (category "food")
+            (amount -450))))
+      =>
+      (list
+        (new
+          ledger-model.Tx
+          (date "2026-01-02")
+          (month "2026-01")
+          (description "Coffee")
+          (category "food")
+          (amount -450))))
+    (body (list.filter txs ledger-model.is-expense)))
+  (fn filter-income
+    (purpose "Keep only income transactions (amount > 0).")
+    (sig (txs (List ledger-model.Tx)) -> (List ledger-model.Tx))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "Salary")
+            (category "income")
+            (amount 50000))
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "Coffee")
+            (category "food")
+            (amount -450))))
+      =>
+      (list
+        (new
+          ledger-model.Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Salary")
+          (category "income")
+          (amount 50000))))
+    (body (list.filter txs ledger-model.is-income)))
+  (fn insert-tx-by-expense
+    (purpose "Insert transaction t into a descending-expense sorted list of transactions.")
+    (sig (sorted (List ledger-model.Tx)) (t ledger-model.Tx) -> (List ledger-model.Tx))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "Small")
+            (category "misc")
+            (amount -200)))
+        (new
+          ledger-model.Tx
+          (date "2026-01-02")
+          (month "2026-01")
+          (description "Big")
+          (category "misc")
+          (amount -900)))
+      =>
+      (list
+        (new
+          ledger-model.Tx
+          (date "2026-01-02")
+          (month "2026-01")
+          (description "Big")
+          (category "misc")
+          (amount -900))
+        (new
+          ledger-model.Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Small")
+          (category "misc")
+          (amount -200))))
+    (body
+      (match
+        sorted
+        ((list) (list t))
+        (
+          (cons h tail)
+          (if
+            (ledger-model.compare-tx-expense t h)
+            (cons t sorted)
+            (cons h (insert-tx-by-expense tail t)))))))
+  (fn sort-expenses-desc
+    (purpose "Sort expense transactions from largest expense magnitude to smallest.")
+    (sig (txs (List ledger-model.Tx)) -> (List ledger-model.Tx))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "Snack")
+            (category "food")
+            (amount -300))
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "Rent")
+            (category "housing")
+            (amount -120000))))
+      =>
+      (list
+        (new
+          ledger-model.Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Rent")
+          (category "housing")
+          (amount -120000))
+        (new
+          ledger-model.Tx
+          (date "2026-01-02")
+          (month "2026-01")
+          (description "Snack")
+          (category "food")
+          (amount -300))))
+    (body (list.fold (filter-expenses txs) (list) insert-tx-by-expense)))
+  (fn sum-expenses
+    (purpose "Total positive expense cents across all expense transactions in txs.")
+    (sig (txs (List ledger-model.Tx)) -> ledger-model.Cents)
+    (ensures (>= result 0))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "Pay")
+            (category "income")
+            (amount 5000))
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "Tea")
+            (category "food")
+            (amount -350))))
+      =>
+      350)
+    (body (list.sum (list.map txs ledger-model.tx-abs-expense))))
+  (fn sum-income
+    (purpose "Total positive income cents across all income transactions in txs.")
+    (sig (txs (List ledger-model.Tx)) -> ledger-model.Cents)
+    (ensures (>= result 0))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "Pay")
+            (category "income")
+            (amount 5000))
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "Tea")
+            (category "food")
+            (amount -350))))
+      =>
+      5000)
+    (body
+      (list.sum
+        (list.map txs (lam ((t ledger-model.Tx)) (if (> (get t amount) 0) (get t amount) 0))))))
+  (fn sum-net
+    (purpose "Net balance in cents across all transactions in txs.")
+    (sig (txs (List ledger-model.Tx)) -> ledger-model.Cents)
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "Pay")
+            (category "income")
+            (amount 5000))
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "Tea")
+            (category "food")
+            (amount -350))))
+      =>
+      4650)
+    (body (list.sum (list.map txs (lam ((t ledger-model.Tx)) (get t amount))))))
+  (fn take-txs
+    (purpose "Take at most n transactions from the front of xs.")
+    (sig (xs (List ledger-model.Tx)) (n Int) -> (List ledger-model.Tx))
+    (example ((list) 3) => (list))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "A")
+            (category "food")
+            (amount -100))
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "B")
+            (category "food")
+            (amount -200)))
+        1)
+      =>
+      (list
+        (new
+          ledger-model.Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "A")
+          (category "food")
+          (amount -100))))
+    (body
+      (if (<= n 0) (list) (match xs ((list) (list)) ((cons h t) (cons h (take-txs t (- n 1))))))))
+  (fn top-expenses
+    (purpose "Return the largest n expense transactions sorted by magnitude descending.")
+    (sig (txs (List ledger-model.Tx)) (n Int) -> (List ledger-model.Tx))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-01-03")
+            (month "2026-01")
+            (description "Gum")
+            (category "food")
+            (amount -150))
+          (new
+            ledger-model.Tx
+            (date "2026-01-01")
+            (month "2026-01")
+            (description "Laptop")
+            (category "tech")
+            (amount -199900))
+          (new
+            ledger-model.Tx
+            (date "2026-01-02")
+            (month "2026-01")
+            (description "Salary")
+            (category "income")
+            (amount 300000))
+          (new
+            ledger-model.Tx
+            (date "2026-01-04")
+            (month "2026-01")
+            (description "Desk")
+            (category "office")
+            (amount -45000)))
+        2)
+      =>
+      (list
+        (new
+          ledger-model.Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Laptop")
+          (category "tech")
+          (amount -199900))
+        (new
+          ledger-model.Tx
+          (date "2026-01-04")
+          (month "2026-01")
+          (description "Desk")
+          (category "office")
+          (amount -45000))))
+    (body (take-txs (sort-expenses-desc txs) n))))

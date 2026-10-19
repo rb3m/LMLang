@@ -1,0 +1,7 @@
+(module letq-effect
+  (purpose "p")
+  (use io)
+  (fn f
+    (purpose "p")
+    (sig (x (Opt Int)) -> (Opt Int))
+    (body (let? ((y x) (u (Some (io.print "x")))) (Some y)))))

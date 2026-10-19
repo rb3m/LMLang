@@ -1,0 +1,6 @@
+(module dup-pair-local
+  (purpose "Local named pair collides with prelude name and suggests p.")
+  (fn f
+    (purpose "p")
+    (sig (x Int) -> Int)
+    (body (let ((pair x)) pair))))

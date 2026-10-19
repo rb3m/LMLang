@@ -1,0 +1,75 @@
+{
+ "01-cart": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "02-fizz": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "03-stats": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "04-primes": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "05-collatz": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "06-search": {
+  "check_errors": [
+   "E-USE-MISSING",
+   "E-USE-MISSING"
+  ],
+  "test_errors": null,
+  "green_first_try": false
+ },
+ "07-bank": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "08-grades": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "09-perimeter": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "10-roman": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "11-dot": {
+  "check_errors": [
+   "E-USE-MISSING",
+   "E-USE-MISSING"
+  ],
+  "test_errors": null,
+  "green_first_try": false
+ },
+ "12-gcd": {
+  "check_errors": [],
+  "test_errors": [],
+  "green_first_try": true
+ },
+ "13-greet": {
+  "check_errors": [
+   "E-USE-MISSING"
+  ],
+  "test_errors": null,
+  "green_first_try": false
+ }
+}

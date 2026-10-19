@@ -1,0 +1,14 @@
+(module const-fn-init
+  (purpose "Const x calls fn whose body reads const y with names ordered so naive order is wrong.")
+  (const a (purpose "Calls f reading z.") (type Int) (value (f 1)))
+  (const z (purpose "Base const.") (type Int) (value 41))
+  (fn f
+    (purpose "Read z.")
+    (sig (n Int) -> Int)
+    (example (1) => 42)
+    (body (+ n z)))
+  (fn main
+    (purpose "Return a.")
+    (sig -> Int)
+    (example () => 42)
+    (body a)))

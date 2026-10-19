@@ -1,0 +1,5 @@
+[{"fn":"line-total","args":[{"$new":"Item","price":7,"qty":0}],"want":0},
+ {"fn":"subtotal","args":[[]],"want":0},
+ {"fn":"total","args":[[{"$new":"Item","price":1000,"qty":6}]],"want":5700},
+ {"fn":"total","args":[[{"$new":"Item","price":4000,"qty":1},{"$new":"Item","price":999,"qty":1}]],"want":4999},
+ {"fn":"discount-percent","args":[7500],"want":5}]

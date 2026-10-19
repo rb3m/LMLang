@@ -1,0 +1,35 @@
+(module order
+  (purpose "Effects and failures happen left to right, also inside nested forms.")
+  (use io list str)
+  (type TwoInts (rec (left Int) (right Int)))
+  (error Stop (at Int))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff io.out)
+    (body
+      (let
+        (
+          (xs (list (say 1) (if (> (say 2) 0) (say 3) (say 4)) (say 5)))
+          (p (new TwoInts (right (say 6)) (left (say 7))))
+          (r (try (list (say 8) (stop 9) (say 10)) (catch Stop (at) (list at))))
+          (u
+            (io.print
+              (str.join (list (show xs) (show (list (get p left) (get p right))) (show r)) ","))))
+        (len xs))))
+  (fn say
+    (purpose "Print n and return it.")
+    (sig (n Int) -> Int)
+    (eff io.out)
+    (body (let ((u (io.print (str.from-int n)))) n)))
+  (fn show
+    (purpose "Space-separated ints.")
+    (sig (xs (List Int)) -> Str)
+    (example ((list 1 2)) => "1 2")
+    (body (str.join (list.map xs str.from-int) " ")))
+  (fn stop
+    (purpose "Print n, then fail.")
+    (sig (n Int) -> Int)
+    (eff io.out)
+    (fails Stop)
+    (body (let ((u (io.print (str.from-int n)))) (fail Stop n)))))

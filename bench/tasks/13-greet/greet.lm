@@ -1,0 +1,13 @@
+(module greet
+  (purpose "Greetings, pure and printed.")
+  (use io str)
+  (fn announce
+    (purpose "Print one greeting per name.")
+    (sig (names (List Str)) -> Unit)
+    (eff io.out)
+    (body (for (n names) (io.print (greeting n)))))
+  (fn greeting
+    (purpose "Hello line for one name.")
+    (sig (name Str) -> Str)
+    (example ("Ana") => "Hello, Ana")
+    (body (str.concat "Hello, " name))))

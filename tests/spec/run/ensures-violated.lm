@@ -1,0 +1,8 @@
+(module ensures-violated
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (ensures (> result 10))
+    (example (1) => 1)
+    (body a)))

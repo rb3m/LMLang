@@ -1,0 +1,5 @@
+(module purpose-missing
+  (purpose "p")
+  (fn f
+    (sig (a Int) -> Int)
+    (body a)))

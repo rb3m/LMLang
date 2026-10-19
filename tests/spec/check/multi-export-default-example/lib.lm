@@ -1,0 +1,16 @@
+(module lib
+  (purpose "Library with no export clause to test example rule.")
+  (use io)
+  (fn used-pure
+    (purpose "Used pure function lacking example.")
+    (sig (x Int) -> Int)
+    (body x))
+  (fn unused-pure
+    (purpose "Unused pure helper lacking example.")
+    (sig (x Int) -> Int)
+    (body x))
+  (fn used-eff
+    (purpose "Used effectful function lacking example.")
+    (sig (x Int) -> Unit)
+    (eff io.out)
+    (body (io.print "eff"))))

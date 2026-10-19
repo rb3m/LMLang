@@ -1,0 +1,17 @@
+(module letq-ok
+  (purpose "p")
+  (use io list str)
+  (error Bad (n Int))
+  (fn f
+    (purpose "p")
+    (sig (xs (List Str)) -> (Opt Int))
+    (eff io.out)
+    (fails Bad)
+    (body
+      (let?
+        (
+          (s (list.at xs 0))
+          (n (str.to-int s))
+          (u (Some (io.print s)))
+          (m (if (< n 0) (fail Bad n) (Some n))))
+        (Some (+ n m))))))

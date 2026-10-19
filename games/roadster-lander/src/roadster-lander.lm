@@ -1,0 +1,242 @@
+(module roadster-lander
+  (purpose "Interactive menus and telemetry for the Roadster Lander parking game.")
+  (use io roadster-format roadster-grade roadster-levels roadster-physics str)
+  (export main play-scripted turn-report)
+  (fn choose-gravity
+    (purpose "Choose Moon, Mars or Earth gravity independently of the parking spot.")
+    (sig (state roadster-physics.State) -> Int)
+    (eff io.in io.out)
+    (fails io.IoError)
+    (body
+      (do
+        (io.print
+          "Gravity: 1 Moon (1.62 m/s^2, easy), 2 Mars (3.71 m/s^2, medium), 3 Earth (9.81 m/s^2, hard)")
+        (match
+          (io.read-line)
+          (None (goodbye))
+          (
+            (Some input)
+            (match
+              (str.to-int (str.trim input))
+              (None (do (io.print "Choose 1, 2 or 3.") (choose-gravity state)))
+              (
+                (Some id)
+                (match
+                  (roadster-levels.gravity id)
+                  (None (do (io.print "Choose 1, 2 or 3.") (choose-gravity state)))
+                  ((Some gravity) (fly state gravity 1))))))))))
+  (fn choose-level
+    (purpose "Choose one of three parking spots, retrying malformed selections.")
+    (sig -> Int)
+    (eff io.in io.out)
+    (fails io.IoError)
+    (body
+      (do
+        (io.print "Parking spot: 1 Street lot, 2 Garage rooftop, 3 Downtown spot")
+        (match
+          (io.read-line)
+          (None (goodbye))
+          (
+            (Some input)
+            (match
+              (str.to-int (str.trim input))
+              (None (do (io.print "Choose 1, 2 or 3.") (choose-level)))
+              (
+                (Some id)
+                (match
+                  (roadster-levels.level id)
+                  (None (do (io.print "Choose 1, 2 or 3.") (choose-level)))
+                  ((Some state) (choose-gravity state))))))))))
+  (fn end-text
+    (purpose "Describe the final parking result with SI numbers and completed turns.")
+    (sig (state roadster-physics.State) (turns Int) -> Str)
+    (example
+      ((new roadster-physics.State (time 12.34) (altitude 0.0) (speed 0.56) (fuel 98.76)) 2)
+      =>
+      "Perfect parking, right between the lines! Impact speed: 0.6 m/s | fuel left: 98.8 kg | time 12.3 s | turns 2")
+    (body
+      (str.join
+        (list
+          (roadster-grade.grade (get state speed))
+          " Impact speed: "
+          (roadster-format.decimal (get state speed))
+          " m/s | fuel left: "
+          (roadster-format.decimal (get state fuel))
+          " kg | time "
+          (roadster-format.decimal (get state time))
+          " s | turns "
+          (str.from-int turns))
+        "")))
+  (fn finish
+    (purpose "Print the shared final parking report.")
+    (sig (state roadster-physics.State) (turns Int) -> Int)
+    (eff io.out)
+    (body (do (io.print (end-text state turns)) 0)))
+  (fn fly
+    (purpose "Show telemetry and ask for the next ten-second burn.")
+    (sig (state roadster-physics.State) (gravity Float) (turn Int) -> Int)
+    (eff io.in io.out)
+    (fails io.IoError)
+    (body
+      (do
+        (telemetry state turn)
+        (if (<= (get state altitude) 0.0) (finish state (- turn 1)) (read-burn state gravity turn)))))
+  (fn goodbye
+    (purpose "End the parking session politely when input reaches EOF.")
+    (sig -> Int)
+    (eff io.out)
+    (body (do (io.print "Input ended. Roadster parking session closed.") 0)))
+  (fn main
+    (purpose "Start the Roadster Lander game, returning zero at EOF and after landing.")
+    (sig -> Int)
+    (eff io.in io.out)
+    (body
+      (do
+        (io.print "ROADSTER LANDER - vertical parking, interplanetary style.")
+        (try
+          (choose-level)
+          (catch io.IoError (message) (do (io.print (str.concat "Input error: " message)) 0))))))
+  (fn play-scripted
+    (purpose "Play one burn per turn, then coast to touchdown; report the final parking result.")
+    (sig (level-id Int) (gravity-id Int) (burns (List Float)) -> Str)
+    (example (0 1 (list)) => "Invalid parking spot or gravity.")
+    (example (1 0 (list)) => "Invalid parking spot or gravity.")
+    (example
+      (1 1 (list))
+      =>
+      "New underground parking level installed. Impact speed: 54.7 m/s | fuel left: 1200.0 kg | time 21.4 s | turns 3")
+    (body
+      (match
+        (let?
+          ((state (roadster-levels.level level-id)) (gravity (roadster-levels.gravity gravity-id)))
+          (Some (script-flight state gravity burns 0)))
+        (None "Invalid parking spot or gravity.")
+        ((Some report) report))))
+  (fn read-burn
+    (purpose "Re-prompt invalid burns without advancing the simulation clock.")
+    (sig (state roadster-physics.State) (gravity Float) (turn Int) -> Int)
+    (eff io.in io.out)
+    (fails io.IoError)
+    (body
+      (do
+        (io.print "Burn rate in kg/s (0 to 12; each turn is 10 s):")
+        (match
+          (io.read-line)
+          (None (goodbye))
+          (
+            (Some input)
+            (match
+              (str.to-float (str.trim input))
+              (None
+                (do
+                  (io.print "NOT POSSIBLE: enter a burn rate from 0 to 12 kg/s.")
+                  (read-burn state gravity turn)))
+              (
+                (Some burn)
+                (if
+                  (and (>= burn 0.0) (<= burn roadster-physics.max-burn))
+                  (fly (roadster-physics.step state burn gravity) gravity (+ turn 1))
+                  (do
+                    (io.print "NOT POSSIBLE: enter a burn rate from 0 to 12 kg/s.")
+                    (read-burn state gravity turn))))))))))
+  (fn script-flight
+    (purpose "Consume scripted burns and count completed turns through first contact.")
+    (sig (state roadster-physics.State) (gravity Float) (burns (List Float)) (turns Int) -> Str)
+    (example
+      ((new roadster-physics.State (time 0.0) (altitude 1.0) (speed 0.0) (fuel 0.0)) 2.0 (list) 0)
+      =>
+      "Nice parking. Your coffee almost stayed in its cup. Impact speed: 2.0 m/s | fuel left: 0.0 kg | time 1.0 s | turns 1")
+    (example
+      (
+        (new roadster-physics.State (time 0.0) (altitude 1.0) (speed 0.0) (fuel 0.0))
+        2.0
+        (list 13.0)
+        0)
+      =>
+      "Invalid burn: choose 0 to 12 kg/s.")
+    (body
+      (if
+        (<= (get state altitude) 0.0)
+        (end-text state turns)
+        (match
+          burns
+          (
+            (list)
+            (script-flight (roadster-physics.step state 0.0 gravity) gravity (list) (+ turns 1)))
+          (
+            (cons burn rest)
+            (if
+              (and (>= burn 0.0) (<= burn roadster-physics.max-burn))
+              (script-flight (roadster-physics.step state burn gravity) gravity rest (+ turns 1))
+              "Invalid burn: choose 0 to 12 kg/s."))))))
+  (fn state-report
+    (purpose "Describe a turn with SI numbers and direction in words.")
+    (sig (state roadster-physics.State) -> Str)
+    (example
+      ((new roadster-physics.State (time 10.0) (altitude 100.26) (speed -2.34) (fuel 50.0)))
+      =>
+      "airborne at 10.0 s: altitude 100.3 m, rising 2.3 m/s, fuel 50.0 kg")
+    (example
+      ((new roadster-physics.State (time 12.34) (altitude 0.0) (speed 0.56) (fuel 98.76)))
+      =>
+      "touchdown at 12.3 s, 0.6 m/s, fuel 98.8 kg")
+    (body
+      (str.join
+        (list
+          (if (<= (get state altitude) 0.0) "touchdown at " "airborne at ")
+          (roadster-format.decimal (get state time))
+          (if
+            (<= (get state altitude) 0.0)
+            (str.join (list " s, " (roadster-format.decimal (get state speed)) " m/s") "")
+            (str.join
+              (list
+                " s: altitude "
+                (roadster-format.decimal (get state altitude))
+                " m, "
+                (roadster-format.direction (get state speed)))
+              ""))
+          ", fuel "
+          (roadster-format.decimal (get state fuel))
+          " kg")
+        "")))
+  (fn telemetry
+    (purpose "Print the current turn and state in SI units.")
+    (sig (state roadster-physics.State) (turn Int) -> Unit)
+    (eff io.out)
+    (body
+      (io.print
+        (str.join
+          (list
+            "Turn "
+            (str.from-int turn)
+            " | time "
+            (roadster-format.decimal (get state time))
+            " s | altitude "
+            (roadster-format.decimal (get state altitude))
+            " m | "
+            (roadster-format.direction (get state speed))
+            " | fuel "
+            (roadster-format.decimal (get state fuel))
+            " kg")
+          ""))))
+  (fn turn-report
+    (purpose "Show first contact or the airborne state after one ten-second burn.")
+    (sig (altitude Float) (speed Float) (fuel Float) (burn Float) (gravity-id Int) -> Str)
+    (example (490.5 0.0 0.0 0.0 3) => "touchdown at 10.0 s, 98.1 m/s, fuel 0.0 kg")
+    (example (490.5 0.0 0.0 0.0 3) => "touchdown at 10.0 s, 98.1 m/s, fuel 0.0 kg")
+    (example
+      (1000.0 0.0 1.0 12.0 3)
+      =>
+      "airborne at 10.0 s: altitude 539.4 m, falling 95.1 m/s, fuel 0.0 kg")
+    (example (1.0 10.0 1000.0 12.0 1) => "touchdown at 0.1 s, 8.2 m/s, fuel 998.7 kg")
+    (body
+      (match
+        (roadster-levels.gravity gravity-id)
+        (None "Invalid gravity.")
+        (
+          (Some gravity)
+          (if
+            (and (>= fuel 0.0) (>= burn 0.0) (<= burn roadster-physics.max-burn))
+            (state-report
+              (roadster-physics.step (roadster-physics.make 0.0 altitude speed fuel) burn gravity))
+            "Invalid fuel or burn."))))))

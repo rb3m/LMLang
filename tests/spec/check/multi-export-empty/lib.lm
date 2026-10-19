@@ -1,0 +1,10 @@
+(module lib
+  (purpose "Library with empty export clause.")
+  (export)
+  (type Secret Int)
+  (error SecretErr (msg Str))
+  (const hidden-val (purpose "Hidden.") (type Int) (value 42))
+  (fn hidden-fn
+    (purpose "Hidden.")
+    (sig (x Int) -> Int)
+    (body x)))

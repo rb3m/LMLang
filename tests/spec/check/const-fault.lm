@@ -1,0 +1,3 @@
+(module const-fault
+  (purpose "Check-time fault in const.")
+  (const bad (purpose "bad") (type Int) (value (+ 9223372036854775807 1))))

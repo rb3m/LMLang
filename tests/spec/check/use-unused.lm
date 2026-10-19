@@ -1,0 +1,7 @@
+(module use-unused
+  (purpose "p")
+  (use list)
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body a)))

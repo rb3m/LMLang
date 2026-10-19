@@ -1,0 +1,7 @@
+[
+  {
+    "args": [],
+    "exit": 0,
+    "stdout": "alpha\nbeta\ngamma\nnum 1\nnum 2\ncaught 3\ncap:x\ncap:y\ncap:z\n"
+  }
+]

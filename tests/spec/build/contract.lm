@@ -1,0 +1,15 @@
+(module contract
+  (purpose "Contracts are checked in binaries unless built with --no-contracts.")
+  (use io str)
+  (fn half
+    (purpose "Half of an even number.")
+    (sig (n Int) -> Int)
+    (requires (= (mod n 2) 0))
+    (ensures (= (* result 2) n))
+    (example (4) => 2)
+    (body (/ n 2)))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Unit)
+    (eff io.out)
+    (body (io.print (str.from-int (half 7))))))

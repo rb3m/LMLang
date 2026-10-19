@@ -1,0 +1,16 @@
+(module map-key-generic
+  (purpose "A type variable used as a key must be a key in the signature; calls check instances.")
+  (use set)
+  (fn hidden
+    (purpose "a is not a Set element in the signature, so callers could pass anything.")
+    (sig (x a) -> Int)
+    (body (set.size (set.add (setof) x))))
+  (fn lists
+    (purpose "An instance that is not a key type.")
+    (sig -> Int)
+    (body (set.size (set.from-list (list (list 1))))))
+  (fn uniq
+    (purpose "An example instantiating the element type with a list.")
+    (sig (xs (List a)) -> (Set a))
+    (example ((list (list 1))) => (setof))
+    (body (set.from-list xs))))

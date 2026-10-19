@@ -1,0 +1,382 @@
+(module ledger-model
+  (purpose "Core personal-finance ledger types, money formatting, and date helpers.")
+  (use list math str)
+  (export
+    BudgetRule
+    BudgetStatus
+    CategoryTotal
+    Cents
+    DateParts
+    MonthTotal
+    ParseOutcome
+    RowError
+    SummaryReport
+    Tx
+    abs-cents
+    add-cents
+    clamp-nonneg
+    compare-tx-expense
+    date-month-key
+    format-cents
+    format-signed-cents
+    is-expense
+    is-income
+    is-leap-year
+    is-valid-category
+    is-valid-day-for-month
+    is-valid-month
+    is-valid-year
+    make-tx
+    month-name
+    negate-cents
+    pad-left
+    pad-right
+    percent-used
+    sub-cents
+    tx-abs-expense)
+  (type BudgetRule (rec (category Str) (limit Int)))
+  (type
+    BudgetStatus
+    (rec (category Str) (limit Int) (spent Int) (remaining Int) (over Bool) (pct Int)))
+  (type CategoryTotal (rec (category Str) (net Int) (expenses Int) (income Int) (count Int)))
+  (type Cents Int)
+  (type DateParts (rec (year Int) (month Int) (day Int) (month-key Str)))
+  (type MonthTotal (rec (month Str) (net Int) (expenses Int) (income Int) (count Int)))
+  (type ParseOutcome (rec (txs (List Tx)) (errors (List RowError)) (skipped-headers Int)))
+  (type RowError (rec (line-no Int) (raw Str) (reason Str)))
+  (type
+    SummaryReport
+    (rec
+      (by-category (List CategoryTotal))
+      (by-month (List MonthTotal))
+      (total-net Int)
+      (total-expenses Int)
+      (total-income Int)
+      (tx-count Int)
+      (bad-rows Int)))
+  (type Tx (rec (date Str) (month Str) (description Str) (category Str) (amount Int)))
+  (fn abs-cents
+    (purpose "Absolute value of a Cents amount.")
+    (sig (c Cents) -> Cents)
+    (example (-450) => 450)
+    (example (0) => 0)
+    (example (1200) => 1200)
+    (body (math.abs c)))
+  (fn add-cents
+    (purpose "Add two Cents values.")
+    (sig (a Cents) (b Cents) -> Cents)
+    (example (100 250) => 350)
+    (example (500 -200) => 300)
+    (body (+ a b)))
+  (fn clamp-nonneg
+    (purpose "Clamp an integer to at least zero.")
+    (sig (n Int) -> Int)
+    (ensures (>= result 0))
+    (example (-50) => 0)
+    (example (0) => 0)
+    (example (75) => 75)
+    (body (if (< n 0) 0 n)))
+  (fn compare-tx-expense
+    (purpose
+      "Return true if transaction a is a strictly larger or tie-broken earlier expense than b.")
+    (sig (a Tx) (b Tx) -> Bool)
+    (example
+      (
+        (new
+          Tx
+          (date "2026-03-01")
+          (month "2026-03")
+          (description "Rent")
+          (category "housing")
+          (amount -150000))
+        (new
+          Tx
+          (date "2026-03-02")
+          (month "2026-03")
+          (description "Coffee")
+          (category "food")
+          (amount -450)))
+      =>
+      true)
+    (example
+      (
+        (new
+          Tx
+          (date "2026-03-02")
+          (month "2026-03")
+          (description "Coffee")
+          (category "food")
+          (amount -450))
+        (new
+          Tx
+          (date "2026-03-01")
+          (month "2026-03")
+          (description "Rent")
+          (category "housing")
+          (amount -150000)))
+      =>
+      false)
+    (body
+      (let
+        ((ea (tx-abs-expense a)) (eb (tx-abs-expense b)))
+        (if
+          (!= ea eb)
+          (> ea eb)
+          (if
+            (!= (get a date) (get b date))
+            (< (get a date) (get b date))
+            (< (get a description) (get b description)))))))
+  (fn date-month-key
+    (purpose "Build YYYY-MM string from year and month integers.")
+    (sig (year Int) (month Int) -> Str)
+    (requires (>= year 1000))
+    (requires (<= year 9999))
+    (requires (>= month 1))
+    (requires (<= month 12))
+    (example (2026 3) => "2026-03")
+    (example (2026 11) => "2026-11")
+    (body
+      (let
+        (
+          (ys (str.from-int year))
+          (ms (if (< month 10) (str.concat "0" (str.from-int month)) (str.from-int month))))
+        (str.concat (str.concat ys "-") ms))))
+  (fn format-cents
+    (purpose "Format a Cents integer as dollars.cents string like 12.34 or -0.05.")
+    (sig (c Cents) -> Str)
+    (example (0) => "0.00")
+    (example (5) => "0.05")
+    (example (1234) => "12.34")
+    (example (-5) => "-0.05")
+    (example (-12345) => "-123.45")
+    (body
+      (let
+        (
+          (neg (< c 0))
+          (mag (if (< c 0) (- 0 c) c))
+          (dollars (/ mag 100))
+          (rem (mod mag 100))
+          (rem-str (if (< rem 10) (str.concat "0" (str.from-int rem)) (str.from-int rem)))
+          (base (str.concat (str.concat (str.from-int dollars) ".") rem-str)))
+        (if neg (str.concat "-" base) base))))
+  (fn format-signed-cents
+    (purpose "Format Cents with explicit + for positive amounts.")
+    (sig (c Cents) -> Str)
+    (example (1250) => "+12.50")
+    (example (0) => "0.00")
+    (example (-450) => "-4.50")
+    (body (if (> c 0) (str.concat "+" (format-cents c)) (format-cents c))))
+  (fn is-expense
+    (purpose "True when a transaction has a negative amount.")
+    (sig (t Tx) -> Bool)
+    (example
+      (
+        (new
+          Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Groceries")
+          (category "food")
+          (amount -2500)))
+      =>
+      true)
+    (example
+      (
+        (new
+          Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Salary")
+          (category "income")
+          (amount 300000)))
+      =>
+      false)
+    (body (< (get t amount) 0)))
+  (fn is-income
+    (purpose "True when a transaction has a positive amount.")
+    (sig (t Tx) -> Bool)
+    (example
+      (
+        (new
+          Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Salary")
+          (category "income")
+          (amount 300000)))
+      =>
+      true)
+    (example
+      (
+        (new
+          Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Groceries")
+          (category "food")
+          (amount -2500)))
+      =>
+      false)
+    (body (> (get t amount) 0)))
+  (fn is-leap-year
+    (purpose "True if year is a Gregorian leap year.")
+    (sig (year Int) -> Bool)
+    (example (2024) => true)
+    (example (2026) => false)
+    (example (2000) => true)
+    (example (1900) => false)
+    (body (or (= (mod year 400) 0) (and (= (mod year 4) 0) (!= (mod year 100) 0)))))
+  (fn is-valid-category
+    (purpose "True when a category name is non-empty after trimming.")
+    (sig (cat Str) -> Bool)
+    (example ("food") => true)
+    (example ("   ") => false)
+    (body (> (str.length (str.trim cat)) 0)))
+  (fn is-valid-day-for-month
+    (purpose "Check whether day is valid for the given year and month.")
+    (sig (year Int) (month Int) (day Int) -> Bool)
+    (example (2026 2 28) => true)
+    (example (2026 2 29) => false)
+    (example (2024 2 29) => true)
+    (example (2026 4 31) => false)
+    (example (2026 12 31) => true)
+    (body
+      (if
+        (or (< day 1) (not (is-valid-month month)))
+        false
+        (let
+          (
+            (max-day
+              (if
+                (= month 2)
+                (if (is-leap-year year) 29 28)
+                (if (or (= month 4) (= month 6) (= month 9) (= month 11)) 30 31))))
+          (<= day max-day)))))
+  (fn is-valid-month
+    (purpose "Check whether month is between 1 and 12 inclusive.")
+    (sig (month Int) -> Bool)
+    (example (1) => true)
+    (example (12) => true)
+    (example (0) => false)
+    (example (13) => false)
+    (body (and (>= month 1) (<= month 12))))
+  (fn is-valid-year
+    (purpose "Check whether year is a 4-digit year in [1900, 2100].")
+    (sig (year Int) -> Bool)
+    (example (2026) => true)
+    (example (1899) => false)
+    (example (2101) => false)
+    (body (and (>= year 1900) (<= year 2100))))
+  (fn make-tx
+    (purpose "Construct a normalized Tx record.")
+    (sig (date Str) (month Str) (desc Str) (cat Str) (amount Cents) -> Tx)
+    (example
+      ("2026-03-15" "2026-03" "Coffee" "food" -450)
+      =>
+      (new
+        Tx
+        (date "2026-03-15")
+        (month "2026-03")
+        (description "Coffee")
+        (category "food")
+        (amount -450)))
+    (body (new Tx (date date) (month month) (description desc) (category cat) (amount amount))))
+  (fn month-name
+    (purpose "Return 3-letter English month abbreviation for month 1..12.")
+    (sig (month Int) -> Str)
+    (example (1) => "Jan")
+    (example (6) => "Jun")
+    (example (12) => "Dec")
+    (example (99) => "Unk")
+    (body
+      (match
+        month
+        (1 "Jan")
+        (2 "Feb")
+        (3 "Mar")
+        (4 "Apr")
+        (5 "May")
+        (6 "Jun")
+        (7 "Jul")
+        (8 "Aug")
+        (9 "Sep")
+        (10 "Oct")
+        (11 "Nov")
+        (12 "Dec")
+        (_ "Unk"))))
+  (fn negate-cents
+    (purpose "Negate a Cents amount.")
+    (sig (c Cents) -> Cents)
+    (example (450) => -450)
+    (example (-450) => 450)
+    (body (- 0 c)))
+  (fn pad-left
+    (purpose "Pad string s on the left with spaces to width w.")
+    (sig (s Str) (w Int) -> Str)
+    (example ("42" 5) => "   42")
+    (example ("hello" 3) => "hello")
+    (body
+      (let
+        ((len-s (str.length s)))
+        (if
+          (>= len-s w)
+          s
+          (let
+            ((spaces (str.join (list.map (list.range 0 (- w len-s)) (lam ((i Int)) " ")) "")))
+            (str.concat spaces s))))))
+  (fn pad-right
+    (purpose "Pad string s on the right with spaces to width w.")
+    (sig (s Str) (w Int) -> Str)
+    (example ("cat" 6) => "cat   ")
+    (example ("longer" 4) => "longer")
+    (body
+      (let
+        ((len-s (str.length s)))
+        (if
+          (>= len-s w)
+          s
+          (let
+            ((spaces (str.join (list.map (list.range 0 (- w len-s)) (lam ((i Int)) " ")) "")))
+            (str.concat s spaces))))))
+  (fn percent-used
+    (purpose "Whole percentage of limit spent; 0 if both 0, 100 if limit <= 0 and spent > 0.")
+    (sig (spent Cents) (limit Cents) -> Int)
+    (example (5000 10000) => 50)
+    (example (12500 10000) => 125)
+    (example (0 0) => 0)
+    (example (500 0) => 100)
+    (body
+      (if (<= limit 0) (if (> spent 0) 100 0) (try (/ (* spent 100) limit) (catch DivZero () 0)))))
+  (fn sub-cents
+    (purpose "Subtract b from a in Cents.")
+    (sig (a Cents) (b Cents) -> Cents)
+    (example (1000 350) => 650)
+    (body (- a b)))
+  (fn tx-abs-expense
+    (purpose
+      "Return positive expense magnitude in cents for an expense, or 0 for non-negative transactions.")
+    (sig (t Tx) -> Cents)
+    (ensures (>= result 0))
+    (example
+      (
+        (new
+          Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Tax")
+          (category "tax")
+          (amount -1200)))
+      =>
+      1200)
+    (example
+      (
+        (new
+          Tx
+          (date "2026-01-01")
+          (month "2026-01")
+          (description "Refund")
+          (category "tax")
+          (amount 500)))
+      =>
+      0)
+    (body (if (< (get t amount) 0) (- 0 (get t amount)) 0))))

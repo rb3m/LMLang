@@ -1,0 +1,10 @@
+(module uncaught
+  (purpose "An uncaught failure after output: stdout flushed, failure on stderr, exit 1.")
+  (use io)
+  (error Boom (n Int) (why Str))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff io.out)
+    (fails Boom)
+    (body (let ((u (io.print "before"))) (fail Boom 7 "bad\nline")))))

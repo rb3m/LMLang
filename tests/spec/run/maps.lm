@@ -1,0 +1,134 @@
+(module maps
+  (purpose
+    "Map and Set semantics: key order, shape-independent equality, deletions, printing (ADR-049).")
+  (use list map set str)
+  (fn bool-order
+    (purpose "false sorts before true.")
+    (sig -> (Map Bool Int))
+    (example () => (mapof (false 0) (true 1)))
+    (body (mapof (true 1) (false 0))))
+  (fn build
+    (purpose "Map k -> k*k from keys inserted in list order.")
+    (sig (ks (List Int)) -> (Map Int Int))
+    (example ((list 3 1 2)) => (mapof (1 1) (2 4) (3 9)))
+    (example ((list)) => (mapof))
+    (body (list.fold ks (mapof) (lam ((m (Map Int Int)) (k Int)) (map.put m k (* k k))))))
+  (fn counts
+    (purpose "Word counts with map.update; printed in key order.")
+    (sig (text Str) -> (Map Str Int))
+    (example ("b a b c b") => (mapof ("a" 1) ("b" 3) ("c" 1)))
+    (body
+      (list.fold
+        (str.split text " ")
+        (mapof)
+        (lam ((m (Map Str Int)) (w Str)) (map.update m w 0 (lam ((n Int)) (+ n 1)))))))
+  (fn deletions-agree
+    (purpose "Deleting evens equals building only the odds; sums of keys and values match.")
+    (sig (n Int) -> Bool)
+    (example (2000) => true)
+    (body
+      (let
+        ((a (drop-evens n)) (b (build (list.filter (list.range 0 n) odd))))
+        (and (= a b) (= (map.keys a) (list.filter (list.range 0 n) odd))))))
+  (fn drop-evens
+    (purpose "Remove every even key from 0..n-1 inserted ascending: rebalancing deletions.")
+    (sig (n Int) -> (Map Int Int))
+    (example (7) => (mapof (1 1) (3 9) (5 25)))
+    (body
+      (list.fold
+        (list.range 0 n)
+        (build (list.range 0 n))
+        (lam ((m (Map Int Int)) (k Int)) (if (even k) (map.remove m k) m)))))
+  (fn empty-typed
+    (purpose "Empty literals take their type from use.")
+    (sig -> (Map Str (Set Int)))
+    (example () => (mapof ("a" (setof))))
+    (body (map.put (mapof) "a" (setof))))
+  (fn even
+    (purpose "True for even n.")
+    (sig (n Int) -> Bool)
+    (example (3) => false)
+    (body (= (mod n 2) 0)))
+  (fn float-order
+    (purpose "Float keys sort numerically, negatives first; 1e+16 after 9.5.")
+    (sig -> (Map Float Str))
+    (example () => (mapof (-2.5 "c") (0.0 "z") (1e-05 "t") (9.5 "n") (1e+16 "b")))
+    (body (mapof (1e+16 "b") (9.5 "n") (0.0 "z") (-2.5 "c") (1e-05 "t"))))
+  (fn fold-order
+    (purpose "map.fold and set.fold visit keys in ascending order.")
+    (sig -> Str)
+    (example () => "a1b2c3|xyz")
+    (body
+      (str.concat
+        (map.fold
+          (mapof ("c" 3) ("a" 1) ("b" 2))
+          ""
+          (lam ((acc Str) (k Str) (v Int)) (str.concat acc (str.concat k (str.from-int v)))))
+        (set.fold (setof "z" "x" "y") "|" str.concat))))
+  (fn int-extremes
+    (purpose "Int keys at the 64-bit bounds.")
+    (sig -> (List Int))
+    (example () => (list -9223372036854775808 0 9223372036854775807))
+    (body (map.keys (mapof (9223372036854775807 1) (0 2) (-9223372036854775808 3)))))
+  (fn nested
+    (purpose "Maps of sets compare structurally, also when built in different orders.")
+    (sig -> Bool)
+    (example () => true)
+    (body
+      (= (mapof (1 (setof 3 2)) (2 (setof))) (map.put (mapof (2 (setof))) 1 (set.add (setof 2) 3)))))
+  (fn odd
+    (purpose "True for odd n.")
+    (sig (n Int) -> Bool)
+    (example (3) => true)
+    (body (= (mod n 2) 1)))
+  (fn order-of-values
+    (purpose "mapof evaluates values left to right; a failing value fails the literal.")
+    (sig (d Int) -> (Map Int Int))
+    (fails DivZero)
+    (example (1) => (mapof (1 10) (2 20)))
+    (example (0) => (fail DivZero))
+    (body (mapof (2 (/ 20 d)) (1 (/ 10 d)))))
+  (fn orders-agree
+    (purpose "Ascending, descending and interleaved insertion of 0..n-1 give equal maps.")
+    (sig (n Int) -> Bool)
+    (example (1000) => true)
+    (example (0) => true)
+    (body
+      (let
+        (
+          (up (build (list.range 0 n)))
+          (down (build (list.reverse (list.range 0 n))))
+          (mixed
+            (build
+              (list.concat (list.filter (list.range 0 n) odd) (list.filter (list.range 0 n) even)))))
+        (and (= up down) (= down mixed) (= (map.size up) n)))))
+  (fn overflow-in-fold
+    (purpose "A fault inside a map.fold callback is still E-OVERFLOW.")
+    (sig (m (Map Int Int)) -> Int)
+    (example ((mapof (1 2))) => 2)
+    (example ((mapof (1 9223372036854775807) (2 1))) => 0)
+    (body (map.fold m 0 (lam ((acc Int) (k Int) (v Int)) (+ acc v)))))
+  (fn remove-all
+    (purpose "Removing every key in a scrambled order leaves the empty map.")
+    (sig (n Int) -> (Map Int Int))
+    (example (500) => (mapof))
+    (body
+      (list.fold
+        (list.concat
+          (list.filter (list.range 0 n) even)
+          (list.reverse (list.filter (list.range 0 n) odd)))
+        (build (list.range 0 n))
+        (lam ((m (Map Int Int)) (k Int)) (map.remove m k)))))
+  (fn sets
+    (purpose "union, intersect, diff and from-list.")
+    (sig -> (List (Set Int)))
+    (example () => (list (setof 1 2 3 4) (setof 2 3) (setof 1) (setof 1 2 3)))
+    (body
+      (let
+        ((a (set.from-list (list 3 1 2 1))) (b (setof 4 3 2)))
+        (list (set.union a b) (set.intersect a b) (set.diff a b) a))))
+  (fn str-order
+    (purpose "Str keys sort by code point: uppercase before lowercase, accents after ASCII.")
+    (sig -> (List Str))
+    (example () => (list "" "B" "a" "b" "é" "日"))
+    (body (set.to-list (setof "b" "日" "a" "" "é" "B")))))

@@ -1,0 +1,7 @@
+(module recursion-limit
+  (purpose "p")
+  (fn spin
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (0) => 0)
+    (body (+ 0 (spin (+ n 1))))))

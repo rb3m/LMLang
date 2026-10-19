@@ -1,0 +1,4 @@
+(module const-cycle
+  (purpose "Const to const cycle.")
+  (const a (purpose "a") (type Int) (value (+ b 1)))
+  (const b (purpose "b") (type Int) (value (+ a 1))))

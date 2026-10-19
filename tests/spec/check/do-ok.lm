@@ -1,0 +1,8 @@
+(module do-ok
+  (purpose "p")
+  (use io)
+  (fn f
+    (purpose "p")
+    (sig (x Int) -> Int)
+    (eff io.out)
+    (body (do (io.print "a") (note "b") (+ x 1)))))

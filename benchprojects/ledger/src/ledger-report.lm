@@ -1,0 +1,312 @@
+(module ledger-report
+  (purpose "Format summary, budget, and top-expense ledger reports into text lines.")
+  (use ledger-budget ledger-model ledger-summary list str)
+  (export
+    budget-status-badge
+    format-budget-line
+    format-category-line
+    format-error-line
+    format-month-line
+    format-top-tx-line
+    render-budget-report
+    render-error-lines
+    render-summary-report
+    render-top-report)
+  (fn budget-status-badge
+    (purpose "Return OVER, UNBUDGETED, or UNDER status tag for a BudgetStatus record.")
+    (sig (s ledger-model.BudgetStatus) -> Str)
+    (example
+      (
+        (new
+          ledger-model.BudgetStatus
+          (category "food")
+          (limit 50000)
+          (spent 60000)
+          (remaining -10000)
+          (over true)
+          (pct 120)))
+      =>
+      "OVER")
+    (example
+      (
+        (new
+          ledger-model.BudgetStatus
+          (category "games")
+          (limit 0)
+          (spent 5000)
+          (remaining -5000)
+          (over true)
+          (pct 100)))
+      =>
+      "UNBUDGETED")
+    (example
+      (
+        (new
+          ledger-model.BudgetStatus
+          (category "rent")
+          (limit 120000)
+          (spent 120000)
+          (remaining 0)
+          (over false)
+          (pct 100)))
+      =>
+      "UNDER")
+    (body
+      (if
+        (and (= (get s limit) 0) (> (get s spent) 0))
+        "UNBUDGETED"
+        (if (get s over) "OVER" "UNDER"))))
+  (fn format-budget-line
+    (purpose "Format a single BudgetStatus entry as an aligned report row.")
+    (sig (s ledger-model.BudgetStatus) -> Str)
+    (example
+      (
+        (new
+          ledger-model.BudgetStatus
+          (category "food")
+          (limit 40000)
+          (spent 30000)
+          (remaining 10000)
+          (over false)
+          (pct 75)))
+      =>
+      "  food           limit:     400.00  spent:     300.00  diff:    +100.00  (75%) [UNDER]")
+    (body
+      (let
+        (
+          (cat-col (ledger-model.pad-right (get s category) 14))
+          (lim-col (ledger-model.pad-left (ledger-model.format-cents (get s limit)) 10))
+          (sp-col (ledger-model.pad-left (ledger-model.format-cents (get s spent)) 10))
+          (rem-col (ledger-model.pad-left (ledger-model.format-signed-cents (get s remaining)) 10))
+          (pct-str (str.concat (str.concat "(" (str.from-int (get s pct))) "%)"))
+          (badge (str.concat (str.concat "[" (budget-status-badge s)) "]")))
+        (str.join
+          (list " " cat-col "limit:" lim-col " spent:" sp-col " diff:" rem-col "" pct-str badge)
+          " "))))
+  (fn format-category-line
+    (purpose "Format a single CategoryTotal entry as an aligned report row.")
+    (sig (c ledger-model.CategoryTotal) -> Str)
+    (example
+      (
+        (new
+          ledger-model.CategoryTotal
+          (category "food")
+          (net -12500)
+          (expenses 12500)
+          (income 0)
+          (count 3)))
+      =>
+      "  food           net:    -125.00  exp:     125.00  inc:       0.00  (3 txs)")
+    (body
+      (let
+        (
+          (cat-col (ledger-model.pad-right (get c category) 14))
+          (net-col (ledger-model.pad-left (ledger-model.format-signed-cents (get c net)) 10))
+          (exp-col (ledger-model.pad-left (ledger-model.format-cents (get c expenses)) 10))
+          (inc-col (ledger-model.pad-left (ledger-model.format-cents (get c income)) 10))
+          (cnt-str (str.concat (str.concat "(" (str.from-int (get c count))) " txs)")))
+        (str.join (list " " cat-col "net:" net-col " exp:" exp-col " inc:" inc-col "" cnt-str) " "))))
+  (fn format-error-line
+    (purpose "Format a RowError record for stderr reporting.")
+    (sig (err ledger-model.RowError) -> Str)
+    (example
+      ((new ledger-model.RowError (line-no 7) (raw "bad,line") (reason "invalid transaction row")))
+      =>
+      "line 7: invalid transaction row [bad,line]")
+    (body
+      (str.concat
+        (str.concat
+          (str.concat (str.concat "line " (str.from-int (get err line-no))) ": ")
+          (get err reason))
+        (str.concat (str.concat " [" (get err raw)) "]"))))
+  (fn format-month-line
+    (purpose "Format a single MonthTotal entry as an aligned report row.")
+    (sig (m ledger-model.MonthTotal) -> Str)
+    (example
+      (
+        (new
+          ledger-model.MonthTotal
+          (month "2026-03")
+          (net 185000)
+          (expenses 65000)
+          (income 250000)
+          (count 5)))
+      =>
+      "  2026-03        net:   +1850.00  exp:     650.00  inc:    2500.00  (5 txs)")
+    (body
+      (let
+        (
+          (m-col (ledger-model.pad-right (get m month) 14))
+          (net-col (ledger-model.pad-left (ledger-model.format-signed-cents (get m net)) 10))
+          (exp-col (ledger-model.pad-left (ledger-model.format-cents (get m expenses)) 10))
+          (inc-col (ledger-model.pad-left (ledger-model.format-cents (get m income)) 10))
+          (cnt-str (str.concat (str.concat "(" (str.from-int (get m count))) " txs)")))
+        (str.join (list " " m-col "net:" net-col " exp:" exp-col " inc:" inc-col "" cnt-str) " "))))
+  (fn format-top-tx-line
+    (purpose "Format a ranked expense transaction row with 1-based rank.")
+    (sig (rank Int) (t ledger-model.Tx) -> Str)
+    (example
+      (1
+        (new
+          ledger-model.Tx
+          (date "2026-03-01")
+          (month "2026-03")
+          (description "Apartment Rent")
+          (category "housing")
+          (amount -150000)))
+      =>
+      "  #1   2026-03-01  housing            1500.00  Apartment Rent")
+    (body
+      (let
+        (
+          (r-str (ledger-model.pad-right (str.concat "#" (str.from-int rank)) 3))
+          (cat-col (ledger-model.pad-right (get t category) 14))
+          (amt-col
+            (ledger-model.pad-left (ledger-model.format-cents (ledger-model.tx-abs-expense t)) 11)))
+        (str.join (list " " r-str "" (get t date) "" cat-col amt-col "" (get t description)) " "))))
+  (fn render-budget-report
+    (purpose "Render the complete budget vs actual report as a list of output lines.")
+    (sig (rules (List ledger-model.BudgetRule)) (summary ledger-model.SummaryReport) -> (List Str))
+    (example
+      (
+        (list (new ledger-model.BudgetRule (category "food") (limit 40000)))
+        (new
+          ledger-model.SummaryReport
+          (by-category
+            (list
+              (new
+                ledger-model.CategoryTotal
+                (category "food")
+                (net -30000)
+                (expenses 30000)
+                (income 0)
+                (count 2))))
+          (by-month (list))
+          (total-net -30000)
+          (total-expenses 30000)
+          (total-income 0)
+          (tx-count 2)
+          (bad-rows 0)))
+      =>
+      (list
+        "=== BUDGET REPORT ==="
+        "  food           limit:     400.00  spent:     300.00  diff:    +100.00  (75%) [UNDER]"
+        "--- BUDGET TOTALS ---"
+        "  Total Budgeted: 400.00"
+        "  Total Spent:    300.00"
+        "  Net Variance:   +100.00"
+        "  Categories Over: 0"))
+    (body
+      (let
+        (
+          (statuses (ledger-budget.evaluate-full-budget rules (get summary by-category)))
+          (rows (list.map statuses format-budget-line))
+          (tot-lim (ledger-budget.total-budget-limit statuses))
+          (tot-sp (ledger-budget.total-budget-spent statuses))
+          (tot-rem (ledger-budget.total-budget-remaining statuses))
+          (over-cnt (ledger-budget.count-over-budget statuses))
+          (header (list "=== BUDGET REPORT ==="))
+          (footer
+            (list
+              "--- BUDGET TOTALS ---"
+              (str.concat "  Total Budgeted: " (ledger-model.format-cents tot-lim))
+              (str.concat "  Total Spent:    " (ledger-model.format-cents tot-sp))
+              (str.concat "  Net Variance:   " (ledger-model.format-signed-cents tot-rem))
+              (str.concat "  Categories Over: " (str.from-int over-cnt)))))
+        (list.concat (list.concat header rows) footer))))
+  (fn render-error-lines
+    (purpose "Render all RowError entries into human-readable warning lines.")
+    (sig (errors (List ledger-model.RowError)) -> (List Str))
+    (example
+      (
+        (list
+          (new ledger-model.RowError (line-no 2) (raw "oops") (reason "invalid transaction row"))))
+      =>
+      (list "line 2: invalid transaction row [oops]"))
+    (body (list.map errors format-error-line)))
+  (fn render-summary-report
+    (purpose "Render the complete summary report (by category, by month, and grand totals).")
+    (sig (s ledger-model.SummaryReport) -> (List Str))
+    (example
+      (
+        (new
+          ledger-model.SummaryReport
+          (by-category
+            (list
+              (new
+                ledger-model.CategoryTotal
+                (category "food")
+                (net -1500)
+                (expenses 1500)
+                (income 0)
+                (count 1))))
+          (by-month
+            (list
+              (new
+                ledger-model.MonthTotal
+                (month "2026-01")
+                (net -1500)
+                (expenses 1500)
+                (income 0)
+                (count 1))))
+          (total-net -1500)
+          (total-expenses 1500)
+          (total-income 0)
+          (tx-count 1)
+          (bad-rows 0)))
+      =>
+      (list
+        "=== LEDGER SUMMARY ==="
+        "-- By Category --"
+        "  food           net:     -15.00  exp:      15.00  inc:       0.00  (1 txs)"
+        "-- By Month --"
+        "  2026-01        net:     -15.00  exp:      15.00  inc:       0.00  (1 txs)"
+        "-- Overall Totals --"
+        "  Transactions: 1"
+        "  Total Income:   0.00"
+        "  Total Expenses: 15.00"
+        "  Net Balance:    -15.00"))
+    (body
+      (let
+        (
+          (cat-lines (list.map (get s by-category) format-category-line))
+          (month-lines (list.map (get s by-month) format-month-line))
+          (sec1 (cons "=== LEDGER SUMMARY ===" (cons "-- By Category --" cat-lines)))
+          (sec2 (cons "-- By Month --" month-lines))
+          (sec3
+            (list
+              "-- Overall Totals --"
+              (str.concat "  Transactions: " (str.from-int (get s tx-count)))
+              (str.concat "  Total Income:   " (ledger-model.format-cents (get s total-income)))
+              (str.concat "  Total Expenses: " (ledger-model.format-cents (get s total-expenses)))
+              (str.concat "  Net Balance:    " (ledger-model.format-signed-cents (get s total-net))))))
+        (list.concat (list.concat sec1 sec2) sec3))))
+  (fn render-top-report
+    (purpose "Render the top N largest expenses report from a list of transactions.")
+    (sig (txs (List ledger-model.Tx)) (n Int) -> (List Str))
+    (example
+      (
+        (list
+          (new
+            ledger-model.Tx
+            (date "2026-03-01")
+            (month "2026-03")
+            (description "Apartment Rent")
+            (category "housing")
+            (amount -150000)))
+        1)
+      =>
+      (list
+        "=== TOP 1 EXPENSES ==="
+        "  #1   2026-03-01  housing            1500.00  Apartment Rent"
+        "  Shown Total: 1500.00"))
+    (body
+      (let
+        (
+          (top (ledger-summary.top-expenses txs n))
+          (ranks (list.range 1 (+ (len top) 1)))
+          (rows (list.map2 ranks top format-top-tx-line))
+          (shown-sum (ledger-summary.sum-expenses top))
+          (header (list (str.concat (str.concat "=== TOP " (str.from-int n)) " EXPENSES ===")))
+          (footer (list (str.concat "  Shown Total: " (ledger-model.format-cents shown-sum)))))
+        (list.concat (list.concat header rows) footer)))))

@@ -1,0 +1,8 @@
+(module aa
+  (purpose "First module: a fn with a fact about d.")
+  (fn f
+    (purpose "x")
+    (sig (d Int) -> Int)
+    (requires (> d 0))
+    (example (2) => 5)
+    (body (/ 10 d))))

@@ -1,0 +1,6 @@
+(module recursion-ok
+  (purpose "p")
+  (fn fact
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (body (if (<= n 1) 1 (* n (fact (- n 1)))))))

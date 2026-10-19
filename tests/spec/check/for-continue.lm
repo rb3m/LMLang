@@ -1,0 +1,8 @@
+(module for-continue
+  (purpose "p")
+  (use io)
+  (fn f
+    (purpose "p")
+    (sig (xs (List Int)) -> Unit)
+    (eff io.out)
+    (body (for (x xs) (do (io.print "x") continue)))))

@@ -1,0 +1,24 @@
+(module primes
+  (purpose "Primality and prime counting.")
+  (use list)
+  (fn count-below
+    (purpose "How many primes are smaller than limit.")
+    (sig (limit Int) -> Int)
+    (example (10) => 4)
+    (example (2) => 0)
+    (body (len (list.filter (list.range 0 limit) is-prime))))
+  (fn divides
+    (purpose "True when d divides n; false for d = 0.")
+    (sig (d Int) (n Int) -> Bool)
+    (example (3 12) => true)
+    (example (5 12) => false)
+    (example (0 12) => false)
+    (body (and (!= d 0) (= (mod n d) 0))))
+  (fn is-prime
+    (purpose "True when n >= 2 has no divisor between 2 and n-1.")
+    (sig (n Int) -> Bool)
+    (example (2) => true)
+    (example (1) => false)
+    (example (91) => false)
+    (example (97) => true)
+    (body (and (>= n 2) (not (list.any (list.range 2 n) (lam (d) (divides d n))))))))

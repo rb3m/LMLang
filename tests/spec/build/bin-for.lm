@@ -1,0 +1,18 @@
+(module bin-for
+  (purpose "For-loop iteration in binary: print in order, escaping failure, closure captures.")
+  (use io str)
+  (error Stop (n Int))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (eff io.out)
+    (body
+      (do
+        (for (s (list "alpha" "beta" "gamma")) (io.print s))
+        (try
+          (for
+            (n (list 1 2 3 4))
+            (if (= n 3) (fail Stop n) (io.print (str.concat "num " (str.from-int n)))))
+          (catch Stop (k) (io.print (str.concat "caught " (str.from-int k)))))
+        (for (w (list "x" "y" "z")) (let ((f (lam () (str.concat "cap:" w)))) (io.print (f))))
+        0))))

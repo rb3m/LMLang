@@ -1,0 +1,7 @@
+(module match-sum
+  (purpose "p")
+  (type T (sum A B))
+  (fn f
+    (purpose "p")
+    (sig (t T) -> Int)
+    (body (match t (A 1)))))

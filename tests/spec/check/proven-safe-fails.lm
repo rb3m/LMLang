@@ -1,0 +1,38 @@
+(module proven-safe-fails
+  (purpose "Operations not proven safe must still report E-FAILS-UNDECLARED.")
+  (use list)
+  (fn div-call-result
+    (purpose "Call result as divisor cannot be discharged.")
+    (sig (a Int) (b Int) -> Int)
+    (body (/ 10 (gcd a b))))
+  (fn div-ge0-alone
+    (purpose ">= 0 alone does not prove nonzero.")
+    (sig (x Int) (d Int) -> Int)
+    (requires (>= d 0))
+    (body (/ x d)))
+  (fn div-uncovered
+    (purpose "Divisor not covered by a fact.")
+    (sig (x Int) (d Int) -> Int)
+    (body (/ x d)))
+  (fn fact-after-if
+    (purpose "Fact from then-branch used after the if.")
+    (sig (x Int) (d Int) -> Int)
+    (body (do (if (!= d 0) unit unit) (/ x d))))
+  (fn fact-sibling-let
+    (purpose "Fact about d in sibling let scope.")
+    (sig (c Bool) (x Int) -> Int)
+    (body (if c (let ((d 1)) (if (!= d 0) (/ x d) 0)) (let ((d 0)) (/ x d)))))
+  (fn gcd
+    (purpose "Helper for call result test.")
+    (sig (a Int) (b Int) -> Int)
+    (body (if (= b 0) a 1)))
+  (fn nth-insufficient
+    (purpose "len xs > 1 is insufficient for index 2.")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (len xs) 1))
+    (body (list.nth xs 2)))
+  (fn req-self
+    (purpose "Function's own requires is not assumed while evaluating that requires.")
+    (sig (d Int) -> Int)
+    (requires (> (/ 10 d) 0))
+    (body 1)))

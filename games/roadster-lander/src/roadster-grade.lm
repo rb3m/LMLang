@@ -1,0 +1,29 @@
+(module roadster-grade
+  (purpose "Parking judgments from inclusive impact-speed limits.")
+  (export grade)
+  (fn grade
+    (purpose "Judge the parking impact using inclusive speed limits in metres per second.")
+    (sig (speed Float) -> Str)
+    (example (1.0) => "Perfect parking, right between the lines!")
+    (example (3.0) => "Nice parking. Your coffee almost stayed in its cup.")
+    (example (7.0) => "Parked! The suspension would like a word.")
+    (example (15.0) => "A little bodywork and nobody will notice.")
+    (example (30.0) => "Parking complete. Please collect your car with a shovel.")
+    (example (31.0) => "New underground parking level installed.")
+    (body
+      (if
+        (<= speed 1.0)
+        "Perfect parking, right between the lines!"
+        (if
+          (<= speed 3.0)
+          "Nice parking. Your coffee almost stayed in its cup."
+          (if
+            (<= speed 7.0)
+            "Parked! The suspension would like a word."
+            (if
+              (<= speed 15.0)
+              "A little bodywork and nobody will notice."
+              (if
+                (<= speed 30.0)
+                "Parking complete. Please collect your car with a shovel."
+                "New underground parking level installed."))))))))

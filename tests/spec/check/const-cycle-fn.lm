@@ -1,0 +1,7 @@
+(module const-cycle-fn
+  (purpose "Const to fn to const cycle.")
+  (const c (purpose "c") (type Int) (value (f 1)))
+  (fn f
+    (purpose "f")
+    (sig (x Int) -> Int)
+    (body (+ x c))))

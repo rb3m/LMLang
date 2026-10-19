@@ -1,0 +1,28 @@
+(module roman
+  (purpose "Integers to Roman numerals.")
+  (use str)
+  (fn step
+    (purpose "Emit symbols for n across descending values and symbols.")
+    (sig (n Int) (vs (List Int)) (ss (List Str)) -> Str)
+    (body
+      (match
+        vs
+        ((list) "")
+        (
+          (cons v vr)
+          (match
+            ss
+            ((list) "")
+            ((cons s sr) (if (>= n v) (str.concat s (step (- n v) vs ss)) (step n vr sr))))))))
+  (fn to-roman
+    (purpose "Roman numeral for 1..3999.")
+    (sig (n Int) -> Str)
+    (requires (and (>= n 1) (<= n 3999)))
+    (example (4) => "IV")
+    (example (9) => "IX")
+    (example (1994) => "MCMXCIV")
+    (body
+      (step
+        n
+        (list 1000 900 500 400 100 90 50 40 10 9 5 4 1)
+        (list "M" "CM" "D" "CD" "C" "XC" "L" "XL" "X" "IX" "V" "IV" "I")))))

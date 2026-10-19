@@ -1,0 +1,39 @@
+(module bank
+  (purpose "Bank accounts with overdraft protection.")
+  (use str)
+  (type Account (rec (owner Str) (balance Int)))
+  (error InsufficientFunds (need Int) (have Int))
+  (fn deposit
+    (purpose "Add a positive amount to the balance.")
+    (sig (acct Account) (amount Int) -> Account)
+    (requires (> amount 0))
+    (example
+      ((new Account (owner "ana") (balance 5)) 10)
+      =>
+      (new Account (owner "ana") (balance 15)))
+    (body (with acct (balance (+ (get acct balance) amount)))))
+  (fn open
+    (purpose "New account with zero balance.")
+    (sig (name Str) -> Account)
+    (example ("ana") => (new Account (owner "ana") (balance 0)))
+    (body (new Account (owner name) (balance 0))))
+  (fn statement
+    (purpose "One-line text such as ana: 15.")
+    (sig (acct Account) -> Str)
+    (example ((new Account (owner "ana") (balance 15))) => "ana: 15")
+    (body (str.concat (get acct owner) (str.concat ": " (str.from-int (get acct balance))))))
+  (fn withdraw
+    (purpose "Remove an amount; fails when the balance is too small.")
+    (sig (acct Account) (amount Int) -> Account)
+    (fails InsufficientFunds)
+    (requires (> amount 0))
+    (example
+      ((new Account (owner "ana") (balance 15)) 10)
+      =>
+      (new Account (owner "ana") (balance 5)))
+    (example ((new Account (owner "ana") (balance 5)) 10) => (fail InsufficientFunds 10 5))
+    (body
+      (if
+        (> amount (get acct balance))
+        (fail InsufficientFunds amount (get acct balance))
+        (with acct (balance (- (get acct balance) amount)))))))

@@ -1,0 +1,8 @@
+(module float-max-int
+  (purpose "from-int(int-max) rounds up to 2^63, so converting it back is E-OVERFLOW.")
+  (use float math)
+  (fn back
+    (purpose "p")
+    (sig -> Int)
+    (example () => 0)
+    (body (float.floor (float.from-int (math.int-max))))))

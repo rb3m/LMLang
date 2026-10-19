@@ -1,0 +1,10 @@
+(module shapes
+  (purpose "Areas and descriptions of simple shapes.")
+  (type Shape (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty))
+  (fn scale
+    (purpose "Multiply every dimension by k.")
+    (sig (s Shape) (k Int) -> Shape)
+    (requires (> k 0))
+    (example ((Rect 1 2) 3) => (Rect 3 6))
+    (example (Empty 2) => Empty)
+    (body (match s ((Circle r) (Circle (* r k))) ((Rect w h) (Rect (* w k) (* h k))) (Empty Empty)))))

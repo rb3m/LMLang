@@ -1,0 +1,36 @@
+[
+  {
+    "exit": 70,
+    "stdout": "",
+    "code": "E-ENSURES-VIOLATED",
+    "path": "tail-contract/post/ensures#0",
+    "found": "(2)"
+  },
+  {
+    "args": [
+      "pre"
+    ],
+    "exit": 70,
+    "stdout": "",
+    "code": "E-REQUIRES-VIOLATED",
+    "path": "tail-contract/pre/requires#0",
+    "found": "(2)"
+  },
+  {
+    "flags": [
+      "--no-contracts"
+    ],
+    "exit": 0,
+    "stdout": ""
+  },
+  {
+    "flags": [
+      "--no-contracts"
+    ],
+    "args": [
+      "pre"
+    ],
+    "exit": 0,
+    "stdout": ""
+  }
+]

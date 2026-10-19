@@ -1,0 +1,7 @@
+(module overflow-intermediate
+  (purpose "p")
+  (fn mid
+    (purpose "p")
+    (sig (a Int) (b Int) -> Int)
+    (example (9223372036854775807 9223372036854775807) => 9223372036854775807)
+    (body (/ (+ a b) 2))))

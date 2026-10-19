@@ -1,0 +1,8 @@
+(module pairs-zip-unequal
+  (purpose "list.zip requires equal lengths, violating like map2.")
+  (use list)
+  (fn test-zip
+    (purpose "p")
+    (sig (xs (List Int)) (ys (List Str)) -> (List (Pair Int Str)))
+    (example ((list 1) (list "a" "b")) => (list))
+    (body (list.zip xs ys))))

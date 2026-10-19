@@ -1,0 +1,8 @@
+(module app
+  (purpose "App module.")
+  (use lib)
+  (fn get-answer
+    (purpose "Get the answer.")
+    (sig -> Int)
+    (example () => 42)
+    (body lib.answer)))

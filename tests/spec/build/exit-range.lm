@@ -1,0 +1,6 @@
+(module exit-range
+  (purpose "An Int exit status outside 0-255 is the fault E-EXIT-RANGE.")
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (body 300)))

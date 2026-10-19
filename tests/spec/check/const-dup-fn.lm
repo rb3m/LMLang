@@ -1,0 +1,7 @@
+(module const-dup-fn
+  (purpose "Const name collides with fn.")
+  (const clash (purpose "c") (type Int) (value 1))
+  (fn clash
+    (purpose "f")
+    (sig -> Int)
+    (body 2)))

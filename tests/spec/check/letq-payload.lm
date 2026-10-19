@@ -1,0 +1,6 @@
+(module letq-payload
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (x (Opt Str)) -> (Opt Int))
+    (body (let? ((y x)) (Some (+ y 1))))))

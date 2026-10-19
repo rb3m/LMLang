@@ -1,0 +1,37 @@
+(module bin-maps
+  (purpose "A 100k-key Map and a Set in a binary: scrambled inserts, half removed, ordered output.")
+  (use io list map set str)
+  (fn key-of
+    (purpose "A scrambled key: i * 7919 mod 100003 is a permutation of 0..100002.")
+    (sig (i Int) -> Int)
+    (example (2) => 15838)
+    (body (mod (* i 7919) 100003)))
+  (fn main
+    (purpose "Insert 100k keys, remove the odd ones, print size, first keys, sums and a Str set.")
+    (sig -> Int)
+    (eff io.out)
+    (body
+      (let
+        (
+          (full
+            (list.fold
+              (list.range 0 100000)
+              (mapof)
+              (lam ((m (Map Int Int)) (i Int)) (map.put m (key-of i) i))))
+          (half
+            (list.fold
+              (list.range 0 100000)
+              full
+              (lam
+                ((m (Map Int Int)) (i Int))
+                (if (= (mod (key-of i) 2) 1) (map.remove m (key-of i)) m))))
+          (words (set.from-list (str.split "pear fig apple fig kiwi apple" " "))))
+        (do
+          (io.print (str.from-int (map.size full)))
+          (io.print (str.from-int (map.size half)))
+          (io.print (str.join (list.map (list.take (map.keys half) 5) str.from-int) " "))
+          (io.print (str.from-int (list.sum (map.values half))))
+          (io.print (str.from-int (map.fold half 0 (lam ((acc Int) (k Int) (v Int)) (+ acc k)))))
+          (io.print (str.join (set.to-list words) " "))
+          (io.print (str.from-int (set.size words)))
+          0)))))

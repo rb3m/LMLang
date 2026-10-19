@@ -1,0 +1,28 @@
+(module math
+  (purpose "Integer math helpers.")
+  (export abs int-max int-min max min)
+  (fn abs
+    (purpose "Absolute value.")
+    (sig (x Int) -> Int)
+    (example (-3) => 3)
+    (body (if (< x 0) (- 0 x) x)))
+  (fn int-max
+    (purpose "Largest Int (2^63 - 1); exceeding it is the runtime fault E-OVERFLOW.")
+    (sig -> Int)
+    (example () => 9223372036854775807)
+    (body 9223372036854775807))
+  (fn int-min
+    (purpose "Smallest Int (-2^63); going below it is the runtime fault E-OVERFLOW.")
+    (sig -> Int)
+    (example () => -9223372036854775808)
+    (body -9223372036854775808))
+  (fn max
+    (purpose "Larger of two integers.")
+    (sig (a Int) (b Int) -> Int)
+    (example (2 5) => 5)
+    (body (if (> a b) a b)))
+  (fn min
+    (purpose "Smaller of two integers.")
+    (sig (a Int) (b Int) -> Int)
+    (example (2 5) => 2)
+    (body (if (< a b) a b))))

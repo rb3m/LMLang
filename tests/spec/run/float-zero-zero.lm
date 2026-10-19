@@ -1,0 +1,7 @@
+(module float-zero-zero
+  (purpose "0.0 / 0.0 would be NaN: the fault E-FLOAT.")
+  (fn ratio
+    (purpose "p")
+    (sig (a Float) (b Float) -> Float)
+    (example (0.0 0.0) => 0.0)
+    (body (/ a b))))

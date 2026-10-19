@@ -1,0 +1,7 @@
+(module app
+  (purpose "App module.")
+  (use lib)
+  (fn get-secret
+    (purpose "Get the secret.")
+    (sig -> Int)
+    (body lib.secret)))

@@ -1,0 +1,7 @@
+(module unresolved-qualified
+  (purpose "p")
+  (use list)
+  (fn f
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (body (list.sumn xs))))

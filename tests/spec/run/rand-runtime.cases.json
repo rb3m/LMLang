@@ -1,0 +1,30 @@
+{
+  "sequence": {
+    "expected": "(list 35 0 79 44 47)"
+  },
+  "full-span": {
+    "expected": "7070836379803831727"
+  },
+  "equal-bounds": {
+    "expected": "(list -9223372036854775808 9223372036854775807 79)"
+  },
+  "float-sequence": {
+    "expected": "(list 0.8833108082136426 0.43152799704850997 0.026433771592597743)"
+  },
+  "float-range": {
+    "expected": "true"
+  },
+  "rejection": {
+    "expected": "-1263085514660420108"
+  },
+  "wall-clock": {
+    "expected": "true"
+  },
+  "monotonic-clock": {
+    "expected": "true"
+  },
+  "bad-bounds": {
+    "expected": "E-REQUIRES-VIOLATED",
+    "kind": "fault"
+  }
+}

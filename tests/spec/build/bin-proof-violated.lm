@@ -1,0 +1,13 @@
+(module bin-proof-violated
+  (purpose "Discharged division violated at runtime under --no-contracts is E-PROOF-VIOLATED.")
+  (use io str)
+  (fn div
+    (purpose "Divide by positive divisor.")
+    (sig (x Int) (d Int) -> Int)
+    (requires (> d 0))
+    (body (/ x d)))
+  (fn main
+    (purpose "Entry.")
+    (sig -> Unit)
+    (eff io.out)
+    (body (io.print (str.from-int (div 10 0))))))

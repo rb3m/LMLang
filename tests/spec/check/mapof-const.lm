@@ -1,0 +1,14 @@
+(module mapof-const
+  (purpose "Keys and elements must be literal constants; key types must agree; shape is checked.")
+  (fn computed
+    (purpose "p")
+    (sig (k Str) -> (Map Str Int))
+    (body (mapof (k 1))))
+  (fn mixed
+    (purpose "p")
+    (sig -> (Set Int))
+    (body (setof 1 2.0)))
+  (fn shape
+    (purpose "p")
+    (sig -> (Map Int Int))
+    (body (mapof 1 2))))

@@ -1,0 +1,27 @@
+(module stats
+  (purpose "Basic statistics over non-empty integer lists.")
+  (use list math)
+  (fn maximum
+    (purpose "Largest element.")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (len xs) 0))
+    (example ((list 3 9 2)) => 9)
+    (body (list.fold xs (list.nth xs 0) math.max)))
+  (fn mean
+    (purpose "Integer mean, rounded down.")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (len xs) 0))
+    (example ((list 1 2 3 4)) => 2)
+    (body (/ (list.sum xs) (len xs))))
+  (fn minimum
+    (purpose "Smallest element.")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (len xs) 0))
+    (example ((list 3 9 2)) => 2)
+    (body (list.fold xs (list.nth xs 0) math.min)))
+  (fn spread
+    (purpose "Largest minus smallest element.")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (len xs) 0))
+    (example ((list 3 9 2)) => 7)
+    (body (- (maximum xs) (minimum xs)))))

@@ -1,0 +1,9 @@
+(module example-fail-args
+  (purpose "p")
+  (error E (n Int))
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (fails E)
+    (example (1) => (fail E 2))
+    (body (fail E a))))

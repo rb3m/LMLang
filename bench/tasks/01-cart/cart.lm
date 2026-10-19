@@ -1,0 +1,26 @@
+(module cart
+  (purpose "Shopping cart totals with a bulk discount.")
+  (use list)
+  (type Item (rec (price Int) (qty Int)))
+  (fn discount-percent
+    (purpose "10 percent from 10000, 5 percent from 5000, otherwise none.")
+    (sig (amount Int) -> Int)
+    (example (10000) => 10)
+    (example (5000) => 5)
+    (example (4999) => 0)
+    (body (if (>= amount 10000) 10 (if (>= amount 5000) 5 0))))
+  (fn line-total
+    (purpose "Price times quantity for one item.")
+    (sig (it Item) -> Int)
+    (example ((new Item (price 250) (qty 3))) => 750)
+    (body (* (get it price) (get it qty))))
+  (fn subtotal
+    (purpose "Sum of all line totals.")
+    (sig (items (List Item)) -> Int)
+    (example ((list (new Item (price 100) (qty 2)) (new Item (price 50) (qty 1)))) => 250)
+    (body (list.sum (list.map items line-total))))
+  (fn total
+    (purpose "Subtotal minus the discount for that subtotal.")
+    (sig (items (List Item)) -> Int)
+    (example ((list (new Item (price 5000) (qty 2)))) => 9000)
+    (body (let ((s (subtotal items))) (- s (/ (* s (discount-percent s)) 100))))))

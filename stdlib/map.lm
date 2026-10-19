@@ -1,0 +1,74 @@
+(module map
+  (purpose
+    "Immutable maps keyed by Int, Float, Str or Bool; every traversal is in ascending key order.")
+  (use opt)
+  (export at fold from-list has keys put remove size to-list update values)
+  (fn at
+    (purpose "The value bound to key, or None.")
+    (sig (m (Map k v)) (key k) -> (Opt v))
+    (example ((mapof ("a" 1)) "a") => (Some 1))
+    (example ((mapof ("a" 1)) "b") => None)
+    (body (prim "map.at")))
+  (fn fold
+    (purpose "Combine the bindings in ascending key order, starting from init.")
+    (sig (m (Map k v)) (init b) (step (Fn (b k v) b)) -> b)
+    (example
+      ((mapof (2 20) (1 10)) 0 (lam ((acc Int) (k Int) (v Int)) (+ (* acc 100) (+ k v))))
+      =>
+      1122)
+    (example ((mapof) 7 (lam ((acc Int) (k Int) (v Int)) (+ acc v))) => 7)
+    (body (prim "map.fold")))
+  (fn from-list
+    (purpose "The map of the given pairs; later duplicate keys replace earlier ones.")
+    (sig (ps (List (Pair k v))) -> (Map k v))
+    (example ((list (pair "a" 1) (pair "b" 2))) => (mapof ("a" 1) ("b" 2)))
+    (example ((list (pair "a" 1) (pair "a" 2))) => (mapof ("a" 2)))
+    (example ((list)) => (mapof))
+    (body (prim "map.from-list")))
+  (fn has
+    (purpose "True when key is bound.")
+    (sig (m (Map k v)) (key k) -> Bool)
+    (example ((mapof (true 1)) true) => true)
+    (example ((mapof (true 1)) false) => false)
+    (body (prim "map.has")))
+  (fn keys
+    (purpose "The keys in ascending order.")
+    (sig (m (Map k v)) -> (List k))
+    (example ((mapof ("b" 2) ("a" 1))) => (list "a" "b"))
+    (example ((mapof (2.5 0) (-1.0 0))) => (list -1.0 2.5))
+    (body (prim "map.keys")))
+  (fn put
+    (purpose "The map with key bound to value, replacing an existing binding.")
+    (sig (m (Map k v)) (key k) (value v) -> (Map k v))
+    (example ((mapof ("a" 1)) "b" 2) => (mapof ("a" 1) ("b" 2)))
+    (example ((mapof ("a" 1)) "a" 5) => (mapof ("a" 5)))
+    (body (prim "map.put")))
+  (fn remove
+    (purpose "The map without key (unchanged when key is absent).")
+    (sig (m (Map k v)) (key k) -> (Map k v))
+    (example ((mapof (1 "x") (2 "y")) 1) => (mapof (2 "y")))
+    (example ((mapof (1 "x")) 3) => (mapof (1 "x")))
+    (body (prim "map.remove")))
+  (fn size
+    (purpose "Number of bindings.")
+    (sig (m (Map k v)) -> Int)
+    (example ((mapof ("a" 1) ("b" 2))) => 2)
+    (example ((mapof)) => 0)
+    (body (prim "map.size")))
+  (fn to-list
+    (purpose "The bindings as (pair key value) in ascending key order.")
+    (sig (m (Map k v)) -> (List (Pair k v)))
+    (example ((mapof ("b" 2) ("a" 1))) => (list (pair "a" 1) (pair "b" 2)))
+    (example ((mapof)) => (list))
+    (body (prim "map.to-list")))
+  (fn update
+    (purpose "Bind key to f of its value, or of default when key is absent.")
+    (sig (m (Map k v)) (key k) (default v) (f (Fn (v) v)) -> (Map k v))
+    (example ((mapof ("a" 1)) "a" 0 (lam ((n Int)) (+ n 10))) => (mapof ("a" 11)))
+    (example ((mapof ("a" 1)) "b" 0 (lam ((n Int)) (+ n 10))) => (mapof ("a" 1) ("b" 10)))
+    (body (put m key (f (opt.unwrap-or (at m key) default)))))
+  (fn values
+    (purpose "The values in ascending order of their keys.")
+    (sig (m (Map k v)) -> (List v))
+    (example ((mapof ("b" 1) ("a" 2))) => (list 2 1))
+    (body (prim "map.values"))))

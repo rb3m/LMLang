@@ -1,0 +1,142 @@
+(module m10
+  (purpose "let? semantics (short-circuit on the first None) and M10 stdlib edge cases (ADR-045).")
+  (use list math opt str)
+  (type Row (rec (key Int) (tag Str)))
+  (error Boom (n Int))
+  (fn after-none-fail
+    (purpose "A later binding that fails is not evaluated after a None.")
+    (sig (o (Opt Int)) -> (Opt Int))
+    (fails Boom)
+    (example (None) => None)
+    (example ((Some 4)) => (fail Boom 4))
+    (body (let? ((x o) (y (fail Boom x))) (Some y))))
+  (fn after-none-fault
+    (purpose "A later binding that would overflow is not evaluated after a None.")
+    (sig (o (Opt Int)) (k Int) -> (Opt Int))
+    (example (None 1) => None)
+    (example ((Some 2) 0) => (Some 9223372036854775807))
+    (body (let? ((x o) (y (Some (+ (math.int-max) k)))) (Some y))))
+  (fn body-none
+    (purpose "The body may itself be None.")
+    (sig (o (Opt Int)) -> (Opt Int))
+    (example ((Some 1)) => None)
+    (body (let? ((x o)) (if (> x 0) None (Some x)))))
+  (fn caught
+    (purpose "Failures inside let? flow out and can be caught.")
+    (sig (o (Opt Int)) -> (Opt Int))
+    (example ((Some 2)) => (Some -2))
+    (example (None) => None)
+    (body (try (after-none-fail o) (catch Boom (n) (Some (- 0 n))))))
+  (fn drop-big
+    (purpose "p")
+    (sig (n Int) -> (List Int))
+    (example (9223372036854775807) => (list))
+    (example (-9223372036854775808) => (list 1 2 3))
+    (body (list.drop (list 1 2 3) n)))
+  (fn first-none
+    (purpose "The first None ends the form; earlier bindings ran.")
+    (sig (xs (List Int)) -> (Opt Int))
+    (example ((list 1 2 3)) => (Some 6))
+    (example ((list 1 2)) => None)
+    (example ((list)) => None)
+    (body (let? ((a (list.at xs 0)) (b (list.at xs 1)) (c (list.at xs 2))) (Some (+ a (+ b c))))))
+  (fn get-big
+    (purpose "p")
+    (sig (i Int) -> (Opt Str))
+    (example (9223372036854775807) => None)
+    (example (0) => (Some "a"))
+    (body (list.at (list "a") i)))
+  (fn index-unicode
+    (purpose "p")
+    (sig (s Str) (part Str) -> (Opt Int))
+    (example ("🙂é🙂x" "x") => (Some 3))
+    (example ("" "") => (Some 0))
+    (example ("" "a") => None)
+    (example ("abab" "ba") => (Some 1))
+    (body (str.index-of s part)))
+  (fn nested
+    (purpose "let? nests and composes with match.")
+    (sig (s Str) -> Int)
+    (example ("12") => 13)
+    (example ("x") => 0)
+    (body (match (let? ((n (str.to-int s)) (m (Some (+ n 1)))) (Some m)) ((Some v) v) (None 0))))
+  (fn opt-chain
+    (purpose "p")
+    (sig (s Str) -> Int)
+    (example ("41") => 42)
+    (example ("x") => -1)
+    (body (opt.unwrap-or (opt.map (str.to-int s) (lam ((n Int)) (+ n 1))) -1)))
+  (fn pad-unicode
+    (purpose "p")
+    (sig (s Str) -> Str)
+    (example ("é") => "··é")
+    (example ("") => "···")
+    (body (str.pad-left s 3 "·")))
+  (fn pad-wide
+    (purpose "p")
+    (sig (w Int) -> Str)
+    (example (-5) => "ab")
+    (example (3) => "ab ")
+    (body (str.pad-right "ab" w " ")))
+  (fn replace-cases
+    (purpose "p")
+    (sig (s Str) -> (List Str))
+    (example ("aaaa") => (list "bb" "aaaa" "xaxaxaxa" "AAAA"))
+    (example ("é🙂é") => (list "é🙂é" "é🙂é" "é🙂é" "é🙂é"))
+    (body
+      (list
+        (str.replace s "aa" "b")
+        (str.replace s "" "z")
+        (str.replace s "a" "xa")
+        (str.upper-ascii (str.lower-ascii (str.upper-ascii s))))))
+  (fn sequential
+    (purpose "Later bindings see earlier names.")
+    (sig (t Str) -> (Opt Int))
+    (fails OutOfRange)
+    (example ("a=5") => (Some 5))
+    (example ("a5") => None)
+    (example ("a=") => None)
+    (body
+      (let?
+        ((i (str.index-of t "=")) (v (str.to-int (str.substring t (+ i 1) (str.length t)))))
+        (Some v))))
+  (fn sort-inconsistent
+    (purpose "An inconsistent less still gives the same result in every backend.")
+    (sig (xs (List Int)) -> (List Int))
+    (example ((list 5 3 9 1 7 2 8)) => (list 8 2 7 1 9 3 5))
+    (body (list.sort-by xs (lam ((a Int) (b Int)) true))))
+  (fn sort-stable
+    (purpose "Equal keys keep their input order.")
+    (sig (n Int) -> Str)
+    (example (0) => "1a 1d 1f 2b 2e 3c 3g")
+    (body
+      (str.join
+        (list.map
+          (list.sort-by
+            (list
+              (new Row (key 2) (tag "b"))
+              (new Row (key 1) (tag "a"))
+              (new Row (key 3) (tag "c"))
+              (new Row (key 1) (tag "d"))
+              (new Row (key 2) (tag "e"))
+              (new Row (key 1) (tag "f"))
+              (new Row (key 3) (tag "g")))
+            (lam ((a Row) (b Row)) (< (get a key) (get b key))))
+          (lam ((r Row)) (str.concat (str.from-int (+ n (get r key))) (get r tag))))
+        " ")))
+  (fn sort-strings
+    (purpose "p")
+    (sig (xs (List Str)) -> (List Str))
+    (example ((list "b" "a" "c" "a")) => (list "a" "a" "b" "c"))
+    (body (list.sort-by xs <)))
+  (fn take-big
+    (purpose "p")
+    (sig (n Int) -> (List Int))
+    (example (9223372036854775807) => (list 1 2 3))
+    (example (-9223372036854775808) => (list))
+    (body (list.take (list 1 2 3) n)))
+  (fn unit-binding
+    (purpose "A binding may carry Unit.")
+    (sig (o (Opt Unit)) -> (Opt Int))
+    (example ((Some unit)) => (Some 1))
+    (body (let? ((u o)) (Some 1)))))

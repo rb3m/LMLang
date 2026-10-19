@@ -1,0 +1,16 @@
+(scenarios
+  (scenario "Circle area uses real pi"
+    (status approved)
+    (why "A circle of radius 2 has area 4 pi, about 12.566, using float.pi (pi to about 16 digits).")
+    (run shapes.area (shapes.Circle 2))
+    (expect 12.566370614359172))
+  (scenario "Rectangle area"
+    (status approved)
+    (why "A 2 by 3 rectangle has area 6.")
+    (run shapes.area (shapes.Rect 2 3))
+    (expect 6.0))
+  (scenario "Scaling multiplies every dimension"
+    (status approved)
+    (why "Scaling a 1 by 2 rectangle by 3 gives a 3 by 6 rectangle.")
+    (run shapes.scale (shapes.Rect 1 2) 3)
+    (expect (shapes.Rect 3 6))))

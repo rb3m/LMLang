@@ -1,0 +1,7 @@
+(module lambda-fails
+  (purpose "p")
+  (use list)
+  (fn f
+    (purpose "p")
+    (sig (xs (List Int)) -> (List Int))
+    (body (list.map xs (lam ((x Int)) (/ 1 x))))))

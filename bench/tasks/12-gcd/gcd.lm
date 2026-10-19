@@ -1,0 +1,23 @@
+(module gcd
+  (purpose "Greatest common divisor and least common multiple.")
+  (fn coprime
+    (purpose "True when the only common divisor is 1.")
+    (sig (a Int) (b Int) -> Bool)
+    (requires (and (>= a 0) (>= b 0)))
+    (example (8 15) => true)
+    (example (8 12) => false)
+    (body (= (gcd a b) 1)))
+  (fn gcd
+    (purpose "Euclid's algorithm for non-negative integers.")
+    (sig (a Int) (b Int) -> Int)
+    (requires (and (>= a 0) (>= b 0)))
+    (example (12 18) => 6)
+    (example (7 0) => 7)
+    (body (if (= b 0) a (gcd b (mod a b)))))
+  (fn lcm
+    (purpose "Least common multiple of positive integers.")
+    (sig (a Int) (b Int) -> Int)
+    (fails DivZero)
+    (requires (and (> a 0) (> b 0)))
+    (example (4 6) => 12)
+    (body (/ (* a b) (gcd a b)))))

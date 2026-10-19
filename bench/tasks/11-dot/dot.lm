@@ -1,0 +1,14 @@
+(module dot
+  (purpose "Dot product and squared length of integer vectors.")
+  (use list)
+  (fn dot
+    (purpose "Sum of pairwise products; both lists must have equal length.")
+    (sig (xs (List Int)) (ys (List Int)) -> Int)
+    (requires (= (len xs) (len ys)))
+    (example ((list 1 2 3) (list 4 5 6)) => 32)
+    (body (list.sum (list.map2 xs ys *))))
+  (fn norm-sq
+    (purpose "Squared length of a vector.")
+    (sig (xs (List Int)) -> Int)
+    (example ((list 3 4)) => 25)
+    (body (dot xs xs))))

@@ -1,0 +1,4 @@
+(module alias-cycle
+  (purpose "p")
+  (type A B)
+  (type B A))

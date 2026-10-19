@@ -1,0 +1,7 @@
+(module effect-unknown
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (eff io.bogus)
+    (body a)))

@@ -1,0 +1,25 @@
+module billing  -- Invoice totals.  (use list)
+ type billing.Cents  Int
+*error billing.BadRegion  (region Str)
+*fn billing.total  (items (List Cents)) (region Str) -> Cents  [fails BadRegion]  -- Sum item prices and add Mexican VAT.
+module colsum  -- Sum a CSV column per key, keys ascending: colsum FILE KEY-COL VALUE-COL (zero-based).  (use fs io list map str)
+ type colsum.Summary  (rec (totals (Map Str Int)) (bad Int))
+ type colsum.Total  (rec (key Str) (amount Int))
+ fn colsum.field  (xs (List Str)) (i Int) -> (Opt Str)  -- The i-th element of xs, if present.
+*fn colsum.main  -> Int  [eff fs.read io.in io.out]  -- Entry point: parse arguments, run, map I/O errors to exit status 1.
+ fn colsum.parse-row  (line Str) (kcol Int) (vcol Int) -> (Opt Total)  -- Key and value of one CSV line, or None if a column is missing or not an integer.
+ fn colsum.print-all  (lines (List Str)) -> Unit  [eff io.out]  -- Print each line to stdout.
+ fn colsum.render  (k Str) (n Int) -> Str  -- One output line: key, tab, total.
+ fn colsum.report  (s Summary) -> Int  [eff io.out]  -- Print every total in key order, then the skipped-row count on stderr if any; exit 0.
+ fn colsum.run  (path Str) (kcol Int) (vcol Int) -> Int  [eff fs.read io.out]  [fails fs.IoError]  -- Read the file and report its totals, skipping the header line.
+*fn colsum.summarize  (rows (List Str)) (kcol Int) (vcol Int) -> Summary  -- Totals per key (a Map, so in ascending key order), and the number of unparsable rows.
+ fn colsum.usage  -> Int  [eff io.out]  -- Print usage on stderr; exit status 2.
+module file-lines  -- Count lines in a UTF-8 file named by the first program argument.  (use fs io list str)
+*fn file-lines.count  (text Str) -> Int  -- Count LF, CRLF, or CR text lines.
+*fn file-lines.main  -> Unit  [eff fs.read io.in io.out]  [fails fs.IoError]  -- Print the line count of the first file argument.
+module shapes  -- Areas and descriptions of simple shapes.  (use float math str)
+*type shapes.Shape  (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty)
+*fn shapes.area  (s Shape) -> Float  -- Area in square units; circles use float.pi.
+*fn shapes.describe  (s Shape) -> Str  -- One-line text description.
+*fn shapes.longest-side  (s Shape) -> Int  -- Largest dimension; circles use the diameter.
+*fn shapes.scale  (s Shape) (k Int) -> Shape  -- Multiply every dimension by k.

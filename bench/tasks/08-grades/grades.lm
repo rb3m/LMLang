@@ -1,0 +1,30 @@
+(module grades
+  (purpose "Score to letter grade.")
+  (use list)
+  (type Grade (sum Excellent Good Passing Failing))
+  (fn average
+    (purpose "Integer average of the scores.")
+    (sig (scores (List Int)) -> Int)
+    (requires (> (len scores) 0))
+    (example ((list 80 90 100)) => 90)
+    (body (/ (list.sum scores) (len scores))))
+  (fn grade-of
+    (purpose "90+ Excellent, 75+ Good, 60+ Passing, otherwise Failing.")
+    (sig (score Int) -> Grade)
+    (example (95) => Excellent)
+    (example (75) => Good)
+    (example (60) => Passing)
+    (example (59) => Failing)
+    (body (if (>= score 90) Excellent (if (>= score 75) Good (if (>= score 60) Passing Failing)))))
+  (fn letter
+    (purpose "A, B, C or F for a grade.")
+    (sig (g Grade) -> Str)
+    (example (Excellent) => "A")
+    (example (Failing) => "F")
+    (body (match g (Excellent "A") (Good "B") (Passing "C") (Failing "F"))))
+  (fn report
+    (purpose "Letter for the average score.")
+    (sig (scores (List Int)) -> Str)
+    (requires (> (len scores) 0))
+    (example ((list 50 60 70)) => "C")
+    (body (letter (grade-of (average scores))))))

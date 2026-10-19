@@ -1,0 +1,11 @@
+(module app
+  (purpose "App calling functions from lib.")
+  (use lib)
+  (fn run
+    (purpose "Run.")
+    (sig (x Int) -> Int)
+    (eff io.out)
+    (body
+      (do
+        (lib.used-eff x)
+        (lib.used-pure x)))))

@@ -1,0 +1,7 @@
+(module app
+  (purpose "App trying to use empty-export lib.")
+  (use lib)
+  (fn run
+    (purpose "Run.")
+    (sig -> Int)
+    (body (lib.hidden-fn lib.hidden-val))))

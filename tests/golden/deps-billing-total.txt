@@ -1,0 +1,4 @@
+1 error billing.BadRegion
+1 type billing.Cents
+1 fn list.sum
+2 fn list.fold

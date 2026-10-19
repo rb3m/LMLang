@@ -1,0 +1,7 @@
+(module float-mul-inf
+  (purpose "A product beyond the largest finite Float is the fault E-FLOAT.")
+  (fn sq
+    (purpose "p")
+    (sig (x Float) -> Float)
+    (example (1e+200) => 0.0)
+    (body (* x x))))

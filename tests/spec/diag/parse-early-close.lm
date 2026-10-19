@@ -1,0 +1,10 @@
+(module early
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig -> Int)
+    (body 1)))
+  (fn g
+    (purpose "p")
+    (sig -> Int)
+    (body 2)))

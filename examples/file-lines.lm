@@ -1,0 +1,22 @@
+(module file-lines
+  (purpose "Count lines in a UTF-8 file named by the first program argument.")
+  (use fs io list str)
+  (export count main)
+  (fn count
+    (purpose "Count LF, CRLF, or CR text lines.")
+    (sig (text Str) -> Int)
+    (example ("") => 0)
+    (example ("one\ntwo\n") => 2)
+    (body (len (str.lines text))))
+  (fn main
+    (purpose "Print the line count of the first file argument.")
+    (sig -> Unit)
+    (eff fs.read io.in io.out)
+    (fails fs.IoError)
+    (body
+      (let
+        ((args (io.args)))
+        (if
+          (= (len args) 0)
+          (io.eprint "usage: file-lines PATH")
+          (io.print (str.from-int (count (fs.read (list.nth args 0))))))))))

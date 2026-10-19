@@ -1,0 +1,1 @@
+[{"fn":"greeting","args":[""],"want":"Hello, "},{"fn":"announce","args":[["Ana","Luis"]],"want":null,"out":"Hello, Ana\nHello, Luis\n"},{"fn":"announce","args":[[]],"want":null,"out":""}]

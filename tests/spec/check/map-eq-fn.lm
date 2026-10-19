@@ -1,0 +1,10 @@
+(module map-eq-fn
+  (purpose "Maps holding functions cannot be compared; mapof and setof are reserved words.")
+  (fn eq
+    (purpose "p")
+    (sig -> Bool)
+    (body (= (mapof (1 not)) (mapof (1 not)))))
+  (fn setof
+    (purpose "p")
+    (sig -> Int)
+    (body 0)))

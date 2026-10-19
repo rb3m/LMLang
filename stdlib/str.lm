@@ -1,0 +1,179 @@
+(module str
+  (purpose "String operations.")
+  (export
+    BadCode
+    concat
+    contains
+    from-codes
+    from-float
+    from-int
+    index-of
+    join
+    length
+    lines
+    lower
+    lower-ascii
+    pad-left
+    pad-right
+    repeat
+    replace
+    split
+    starts-with
+    substring
+    to-codes
+    to-float
+    to-int
+    trim
+    upper
+    upper-ascii)
+  (error BadCode (code Int))
+  (fn concat
+    (purpose "Join two strings.")
+    (sig (a Str) (b Str) -> Str)
+    (example ("ab" "cd") => "abcd")
+    (body (prim "str.concat")))
+  (fn contains
+    (purpose "Test for a literal substring.")
+    (sig (s Str) (part Str) -> Bool)
+    (example ("abc" "b") => true)
+    (body (prim "str.contains")))
+  (fn from-codes
+    (purpose "Build a string from Unicode scalar values; fails BadCode on invalid values.")
+    (sig (cs (List Int)) -> Str)
+    (fails BadCode)
+    (example ((list 65 66 67)) => "ABC")
+    (example ((list 65 -1 67)) => (fail BadCode -1))
+    (example ((list 65 55296 67)) => (fail BadCode 55296))
+    (body (prim "str.from-codes")))
+  (fn from-float
+    (purpose "Canonical text of a Float (shortest round-trip digits, as LM prints it).")
+    (sig (x Float) -> Str)
+    (example (100.0) => "100.0")
+    (example (0.0001) => "0.0001")
+    (example (1e-05) => "1e-05")
+    (example (1e+16) => "1e+16")
+    (example (0.30000000000000004) => "0.30000000000000004")
+    (body (prim "str.from-float")))
+  (fn from-int
+    (purpose "Decimal text of an integer.")
+    (sig (n Int) -> Str)
+    (example (42) => "42")
+    (body (prim "str.from-int")))
+  (fn index-of
+    (purpose "Code-point index of the first occurrence of part (an empty part is at 0).")
+    (sig (s Str) (part Str) -> (Opt Int))
+    (example ("héllo" "l") => (Some 2))
+    (example ("abc" "") => (Some 0))
+    (example ("abc" "z") => None)
+    (body (prim "str.index-of")))
+  (fn join
+    (purpose "Join parts with a separator between them.")
+    (sig (parts (List Str)) (sep Str) -> Str)
+    (example ((list "a" "b") ", ") => "a, b")
+    (body (prim "str.join")))
+  (fn length
+    (purpose "Number of characters.")
+    (sig (s Str) -> Int)
+    (example ("abc") => 3)
+    (body (prim "str.length")))
+  (fn lines
+    (purpose "Split CRLF, LF, or CR lines, omitting a final empty line.")
+    (sig (s Str) -> (List Str))
+    (example ("a\nb\n") => (list "a" "b"))
+    (body (prim "str.lines")))
+  (fn lower
+    (purpose "Unicode simple lowercase mapping; length is preserved.")
+    (sig (s Str) -> Str)
+    (example ("ABC-123") => "abc-123")
+    (example ("ß") => "ß")
+    (example ("İ") => "i")
+    (body (prim "str.lower")))
+  (fn lower-ascii
+    (purpose "Turn A-Z into a-z; every other character is unchanged.")
+    (sig (s Str) -> Str)
+    (example ("AbC-É") => "abc-É")
+    (body (prim "str.lower-ascii")))
+  (fn pad-left
+    (purpose "Prefix fill until s is width code points long; s unchanged if already that long.")
+    (sig (s Str) (width Int) (fill Str) -> Str)
+    (requires (= (length fill) 1))
+    (example ("7" 3 "0") => "007")
+    (example ("1234" 3 "0") => "1234")
+    (body (if (>= (length s) width) s (concat (repeat fill (- width (length s))) s))))
+  (fn pad-right
+    (purpose "Append fill until s is width code points long; s unchanged if already that long.")
+    (sig (s Str) (width Int) (fill Str) -> Str)
+    (requires (= (length fill) 1))
+    (example ("ab" 4 ".") => "ab..")
+    (example ("é" 2 " ") => "é ")
+    (body (if (>= (length s) width) s (concat s (repeat fill (- width (length s)))))))
+  (fn repeat
+    (purpose "s concatenated n times.")
+    (sig (s Str) (n Int) -> Str)
+    (requires (>= n 0))
+    (example ("ab" 3) => "ababab")
+    (example ("ab" 0) => "")
+    (body (prim "str.repeat")))
+  (fn replace
+    (purpose
+      "Replace every non-overlapping occurrence of old, left to right; empty old changes nothing.")
+    (sig (s Str) (old Str) (replacement Str) -> Str)
+    (example ("a-b-c" "-" "+") => "a+b+c")
+    (example ("aaa" "aa" "b") => "ba")
+    (example ("abc" "" "x") => "abc")
+    (body (prim "str.replace")))
+  (fn split
+    (purpose "Split on a literal separator; empty separator splits characters.")
+    (sig (s Str) (sep Str) -> (List Str))
+    (example ("a,b" ",") => (list "a" "b"))
+    (body (prim "str.split")))
+  (fn starts-with
+    (purpose "Test a literal prefix.")
+    (sig (s Str) (prefix Str) -> Bool)
+    (example ("abc" "ab") => true)
+    (body (prim "str.starts-with")))
+  (fn substring
+    (purpose "Slice Unicode characters from start inclusive to end exclusive.")
+    (sig (s Str) (start Int) (end Int) -> Str)
+    (fails OutOfRange)
+    (example ("abc" 1 3) => "bc")
+    (body (prim "str.substring")))
+  (fn to-codes
+    (purpose "Unicode scalar values of each character in s.")
+    (sig (s Str) -> (List Int))
+    (example ("ABC") => (list 65 66 67))
+    (example ("") => (list))
+    (body (prim "str.to-codes")))
+  (fn to-float
+    (purpose "Parse decimal text like 1.5 or 1e-3; None if malformed, inf, nan or out of range.")
+    (sig (s Str) -> (Opt Float))
+    (example ("2.5e-3") => (Some 0.0025))
+    (example ("-0") => (Some 0.0))
+    (example ("1e400") => None)
+    (example ("nan") => None)
+    (example (" 1.0") => None)
+    (body (prim "str.to-float")))
+  (fn to-int
+    (purpose
+      "Parse signed ASCII decimal text; None if malformed or outside the signed 64-bit range.")
+    (sig (s Str) -> (Opt Int))
+    (example ("42") => (Some 42))
+    (example ("4x") => None)
+    (body (prim "str.to-int")))
+  (fn trim
+    (purpose "Strip Unicode whitespace from both ends.")
+    (sig (s Str) -> Str)
+    (example (" x ") => "x")
+    (body (prim "str.trim")))
+  (fn upper
+    (purpose "Unicode simple uppercase mapping; length is preserved.")
+    (sig (s Str) -> Str)
+    (example ("abc-123") => "ABC-123")
+    (example ("ß") => "ß")
+    (example ("ǅ") => "Ǆ")
+    (body (prim "str.upper")))
+  (fn upper-ascii
+    (purpose "Turn a-z into A-Z; every other character is unchanged.")
+    (sig (s Str) -> Str)
+    (example ("abC-é") => "ABC-é")
+    (body (prim "str.upper-ascii"))))

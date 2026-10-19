@@ -1,0 +1,6 @@
+(module type-return
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Str)
+    (body a)))

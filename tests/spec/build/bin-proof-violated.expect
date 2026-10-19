@@ -1,0 +1,1 @@
+[{"exit": 70, "stdout": "", "code": "E-REQUIRES-VIOLATED"}, {"flags": ["--no-contracts"], "exit": 70, "stdout": "", "code": "E-PROOF-VIOLATED"}]

@@ -1,0 +1,21 @@
+(module search
+  (purpose "Linear search over integer lists.")
+  (use list)
+  (fn contains
+    (purpose "True when target occurs in xs.")
+    (sig (xs (List Int)) (target Int) -> Bool)
+    (example ((list 1 2) 2) => true)
+    (example ((list 1 2) 3) => false)
+    (body (match (find-index xs target) ((Some _) true) (None false))))
+  (fn find-index
+    (purpose "Index of the first occurrence of target, if any.")
+    (sig (xs (List Int)) (target Int) -> (Opt Int))
+    (example ((list 5 6 7) 7) => (Some 2))
+    (example ((list 5 6 7) 9) => None)
+    (body (list.index-of xs target)))
+  (fn get-or
+    (purpose "Element at index i, or default when out of range.")
+    (sig (xs (List Int)) (i Int) (default Int) -> Int)
+    (example ((list 5 6) 1 0) => 6)
+    (example ((list 5 6) 4 -1) => -1)
+    (body (try (list.nth xs i) (catch OutOfRange () default)))))

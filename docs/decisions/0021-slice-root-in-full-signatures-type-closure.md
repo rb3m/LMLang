@@ -1,0 +1,3 @@
+# ADR-021 Slice = root in full + signatures + type closure (M3)
+
+A slice contains the root symbol in full, direct callees as signature blocks only, and the full text of every type/error reachable from the root or from included signatures. Depth beyond 1 needs `--bodies`. Budget trimming removes deepest items first and never the root. Why: with qualified names, exact resolution and declared effects/failures, nothing else can change the meaning of the root; the sufficiency property is tested by mutation (tests/unit/test_index.py). Reference graph comes from the checker (`prog.refs`), so queries cost no re-parsing. Revisit: if M6 shows agents routinely need callee bodies (then make `--bodies` cheaper or default for small callees).

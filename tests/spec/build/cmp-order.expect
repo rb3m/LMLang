@@ -1,0 +1,1 @@
+[{"exit": 1, "stdout": "1\n2\n", "stderr": "(fail cmp-order.Stop 2)\n"}]

@@ -1,0 +1,5 @@
+(module parse-missing-sig
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (body 1)))

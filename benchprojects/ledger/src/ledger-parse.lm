@@ -1,0 +1,350 @@
+(module ledger-parse
+  (purpose "Parse transaction and budget CSV lines with strict date and integer validation.")
+  (use ledger-model list str)
+  (export
+    field-at
+    is-comment-or-blank
+    is-header-line
+    normalize-category
+    parse-budget-line
+    parse-budget-lines
+    parse-budget-text
+    parse-date
+    parse-tx-line
+    parse-tx-lines
+    parse-tx-text)
+  (fn field-at
+    (purpose "Return the trimmed i-th element of xs, if present.")
+    (sig (xs (List Str)) (i Int) -> (Opt Str))
+    (example ((list " 2026-01-01 " " Coffee " " food ") 1) => (Some "Coffee"))
+    (example ((list "only-one") 2) => None)
+    (example ((list "a" "b") -1) => None)
+    (body
+      (if
+        (< i 0)
+        None
+        (match xs ((list) None) ((cons h t) (if (= i 0) (Some (str.trim h)) (field-at t (- i 1))))))))
+  (fn is-comment-or-blank
+    (purpose "True when a line is empty after trimming or starts with #.")
+    (sig (line Str) -> Bool)
+    (example ("   ") => true)
+    (example ("# comment row") => true)
+    (example ("2026-01-01,Rent,housing,-1000") => false)
+    (body
+      (let
+        ((trimmed (str.trim line)))
+        (or (= (str.length trimmed) 0) (str.starts-with trimmed "#")))))
+  (fn is-header-line
+    (purpose "True when a CSV line looks like a transaction or budget header row.")
+    (sig (line Str) -> Bool)
+    (example ("date,description,category,amount") => true)
+    (example ("category,limit") => true)
+    (example ("2026-01-01,Coffee,food,-450") => false)
+    (body
+      (let
+        ((cells (str.split line ",")))
+        (match
+          (field-at cells 0)
+          (None false)
+          (
+            (Some first)
+            (or (= first "date") (= first "Date") (= first "category") (= first "Category")))))))
+  (fn normalize-category
+    (purpose "Trim a category string; return uncategorized if empty.")
+    (sig (raw Str) -> Str)
+    (example ("  groceries ") => "groceries")
+    (example ("   ") => "uncategorized")
+    (body (let ((trimmed (str.trim raw))) (if (= (str.length trimmed) 0) "uncategorized" trimmed))))
+  (fn parse-budget-line
+    (purpose "Parse one budget line 'category,limit-cents' into a BudgetRule if valid.")
+    (sig (line Str) -> (Opt ledger-model.BudgetRule))
+    (example ("food,50000") => (Some (new ledger-model.BudgetRule (category "food") (limit 50000))))
+    (example
+      ("housing, 150000 ")
+      =>
+      (Some (new ledger-model.BudgetRule (category "housing") (limit 150000))))
+    (example ("food,not-an-int") => None)
+    (example ("food,-100") => None)
+    (example ("only-one-col") => None)
+    (body
+      (let
+        ((cells (str.split line ",")))
+        (if
+          (!= (len cells) 2)
+          None
+          (match
+            (field-at cells 0)
+            (None None)
+            (
+              (Some raw-cat)
+              (if
+                (not (ledger-model.is-valid-category raw-cat))
+                None
+                (match
+                  (field-at cells 1)
+                  (None None)
+                  (
+                    (Some raw-limit)
+                    (match
+                      (str.to-int raw-limit)
+                      (None None)
+                      (
+                        (Some lim)
+                        (if
+                          (< lim 0)
+                          None
+                          (Some
+                            (new
+                              ledger-model.BudgetRule
+                              (category (normalize-category raw-cat))
+                              (limit lim)))))))))))))))
+  (fn parse-budget-lines
+    (purpose "Parse a list of budget CSV lines, skipping comments, blanks, and header rows.")
+    (sig (lines (List Str)) -> (List ledger-model.BudgetRule))
+    (example
+      ((list "category,limit" "# monthly" "food,40000" "bad-line" "rent,120000"))
+      =>
+      (list
+        (new ledger-model.BudgetRule (category "food") (limit 40000))
+        (new ledger-model.BudgetRule (category "rent") (limit 120000))))
+    (body
+      (list.fold
+        lines
+        (list)
+        (lam
+          ((acc (List ledger-model.BudgetRule)) (line Str))
+          (if
+            (or (is-comment-or-blank line) (is-header-line line))
+            acc
+            (match (parse-budget-line line) (None acc) ((Some rule) (list.concat acc (list rule)))))))))
+  (fn parse-budget-text
+    (purpose "Parse full budget CSV text into a list of BudgetRule records.")
+    (sig (text Str) -> (List ledger-model.BudgetRule))
+    (example
+      ("category,limit\nfood,30000\ntransport,15000\n")
+      =>
+      (list
+        (new ledger-model.BudgetRule (category "food") (limit 30000))
+        (new ledger-model.BudgetRule (category "transport") (limit 15000))))
+    (body (parse-budget-lines (str.lines text))))
+  (fn parse-date
+    (purpose "Parse a strict YYYY-MM-DD date string into DateParts, validating calendar bounds.")
+    (sig (s Str) -> (Opt ledger-model.DateParts))
+    (example
+      ("2026-03-15")
+      =>
+      (Some (new ledger-model.DateParts (year 2026) (month 3) (day 15) (month-key "2026-03"))))
+    (example ("2026-02-29") => None)
+    (example
+      ("2024-02-29")
+      =>
+      (Some (new ledger-model.DateParts (year 2024) (month 2) (day 29) (month-key "2024-02"))))
+    (example ("2026-3-15") => None)
+    (example ("not-a-date") => None)
+    (body
+      (let
+        ((trimmed (str.trim s)))
+        (if
+          (!= (str.length trimmed) 10)
+          None
+          (let
+            ((parts (str.split trimmed "-")))
+            (if
+              (!= (len parts) 3)
+              None
+              (match
+                (field-at parts 0)
+                (None None)
+                (
+                  (Some ys)
+                  (match
+                    (field-at parts 1)
+                    (None None)
+                    (
+                      (Some ms)
+                      (match
+                        (field-at parts 2)
+                        (None None)
+                        (
+                          (Some ds)
+                          (if
+                            (or
+                              (!= (str.length ys) 4)
+                              (!= (str.length ms) 2)
+                              (!= (str.length ds) 2))
+                            None
+                            (match
+                              (str.to-int ys)
+                              (None None)
+                              (
+                                (Some y)
+                                (match
+                                  (str.to-int ms)
+                                  (None None)
+                                  (
+                                    (Some m)
+                                    (match
+                                      (str.to-int ds)
+                                      (None None)
+                                      (
+                                        (Some d)
+                                        (if
+                                          (and
+                                            (ledger-model.is-valid-year y)
+                                            (ledger-model.is-valid-month m)
+                                            (ledger-model.is-valid-day-for-month y m d))
+                                          (Some
+                                            (new
+                                              ledger-model.DateParts
+                                              (year y)
+                                              (month m)
+                                              (day d)
+                                              (month-key (ledger-model.date-month-key y m))))
+                                          None))))))))))))))))))))
+  (fn parse-tx-line
+    (purpose "Parse one 4-column CSV line (date,description,category,amount) into Tx.")
+    (sig (line Str) -> (Opt ledger-model.Tx))
+    (example
+      ("2026-03-10, Espresso Beans ,coffee,-1850")
+      =>
+      (Some
+        (new
+          ledger-model.Tx
+          (date "2026-03-10")
+          (month "2026-03")
+          (description "Espresso Beans")
+          (category "coffee")
+          (amount -1850))))
+    (example ("2026-02-30,Bad Date,misc,-100") => None)
+    (example ("2026-03-10,Missing Col,-100") => None)
+    (example ("2026-03-10,Bad Amount,misc,12.34") => None)
+    (body
+      (let
+        ((cells (str.split line ",")))
+        (if
+          (!= (len cells) 4)
+          None
+          (match
+            (field-at cells 0)
+            (None None)
+            (
+              (Some raw-date)
+              (match
+                (parse-date raw-date)
+                (None None)
+                (
+                  (Some dp)
+                  (match
+                    (field-at cells 1)
+                    (None None)
+                    (
+                      (Some desc)
+                      (match
+                        (field-at cells 2)
+                        (None None)
+                        (
+                          (Some raw-cat)
+                          (match
+                            (field-at cells 3)
+                            (None None)
+                            (
+                              (Some raw-amt)
+                              (match
+                                (str.to-int raw-amt)
+                                (None None)
+                                (
+                                  (Some amt)
+                                  (let
+                                    (
+                                      (clean-desc
+                                        (if (= (str.length desc) 0) "(no description)" desc))
+                                      (clean-cat (normalize-category raw-cat))
+                                      (norm-date (str.trim raw-date)))
+                                    (Some
+                                      (ledger-model.make-tx
+                                        norm-date
+                                        (get dp month-key)
+                                        clean-desc
+                                        clean-cat
+                                        amt)))))))))))))))))))
+  (fn parse-tx-lines
+    (purpose "Parse a list of CSV lines into a ParseOutcome with transactions and row errors.")
+    (sig (lines (List Str)) -> ledger-model.ParseOutcome)
+    (example
+      ((list "date,description,category,amount" "2026-01-05,Paycheck,salary,250000" "bad,row"))
+      =>
+      (new
+        ledger-model.ParseOutcome
+        (txs
+          (list
+            (new
+              ledger-model.Tx
+              (date "2026-01-05")
+              (month "2026-01")
+              (description "Paycheck")
+              (category "salary")
+              (amount 250000))))
+        (errors
+          (list
+            (new
+              ledger-model.RowError
+              (line-no 3)
+              (raw "bad,row")
+              (reason "invalid transaction row"))))
+        (skipped-headers 1)))
+    (body
+      (let
+        (
+          (indices (list.range 0 (len lines)))
+          (init (new ledger-model.ParseOutcome (txs (list)) (errors (list)) (skipped-headers 0))))
+        (list.fold
+          indices
+          init
+          (lam
+            ((acc ledger-model.ParseOutcome) (idx Int))
+            (match
+              (field-at lines idx)
+              (None acc)
+              (
+                (Some line)
+                (if
+                  (is-comment-or-blank line)
+                  acc
+                  (if
+                    (is-header-line line)
+                    (with acc (skipped-headers (+ (get acc skipped-headers) 1)))
+                    (match
+                      (parse-tx-line line)
+                      (None
+                        (with
+                          acc
+                          (errors
+                            (list.concat
+                              (get acc errors)
+                              (list
+                                (new
+                                  ledger-model.RowError
+                                  (line-no (+ idx 1))
+                                  (raw line)
+                                  (reason "invalid transaction row")))))))
+                      ((Some tx) (with acc (txs (list.concat (get acc txs) (list tx)))))))))))))))
+  (fn parse-tx-text
+    (purpose "Parse full transaction CSV file content into a ParseOutcome.")
+    (sig (text Str) -> ledger-model.ParseOutcome)
+    (example
+      ("date,description,category,amount\n2026-01-10,Book,education,-2499\n")
+      =>
+      (new
+        ledger-model.ParseOutcome
+        (txs
+          (list
+            (new
+              ledger-model.Tx
+              (date "2026-01-10")
+              (month "2026-01")
+              (description "Book")
+              (category "education")
+              (amount -2499))))
+        (errors (list))
+        (skipped-headers 1)))
+    (body (parse-tx-lines (str.lines text)))))

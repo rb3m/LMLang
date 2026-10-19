@@ -1,0 +1,13 @@
+(module time
+  (purpose "Wall and monotonic clocks in milliseconds.")
+  (export mono-ms now-ms)
+  (fn mono-ms
+    (purpose "Monotonic milliseconds from an arbitrary origin; only differences are meaningful.")
+    (sig -> Int)
+    (eff time.now)
+    (body (prim "time.mono-ms")))
+  (fn now-ms
+    (purpose "Unix epoch milliseconds.")
+    (sig -> Int)
+    (eff time.now)
+    (body (prim "time.now-ms"))))

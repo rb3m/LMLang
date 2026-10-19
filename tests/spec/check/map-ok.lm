@@ -1,0 +1,42 @@
+(module map-ok
+  (purpose
+    "Map and Set types, literals, empty-literal inference, aliases and generic key variables.")
+  (use map set)
+  (type Index (Map Str Int))
+  (type Tags (rec (names (Set Str))))
+  (fn bools
+    (purpose "Bool keys, Float elements, nested map values.")
+    (sig -> (Map Bool (Map Float (Set Int))))
+    (body (mapof (true (mapof (0.5 (setof 1)))) (false (mapof)))))
+  (fn count
+    (purpose "Count each word.")
+    (sig (words (List Str)) -> Index)
+    (body (count-from words (mapof))))
+  (fn count-from
+    (purpose "Count each word on top of an existing index.")
+    (sig (words (List Str)) (acc Index) -> Index)
+    (body
+      (match
+        words
+        ((list) acc)
+        ((cons w rest) (count-from rest (map.update acc w 0 (lam ((n Int)) (+ n 1))))))))
+  (fn empty-size
+    (purpose "An empty set typed by its use.")
+    (sig -> Int)
+    (body (set.size (set.add (setof) 1.5))))
+  (fn first-key
+    (purpose "A generic function over any key type.")
+    (sig (m (Map k v)) -> (Opt k))
+    (body (match (map.keys m) ((list) None) ((cons h _) (Some h)))))
+  (fn same
+    (purpose "Maps compare structurally.")
+    (sig -> Bool)
+    (body (= (mapof (1 "a") (2 "b")) (map.put (mapof (2 "b")) 1 "a"))))
+  (fn tags
+    (purpose "A record holding a set.")
+    (sig -> Tags)
+    (body (new Tags (names (setof "x" "y")))))
+  (fn uniq
+    (purpose "A generic function whose type variable is a Set element in its signature.")
+    (sig (xs (List a)) -> (Set a))
+    (body (set.from-list xs))))

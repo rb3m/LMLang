@@ -1,0 +1,15 @@
+(module collatz
+  (purpose "Collatz sequence length.")
+  (fn next
+    (purpose "Next Collatz value: halve when even, else 3n+1.")
+    (sig (n Int) -> Int)
+    (example (6) => 3)
+    (example (7) => 22)
+    (body (if (= (mod n 2) 0) (/ n 2) (+ (* 3 n) 1))))
+  (fn steps
+    (purpose "Number of steps to reach 1.")
+    (sig (n Int) -> Int)
+    (requires (> n 0))
+    (example (1) => 0)
+    (example (6) => 8)
+    (body (if (= n 1) 0 (+ 1 (steps (next n)))))))

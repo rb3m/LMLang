@@ -1,0 +1,155 @@
+module billing  -- Invoice totals.  (use list)
+*error billing.BadRegion  (region Str)
+*fn billing.total  (items (List Cents)) (region Str) -> Cents  [fails BadRegion]  -- Sum item prices and add Mexican VAT.
+module colsum  -- Sum a CSV column per key, keys ascending: colsum FILE KEY-COL VALUE-COL (zero-based).  (use fs io list map str)
+*fn colsum.main  -> Int  [eff fs.read io.in io.out]  -- Entry point: parse arguments, run, map I/O errors to exit status 1.
+*fn colsum.summarize  (rows (List Str)) (kcol Int) (vcol Int) -> Summary  -- Totals per key (a Map, so in ascending key order), and the number of unparsable rows.
+module file-lines  -- Count lines in a UTF-8 file named by the first program argument.  (use fs io list str)
+*fn file-lines.count  (text Str) -> Int  -- Count LF, CRLF, or CR text lines.
+*fn file-lines.main  -> Unit  [eff fs.read io.in io.out]  [fails fs.IoError]  -- Print the line count of the first file argument.
+module float  -- Float helpers: conversions, rounding, constants, exp, logs, sqrt, abs, min, max, sum.  (use list)
+*fn float.abs  (x Float) -> Float  -- Absolute value.
+*fn float.acos  (x Float) -> Float  -- Arccosine in radians; |x| > 1.0 is E-FLOAT; error at most 1 ulp.
+*fn float.asin  (x Float) -> Float  -- Arcsine in radians; |x| > 1.0 is E-FLOAT; error at most 1 ulp.
+*fn float.atan  (x Float) -> Float  -- Arctangent in radians for every finite Float; error at most 1 ulp.
+*fn float.atan2  (y Float) (x Float) -> Float  -- Angle of (x, y) in radians, arguments (y, x); atan2(0, 0) = 0; error at most 1 ulp.
+*fn float.cbrt  (x Float) -> Float  -- Real cube root, including negative inputs; exact cubes are exact; error at most 1 ulp.
+*fn float.ceil  (x Float) -> Int  -- Smallest Int not below x; outside the Int range is the fault E-OVERFLOW.
+*fn float.cos  (x Float) -> Float  -- Cosine of any finite binary64 angle in radians; finite result, error at most 1 ulp.
+*fn float.cosh  (x Float) -> Float  -- Hyperbolic cosine; overflow faults E-FLOAT; error at most 1 ulp.
+*fn float.e  -> Float  -- Euler's number, nearest binary64, pinned to bits 0x4005bf0a8b145769.
+*fn float.exp  (x Float) -> Float  -- Exponential; overflow is E-FLOAT, underflow is allowed; error at most 1 ulp.
+*fn float.expm1  (x Float) -> Float  -- exp(x)-1, preserving tiny x lost by exp(x)-1; overflow faults E-FLOAT; error at most 1 ulp.
+*fn float.floor  (x Float) -> Int  -- Largest Int not above x; outside the Int range is the fault E-OVERFLOW.
+*fn float.from-int  (n Int) -> Float  -- Nearest Float to an Int (ties to even).
+*fn float.hypot  (x Float) (y Float) -> Float  -- Euclidean length without intermediate overflow; result overflow is E-FLOAT; error at most 1 ulp.
+*fn float.ln  (x Float) -> Float  -- Natural logarithm; x <= 0.0 is E-FLOAT; error at most 1 ulp.
+*fn float.log10  (x Float) -> Float  -- Base-ten logarithm; x <= 0.0 is E-FLOAT; error at most 1 ulp.
+*fn float.log1p  (x Float) -> Float  -- ln(1+x), preserving tiny x lost by ln(1+x); x <= -1.0 faults E-FLOAT; error at most 1 ulp.
+*fn float.log2  (x Float) -> Float  -- Base-two logarithm; x <= 0.0 is E-FLOAT; error at most 1 ulp.
+*fn float.max  (a Float) (b Float) -> Float  -- Larger of two Floats.
+*fn float.min  (a Float) (b Float) -> Float  -- Smaller of two Floats.
+*fn float.pi  -> Float  -- Pi, nearest binary64, pinned to bits 0x400921fb54442d18.
+*fn float.pow  (x Float) (y Float) -> Float  -- Power; invalid real domains and overflow are E-FLOAT; underflow allowed; error at most 1 ulp.
+*fn float.round  (x Float) -> Int  -- Nearest Int, halves away from zero; outside the Int range is the fault E-OVERFLOW.
+*fn float.sin  (x Float) -> Float  -- Sine of any finite binary64 angle in radians; finite result, error at most 1 ulp.
+*fn float.sinh  (x Float) -> Float  -- Hyperbolic sine; overflow faults E-FLOAT; error at most 1 ulp.
+*fn float.sqrt  (x Float) -> Float  -- Square root, correctly rounded; a negative argument is the fault E-FLOAT.
+*fn float.sum  (xs (List Float)) -> Float  -- Sum from 0.0, left to right; a non-finite partial sum is the fault E-FLOAT.
+*fn float.tan  (x Float) -> Float  -- Tangent of any finite binary64 angle in radians; finite result, error at most 1 ulp.
+*fn float.tanh  (x Float) -> Float  -- Hyperbolic tangent for every finite Float; error at most 1 ulp.
+*fn float.trunc  (x Float) -> Int  -- Int part of x, toward zero; outside the Int range is the fault E-OVERFLOW.
+module fs  -- UTF-8 file operations.
+*error fs.IoError  (path Str) (msg Str)
+*fn fs.exists  (path Str) -> Bool  [eff fs.read]  [fails IoError]  -- Test whether a filesystem path exists.
+*fn fs.read  (path Str) -> Str  [eff fs.read]  [fails IoError]  -- Read a UTF-8 file.
+*fn fs.write  (path Str) (text Str) -> Unit  [eff fs.write]  [fails IoError]  -- Replace a file with UTF-8 text.
+module io  -- Console input, output, and program arguments.
+*error io.IoError  (msg Str)
+*fn io.args  -> (List Str)  [eff io.in]  -- Program arguments after the command separator.
+*fn io.eprint  (s Str) -> Unit  [eff io.out]  -- Write a line to standard error.
+*fn io.print  (s Str) -> Unit  [eff io.out]  -- Write a line of text to standard output.
+*fn io.read-all  -> Str  [eff io.in]  [fails IoError]  -- Read the remaining UTF-8 input.
+*fn io.read-line  -> (Opt Str)  [eff io.in]  [fails IoError]  -- Read a line without its terminator; None at EOF.
+module json  -- Strict JSON values, parsing, rendering and object lookup.  (use map)
+*type json.Json  (sum JNull (JBool (b Bool)) (JInt (n Int)) (JFloat (x Float)) (JStr (s Str)) (JArr (items (List Json))) (JObj (fields (Map Str Json))))
+*error json.BadJson  (pos Int) (msg Str)
+*fn json.field  (j Json) (key Str) -> (Opt Json)  -- Look up an object field; None for a non-object or absent key.
+*fn json.parse  (s Str) -> Json  [fails BadJson]  -- Parse one strict JSON value; report code-point positions on invalid input.
+*fn json.print  (j Json) -> Str  -- Render compact JSON in ascending object-key order.
+module list  -- List operations.
+*fn list.all  (xs (List a)) (pred (Fn (a) Bool)) -> Bool  -- True when every element satisfies pred (true for an empty list).
+*fn list.any  (xs (List a)) (pred (Fn (a) Bool)) -> Bool  -- True when some element satisfies pred (false for an empty list).
+*fn list.at  (xs (List a)) (i Int) -> (Opt a)  -- Element at zero-based index i, or None out of range (the Opt twin of nth).
+*fn list.concat  (xs (List a)) (ys (List a)) -> (List a)  -- Concatenate two lists.
+*fn list.drop  (xs (List a)) (n Int) -> (List a)  -- The list without its first n elements (n clamps to 0..length).
+*fn list.filter  (xs (List a)) (keep (Fn (a) Bool)) -> (List a)  -- Keep the elements for which keep returns true.
+*fn list.fold  (xs (List a)) (init b) (step (Fn (b a) b)) -> b  -- Combine elements left to right starting from init.
+*fn list.head  (xs (List a)) -> (Opt a)  -- First element, or None when empty.
+*fn list.index-of  (xs (List a)) (target a) -> (Opt Int)  -- Index of the first element equal to target, if any.
+*fn list.last  (xs (List a)) -> (Opt a)  -- Last element, or None when empty.
+*fn list.map  (xs (List a)) (f (Fn (a) b)) -> (List b)  -- Apply f to every element.
+*fn list.map2  (xs (List a)) (ys (List b)) (f (Fn (a b) c)) -> (List c)  -- Combine elements pairwise with f.
+*fn list.nth  (xs (List a)) (i Int) -> a  [fails OutOfRange]  -- Element at zero-based index i.
+*fn list.range  (start Int) (stop Int) -> (List Int)  -- Integers from start up to but excluding stop.
+*fn list.reverse  (xs (List a)) -> (List a)  -- Elements in opposite order.
+*fn list.sort-by  (xs (List a)) (less (Fn (a a) Bool)) -> (List a)  -- Stable sort by less, a strict weak ordering (top-down merge sort, same in every backend).
+*fn list.sum  (xs (List Int)) -> Int  -- Sum of a list of integers.
+*fn list.tail  (xs (List a)) -> (Opt (List a))  -- List without its first element, or None when empty.
+*fn list.take  (xs (List a)) (n Int) -> (List a)  -- The first n elements (n clamps to 0..length).
+*fn list.zip  (xs (List a)) (ys (List b)) -> (List (Pair a b))  -- Combine elements of two equal-length lists into pairs.
+module map  -- Immutable maps keyed by Int, Float, Str or Bool; every traversal is in ascending key order.  (use opt)
+*fn map.at  (m (Map k v)) (key k) -> (Opt v)  -- The value bound to key, or None.
+*fn map.fold  (m (Map k v)) (init b) (step (Fn (b k v) b)) -> b  -- Combine the bindings in ascending key order, starting from init.
+*fn map.from-list  (ps (List (Pair k v))) -> (Map k v)  -- The map of the given pairs; later duplicate keys replace earlier ones.
+*fn map.has  (m (Map k v)) (key k) -> Bool  -- True when key is bound.
+*fn map.keys  (m (Map k v)) -> (List k)  -- The keys in ascending order.
+*fn map.put  (m (Map k v)) (key k) (value v) -> (Map k v)  -- The map with key bound to value, replacing an existing binding.
+*fn map.remove  (m (Map k v)) (key k) -> (Map k v)  -- The map without key (unchanged when key is absent).
+*fn map.size  (m (Map k v)) -> Int  -- Number of bindings.
+*fn map.to-list  (m (Map k v)) -> (List (Pair k v))  -- The bindings as (pair key value) in ascending key order.
+*fn map.update  (m (Map k v)) (key k) (default v) (f (Fn (v) v)) -> (Map k v)  -- Bind key to f of its value, or of default when key is absent.
+*fn map.values  (m (Map k v)) -> (List v)  -- The values in ascending order of their keys.
+module math  -- Integer math helpers.
+*fn math.abs  (x Int) -> Int  -- Absolute value.
+*fn math.int-max  -> Int  -- Largest Int (2^63 - 1); exceeding it is the runtime fault E-OVERFLOW.
+*fn math.int-min  -> Int  -- Smallest Int (-2^63); going below it is the runtime fault E-OVERFLOW.
+*fn math.max  (a Int) (b Int) -> Int  -- Larger of two integers.
+*fn math.min  (a Int) (b Int) -> Int  -- Smaller of two integers.
+module opt  -- Optional values: defaults, mapping, tests.
+*fn opt.is-some  (o (Opt a)) -> Bool  -- True for (Some _), false for None.
+*fn opt.map  (o (Opt a)) (f (Fn (a) b)) -> (Opt b)  -- Apply f to the payload of a Some; None stays None.
+*fn opt.unwrap-or  (o (Opt a)) (d a) -> a  -- The payload of a Some, else the default d (evaluated eagerly, like every argument).
+module pair  -- Pair operations: accessors and swap.
+*fn pair.first  (p (Pair a b)) -> a  -- First element of a pair.
+*fn pair.second  (p (Pair a b)) -> b  -- Second element of a pair.
+*fn pair.swap  (p (Pair a b)) -> (Pair b a)  -- Swap elements of a pair.
+module rand  -- Seedable SplitMix64 random numbers.
+*fn rand.float  -> Float  [eff rand]  -- Uniform random Float in [0, 1) using 53 random bits.
+*fn rand.int  (lo Int) (hi Int) -> Int  [eff rand]  -- Uniform random Int in the inclusive range lo..hi.
+module set  -- Immutable sets of Int, Float, Str or Bool; every traversal is in ascending order.  (use list)
+*fn set.add  (s (Set a)) (x a) -> (Set a)  -- The set with x added (unchanged when x is already in it).
+*fn set.diff  (s (Set a)) (t (Set a)) -> (Set a)  -- Elements of s that are not in t.
+*fn set.fold  (s (Set a)) (init b) (step (Fn (b a) b)) -> b  -- Combine the elements in ascending order, starting from init.
+*fn set.from-list  (xs (List a)) -> (Set a)  -- The set of the list's elements (duplicates collapse).
+*fn set.has  (s (Set a)) (x a) -> Bool  -- True when x is in s.
+*fn set.intersect  (s (Set a)) (t (Set a)) -> (Set a)  -- Elements in both s and t.
+*fn set.remove  (s (Set a)) (x a) -> (Set a)  -- The set without x (unchanged when x is absent).
+*fn set.size  (s (Set a)) -> Int  -- Number of elements.
+*fn set.to-list  (s (Set a)) -> (List a)  -- The elements in ascending order.
+*fn set.union  (s (Set a)) (t (Set a)) -> (Set a)  -- Elements in s or t.
+module shapes  -- Areas and descriptions of simple shapes.  (use float math str)
+*type shapes.Shape  (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty)
+*fn shapes.area  (s Shape) -> Float  -- Area in square units; circles use float.pi.
+*fn shapes.describe  (s Shape) -> Str  -- One-line text description.
+*fn shapes.longest-side  (s Shape) -> Int  -- Largest dimension; circles use the diameter.
+*fn shapes.scale  (s Shape) (k Int) -> Shape  -- Multiply every dimension by k.
+module str  -- String operations.
+*error str.BadCode  (code Int)
+*fn str.concat  (a Str) (b Str) -> Str  -- Join two strings.
+*fn str.contains  (s Str) (part Str) -> Bool  -- Test for a literal substring.
+*fn str.from-codes  (cs (List Int)) -> Str  [fails BadCode]  -- Build a string from Unicode scalar values; fails BadCode on invalid values.
+*fn str.from-float  (x Float) -> Str  -- Canonical text of a Float (shortest round-trip digits, as LM prints it).
+*fn str.from-int  (n Int) -> Str  -- Decimal text of an integer.
+*fn str.index-of  (s Str) (part Str) -> (Opt Int)  -- Code-point index of the first occurrence of part (an empty part is at 0).
+*fn str.join  (parts (List Str)) (sep Str) -> Str  -- Join parts with a separator between them.
+*fn str.length  (s Str) -> Int  -- Number of characters.
+*fn str.lines  (s Str) -> (List Str)  -- Split CRLF, LF, or CR lines, omitting a final empty line.
+*fn str.lower  (s Str) -> Str  -- Unicode simple lowercase mapping; length is preserved.
+*fn str.lower-ascii  (s Str) -> Str  -- Turn A-Z into a-z; every other character is unchanged.
+*fn str.pad-left  (s Str) (width Int) (fill Str) -> Str  -- Prefix fill until s is width code points long; s unchanged if already that long.
+*fn str.pad-right  (s Str) (width Int) (fill Str) -> Str  -- Append fill until s is width code points long; s unchanged if already that long.
+*fn str.repeat  (s Str) (n Int) -> Str  -- s concatenated n times.
+*fn str.replace  (s Str) (old Str) (replacement Str) -> Str  -- Replace every non-overlapping occurrence of old, left to right; empty old changes nothing.
+*fn str.split  (s Str) (sep Str) -> (List Str)  -- Split on a literal separator; empty separator splits characters.
+*fn str.starts-with  (s Str) (prefix Str) -> Bool  -- Test a literal prefix.
+*fn str.substring  (s Str) (start Int) (end Int) -> Str  [fails OutOfRange]  -- Slice Unicode characters from start inclusive to end exclusive.
+*fn str.to-codes  (s Str) -> (List Int)  -- Unicode scalar values of each character in s.
+*fn str.to-float  (s Str) -> (Opt Float)  -- Parse decimal text like 1.5 or 1e-3; None if malformed, inf, nan or out of range.
+*fn str.to-int  (s Str) -> (Opt Int)  -- Parse signed ASCII decimal text; None if malformed or outside the signed 64-bit range.
+*fn str.trim  (s Str) -> Str  -- Strip Unicode whitespace from both ends.
+*fn str.upper  (s Str) -> Str  -- Unicode simple uppercase mapping; length is preserved.
+*fn str.upper-ascii  (s Str) -> Str  -- Turn a-z into A-Z; every other character is unchanged.
+module time  -- Wall and monotonic clocks in milliseconds.
+*fn time.mono-ms  -> Int  [eff time.now]  -- Monotonic milliseconds from an arbitrary origin; only differences are meaningful.
+*fn time.now-ms  -> Int  [eff time.now]  -- Unix epoch milliseconds.

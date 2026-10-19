@@ -1,0 +1,4 @@
+[{"fn":"of","args":[{"$v":"Circle","args":[0]}],"want":0},
+ {"fn":"of","args":[{"$v":"Triangle","args":[1,1,1]}],"want":3},
+ {"fn":"total","args":[[]],"want":0},
+ {"fn":"total","args":[[{"$v":"Circle","args":[1]},{"$v":"Rect","args":[5,5]},{"$v":"Square","args":[2]}]],"want":34}]

@@ -1,0 +1,6 @@
+(module dup-reserved
+  (purpose "p")
+  (fn len
+    (purpose "p")
+    (sig (x Int) -> Int)
+    (body x)))

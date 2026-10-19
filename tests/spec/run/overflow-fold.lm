@@ -1,0 +1,8 @@
+(module overflow-fold
+  (purpose "p")
+  (use list)
+  (fn product
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (example ((list 4294967296 4294967296)) => 0)
+    (body (list.fold xs 1 *))))

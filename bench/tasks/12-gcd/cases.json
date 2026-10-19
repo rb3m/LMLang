@@ -1,0 +1,1 @@
+[{"fn":"gcd","args":[0,0],"want":0},{"fn":"gcd","args":[1071,462],"want":21},{"fn":"lcm","args":[21,6],"want":42},{"fn":"coprime","args":[9,28],"want":true}]

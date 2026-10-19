@@ -1,0 +1,4 @@
+(module zz
+  (purpose "A const named like another module's param must not reuse its facts.")
+  (const d (purpose "Zero.") (type Int) (value 0))
+  (const k (purpose "Divides by the zero const.") (type Int) (value (/ 10 d))))

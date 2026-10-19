@@ -1,0 +1,8 @@
+(module float-ln-zero
+  (purpose "float.ln of zero is the fault E-FLOAT.")
+  (use float)
+  (fn logarithm
+    (purpose "Exercise the logarithm domain fault.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (body (float.ln x))))

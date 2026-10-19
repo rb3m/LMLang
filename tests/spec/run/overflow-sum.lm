@@ -1,0 +1,8 @@
+(module overflow-sum
+  (purpose "p")
+  (use list)
+  (fn total
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (example ((list 9223372036854775807 1)) => 0)
+    (body (list.sum xs))))

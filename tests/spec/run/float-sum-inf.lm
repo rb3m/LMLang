@@ -1,0 +1,8 @@
+(module float-sum-inf
+  (purpose "float.sum faults through + like any reduction.")
+  (use float)
+  (fn total
+    (purpose "p")
+    (sig (xs (List Float)) -> Float)
+    (example ((list 1e+308 1e+308 -1e+308)) => 0.0)
+    (body (float.sum xs))))

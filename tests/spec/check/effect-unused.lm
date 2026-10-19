@@ -1,0 +1,7 @@
+(module effect-unused
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (eff io.out)
+    (body a)))

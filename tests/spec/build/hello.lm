@@ -1,0 +1,8 @@
+(module hello
+  (purpose "Prints two lines and exits 0.")
+  (use io)
+  (fn main
+    (purpose "Entry.")
+    (sig -> Unit)
+    (eff io.out)
+    (body (let ((a (io.print "hello")) (b (io.print "wörld \"q\"\t\\"))) unit))))

@@ -1,0 +1,49 @@
+(module letq-sort
+  (purpose "let? short-circuit and list.sort-by in a binary.")
+  (use io list str)
+  (type Entry (rec (key Str) (value Int)))
+  (fn keep
+    (purpose "The Some payloads, in order.")
+    (sig (xs (List (Opt Entry))) -> (List Entry))
+    (example ((list None)) => (list))
+    (body
+      (match xs ((list) (list)) ((cons h t) (match h ((Some p) (cons p (keep t))) (None (keep t)))))))
+  (fn main
+    (purpose "Entry: parse key=value args, sort by value, print; skip malformed ones.")
+    (sig -> Int)
+    (eff io.in io.out)
+    (body
+      (let
+        (
+          (pairs (list.map (io.args) parse))
+          (kept
+            (list.sort-by (keep pairs) (lam ((a Entry) (b Entry)) (< (get a value) (get b value))))))
+        (do
+          (io.print (str.join (list.map kept (lam ((p Entry)) (get p key))) " "))
+          (match (trace (list "7")) ((Some n) (io.print (str.from-int n))) (None (io.print "none")))
+          (match (trace (list)) ((Some n) (io.print (str.from-int n))) (None (io.print "none")))
+          (match (trace (list "x")) ((Some n) (io.print (str.from-int n))) (None (io.print "none")))
+          (len kept)))))
+  (fn parse
+    (purpose "key=value with an Int value, or None.")
+    (sig (arg Str) -> (Opt Entry))
+    (example ("a=1") => (Some (new Entry (key "a") (value 1))))
+    (example ("a") => None)
+    (body
+      (let
+        ((parts (str.split arg "=")))
+        (let?
+          ((k (list.at parts 0)) (t (list.at parts 1)) (v (str.to-int (str.trim t))))
+          (Some (new Entry (key k) (value v)))))))
+  (fn trace
+    (purpose "Print each step; a None stops before the later prints.")
+    (sig (xs (List Str)) -> (Opt Int))
+    (eff io.out)
+    (body
+      (let?
+        (
+          (s (list.at xs 0))
+          (u (Some (io.print (str.concat "got " s))))
+          (n (str.to-int s))
+          (w (Some (io.print "parsed"))))
+        (Some n)))))

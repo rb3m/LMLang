@@ -1,0 +1,4 @@
+(module lib
+  (purpose "Library module.")
+  (export answer)
+  (const answer (purpose "The answer.") (type Int) (value 42)))

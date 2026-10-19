@@ -1,0 +1,36 @@
+(module json
+  (purpose "Strict JSON values, parsing, rendering and object lookup.")
+  (use map)
+  (export BadJson Json field parse print)
+  (type
+    Json
+    (sum
+      JNull
+      (JBool (b Bool))
+      (JInt (n Int))
+      (JFloat (x Float))
+      (JStr (s Str))
+      (JArr (items (List Json)))
+      (JObj (fields (Map Str Json)))))
+  (error BadJson (pos Int) (msg Str))
+  (fn field
+    (purpose "Look up an object field; None for a non-object or absent key.")
+    (sig (j Json) (key Str) -> (Opt Json))
+    (example ((JObj (mapof ("a" JNull))) "a") => (Some JNull))
+    (example (JNull "a") => None)
+    (example ((JObj (mapof)) "a") => None)
+    (body (match j ((JObj fields) (map.at fields key)) (_ None))))
+  (fn parse
+    (purpose "Parse one strict JSON value; report code-point positions on invalid input.")
+    (sig (s Str) -> Json)
+    (fails BadJson)
+    (example ("null") => JNull)
+    (example ("[1,true]") => (JArr (list (JInt 1) (JBool true))))
+    (example ("x") => (fail BadJson 0 "unexpected character"))
+    (body (prim "json.parse")))
+  (fn print
+    (purpose "Render compact JSON in ascending object-key order.")
+    (sig (j Json) -> Str)
+    (example (JNull) => "null")
+    (example ((JArr (list (JInt 1) (JBool true)))) => "[1,true]")
+    (body (prim "json.print"))))

@@ -1,0 +1,10 @@
+# ADR-064 Backlog 9: measure the existing outside-author projects instead of writing a new one (2026-10-18, agent consensus)
+
+Context: backlog 9 asks for a larger multi-module project by someone other than the toolchain author, to test slice value (S1) at scale. Claude proposed a new "ledger" project by a fresh agy session. agy and Codex both pointed out that one already exists: agy's 6-module, 1,989-line ledger CLI from M9 (EVIDENCE 2026-10-16, ADR-044), kept on branch `m9-app` explicitly "as a benchmark candidate for backlog item 9" and left off main only because it would enlarge the default `index`/`slice` scope; Roadster Lander (ADR-054, 6 modules, by Codex from the docs) is a second outside-author datapoint. A second ledger would add little and would not be independent of the first.
+
+Decision:
+1. Import the m9-app ledger (its six `src/ledger-*.lm` modules and EXPERIENCE.md) as a self-contained project `benchprojects/ledger/` (like `games/`, outside the default scope), and port it to the current language with minimal changes, logging every change the newer language forced (a compatibility datapoint). Its unapproved scenarios are not imported.
+2. `lm bench --project PATH` measures S1 and S2 for any project with the existing definitions unchanged (canonical target-module text as the S1 denominator, the frozen slice settings of `lm/bench.py`, S2 as replacement payload size), and also reports module-relative ratios so gains caused merely by project size are visible.
+3. Measure both outside-author projects (ledger, Roadster Lander) and record the results, labelled with their caveats (prior familiarity of the authors, payload-size S2), in EVIDENCE.md. Gaps found become new backlog items; they do not extend backlog 9, which the owner designated as the last item.
+
+Who agreed: agy and Codex (gpt-6.1-sol) both rejected writing a new ledger because the M9 ledger exists, and Codex asked for the unchanged S1/S2 definitions, module-relative ratios and disclosed familiarity; Claude adopted both.

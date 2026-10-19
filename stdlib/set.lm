@@ -1,0 +1,60 @@
+(module set
+  (purpose "Immutable sets of Int, Float, Str or Bool; every traversal is in ascending order.")
+  (use list)
+  (export add diff fold from-list has intersect remove size to-list union)
+  (fn add
+    (purpose "The set with x added (unchanged when x is already in it).")
+    (sig (s (Set a)) (x a) -> (Set a))
+    (example ((setof 1) 2) => (setof 1 2))
+    (example ((setof 1) 1) => (setof 1))
+    (body (prim "set.add")))
+  (fn diff
+    (purpose "Elements of s that are not in t.")
+    (sig (s (Set a)) (t (Set a)) -> (Set a))
+    (example ((setof 1 2 3) (setof 2 4)) => (setof 1 3))
+    (body (prim "set.diff")))
+  (fn fold
+    (purpose "Combine the elements in ascending order, starting from init.")
+    (sig (s (Set a)) (init b) (step (Fn (b a) b)) -> b)
+    (example ((setof 1 2 3) 0 +) => 6)
+    (example ((setof 3 1 2) (list) (lam ((acc (List Int)) (x Int)) (cons x acc))) => (list 3 2 1))
+    (body (prim "set.fold")))
+  (fn from-list
+    (purpose "The set of the list's elements (duplicates collapse).")
+    (sig (xs (List a)) -> (Set a))
+    (example ((list "b" "a" "b")) => (setof "a" "b"))
+    (example ((list)) => (setof))
+    (body (list.fold xs (setof) add)))
+  (fn has
+    (purpose "True when x is in s.")
+    (sig (s (Set a)) (x a) -> Bool)
+    (example ((setof 1.5) 1.5) => true)
+    (example ((setof 1.5) 2.0) => false)
+    (body (prim "set.has")))
+  (fn intersect
+    (purpose "Elements in both s and t.")
+    (sig (s (Set a)) (t (Set a)) -> (Set a))
+    (example ((setof 1 2 3) (setof 2 3 4)) => (setof 2 3))
+    (body (prim "set.intersect")))
+  (fn remove
+    (purpose "The set without x (unchanged when x is absent).")
+    (sig (s (Set a)) (x a) -> (Set a))
+    (example ((setof 1 2) 1) => (setof 2))
+    (example ((setof 1 2) 5) => (setof 1 2))
+    (body (prim "set.remove")))
+  (fn size
+    (purpose "Number of elements.")
+    (sig (s (Set a)) -> Int)
+    (example ((setof false true)) => 2)
+    (body (prim "set.size")))
+  (fn to-list
+    (purpose "The elements in ascending order.")
+    (sig (s (Set a)) -> (List a))
+    (example ((setof "b" "a" "c")) => (list "a" "b" "c"))
+    (example ((setof true false)) => (list false true))
+    (body (prim "set.to-list")))
+  (fn union
+    (purpose "Elements in s or t.")
+    (sig (s (Set a)) (t (Set a)) -> (Set a))
+    (example ((setof 1 3) (setof 2 3)) => (setof 1 2 3))
+    (body (prim "set.union"))))

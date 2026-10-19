@@ -1,0 +1,8 @@
+(module float-sinh-overflow
+  (purpose "float.sinh overflow faults E-FLOAT.")
+  (use float)
+  (fn hyperbolic
+    (purpose "Exercise the hyperbolic sine overflow fault.")
+    (sig (x Float) -> Float)
+    (example (711.0) => 0.0)
+    (body (float.sinh x))))

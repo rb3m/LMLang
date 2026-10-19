@@ -1,0 +1,6 @@
+(module match-list-nested
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (xs (List Int)) -> Int)
+    (body (match xs ((list) 0) ((cons 1 _) 1)))))

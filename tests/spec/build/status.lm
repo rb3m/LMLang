@@ -1,0 +1,7 @@
+(module status
+  (purpose "Returns an exit status computed from a list.")
+  (use list)
+  (fn main
+    (purpose "Entry.")
+    (sig -> Int)
+    (body (list.sum (list 1 2 (- 0 0) (mod 7 -4) 3)))))

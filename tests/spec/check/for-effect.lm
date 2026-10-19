@@ -1,0 +1,7 @@
+(module for-effect
+  (purpose "p")
+  (use io)
+  (fn f
+    (purpose "p")
+    (sig (xs (List Str)) -> Unit)
+    (body (for (x xs) (io.print x)))))

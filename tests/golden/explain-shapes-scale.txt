@@ -1,0 +1,10 @@
+shapes.scale - Multiply every dimension by k.
+Takes:    s: Shape; k: Int
+Returns:  Shape
+Can fail: never
+Effects:  none (pure)
+Requires: (> k 0)
+Examples:
+  scale((Rect 1 2) 3) => (Rect 3 6)
+  scale(Empty 2) => Empty
+Used by:  nothing in this project

@@ -1,0 +1,19 @@
+(module float-op-type
+  (purpose "Arithmetic needs Int or Float, ordering Int, Float or Str, mod Int only.")
+  (fn cat
+    (purpose "p")
+    (sig (a Str) (b Str) -> Str)
+    (body (+ a b)))
+  (fn generic
+    (purpose "p")
+    (sig (a a) (b a) -> a)
+    (body (* a b)))
+  (fn order
+    (purpose "p")
+    (sig (a Bool) (b Bool) -> Bool)
+    (body (< a b)))
+  (fn rem
+    (purpose "p")
+    (sig (a Float) -> Float)
+    (fails DivZero)
+    (body (mod a 2.0))))

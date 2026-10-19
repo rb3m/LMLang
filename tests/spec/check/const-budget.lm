@@ -1,0 +1,7 @@
+(module const-budget
+  (purpose "Budget exhausted.")
+  (fn loop
+    (purpose "Infinite loop.")
+    (sig (n Int) -> Int)
+    (body (loop (+ n 1))))
+  (const bad (purpose "bad") (type Int) (value (loop 0))))

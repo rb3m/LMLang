@@ -1,0 +1,242 @@
+(module float
+  (purpose "Float helpers: conversions, rounding, constants, exp, logs, sqrt, abs, min, max, sum.")
+  (use list)
+  (export
+    abs
+    acos
+    asin
+    atan
+    atan2
+    cbrt
+    ceil
+    cos
+    cosh
+    e
+    exp
+    expm1
+    floor
+    from-int
+    hypot
+    ln
+    log10
+    log1p
+    log2
+    max
+    min
+    pi
+    pow
+    round
+    sin
+    sinh
+    sqrt
+    sum
+    tan
+    tanh
+    trunc)
+  (fn abs
+    (purpose "Absolute value.")
+    (sig (x Float) -> Float)
+    (example (-2.5) => 2.5)
+    (example (0.0) => 0.0)
+    (body (if (< x 0.0) (- 0.0 x) x)))
+  (fn acos
+    (purpose "Arccosine in radians; |x| > 1.0 is E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (1.0) => 0.0)
+    (example (-1.0) => (pi))
+    (example (0.0) => 1.5707963267948966)
+    (body (prim "float.acos")))
+  (fn asin
+    (purpose "Arcsine in radians; |x| > 1.0 is E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (example (1.0) => 1.5707963267948966)
+    (example (-1.0) => -1.5707963267948966)
+    (body (prim "float.asin")))
+  (fn atan
+    (purpose "Arctangent in radians for every finite Float; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (example (1.0) => (/ (pi) 4.0))
+    (body (prim "float.atan")))
+  (fn atan2
+    (purpose "Angle of (x, y) in radians, arguments (y, x); atan2(0, 0) = 0; error at most 1 ulp.")
+    (sig (y Float) (x Float) -> Float)
+    (example (0.0 0.0) => 0.0)
+    (example (0.0 -1.0) => (pi))
+    (example (1.0 0.0) => 1.5707963267948966)
+    (example (-1.0 0.0) => -1.5707963267948966)
+    (example (1.0 -1.0) => 2.356194490192345)
+    (example (-1.0 -1.0) => -2.356194490192345)
+    (body (prim "float.atan2")))
+  (fn cbrt
+    (purpose
+      "Real cube root, including negative inputs; exact cubes are exact; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (-8.0) => -2.0)
+    (example (27.0) => 3.0)
+    (example (0.0) => 0.0)
+    (body (prim "float.cbrt")))
+  (fn ceil
+    (purpose "Smallest Int not below x; outside the Int range is the fault E-OVERFLOW.")
+    (sig (x Float) -> Int)
+    (example (1.2) => 2)
+    (example (-0.5) => 0)
+    (example (-9.223372036854776e+18) => -9223372036854775808)
+    (body (prim "float.ceil")))
+  (fn cos
+    (purpose "Cosine of any finite binary64 angle in radians; finite result, error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 1.0)
+    (body (prim "float.cos")))
+  (fn cosh
+    (purpose "Hyperbolic cosine; overflow faults E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 1.0)
+    (example (1e-300) => 1.0)
+    (example (-1e-300) => 1.0)
+    (body (prim "float.cosh")))
+  (fn e
+    (purpose "Euler's number, nearest binary64, pinned to bits 0x4005bf0a8b145769.")
+    (sig -> Float)
+    (example () => 2.718281828459045)
+    (body (prim "float.e")))
+  (fn exp
+    (purpose "Exponential; overflow is E-FLOAT, underflow is allowed; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 1.0)
+    (example (1.0) => 2.718281828459045)
+    (body (prim "float.exp")))
+  (fn expm1
+    (purpose
+      "exp(x)-1, preserving tiny x lost by exp(x)-1; overflow faults E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (example (1e-300) => 1e-300)
+    (example (-1000.0) => -1.0)
+    (body (prim "float.expm1")))
+  (fn floor
+    (purpose "Largest Int not above x; outside the Int range is the fault E-OVERFLOW.")
+    (sig (x Float) -> Int)
+    (example (1.7) => 1)
+    (example (-0.5) => -1)
+    (example (9.223372036854775e+18) => 9223372036854774784)
+    (body (prim "float.floor")))
+  (fn from-int
+    (purpose "Nearest Float to an Int (ties to even).")
+    (sig (n Int) -> Float)
+    (example (3) => 3.0)
+    (example (9007199254740993) => 9007199254740992.0)
+    (example (9223372036854775807) => 9.223372036854776e+18)
+    (body (prim "float.from-int")))
+  (fn hypot
+    (purpose
+      "Euclidean length without intermediate overflow; result overflow is E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) (y Float) -> Float)
+    (example (3.0 4.0) => 5.0)
+    (example (1e+300 0.0) => 1e+300)
+    (example (0.0 0.0) => 0.0)
+    (body (prim "float.hypot")))
+  (fn ln
+    (purpose "Natural logarithm; x <= 0.0 is E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (1.0) => 0.0)
+    (example (2.0) => 0.6931471805599453)
+    (body (prim "float.ln")))
+  (fn log10
+    (purpose "Base-ten logarithm; x <= 0.0 is E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (10.0) => 1.0)
+    (example (1.0) => 0.0)
+    (body (prim "float.log10")))
+  (fn log1p
+    (purpose
+      "ln(1+x), preserving tiny x lost by ln(1+x); x <= -1.0 faults E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (example (1e-300) => 1e-300)
+    (example (1.0) => 0.6931471805599453)
+    (body (prim "float.log1p")))
+  (fn log2
+    (purpose "Base-two logarithm; x <= 0.0 is E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (8.0) => 3.0)
+    (example (0.5) => -1.0)
+    (body (prim "float.log2")))
+  (fn max
+    (purpose "Larger of two Floats.")
+    (sig (a Float) (b Float) -> Float)
+    (example (1.5 -2.0) => 1.5)
+    (body (if (> a b) a b)))
+  (fn min
+    (purpose "Smaller of two Floats.")
+    (sig (a Float) (b Float) -> Float)
+    (example (1.5 -2.0) => -2.0)
+    (body (if (< a b) a b)))
+  (fn pi
+    (purpose "Pi, nearest binary64, pinned to bits 0x400921fb54442d18.")
+    (sig -> Float)
+    (example () => 3.141592653589793)
+    (body (prim "float.pi")))
+  (fn pow
+    (purpose
+      "Power; invalid real domains and overflow are E-FLOAT; underflow allowed; error at most 1 ulp.")
+    (sig (x Float) (y Float) -> Float)
+    (example (0.0 0.0) => 1.0)
+    (example (-2.0 3.0) => -8.0)
+    (example (1.0 1e+300) => 1.0)
+    (example (2.0 -1074.0) => 5e-324)
+    (body (prim "float.pow")))
+  (fn round
+    (purpose "Nearest Int, halves away from zero; outside the Int range is the fault E-OVERFLOW.")
+    (sig (x Float) -> Int)
+    (example (2.5) => 3)
+    (example (-2.5) => -3)
+    (example (0.49999999999999994) => 0)
+    (example (-1.4) => -1)
+    (body (prim "float.round")))
+  (fn sin
+    (purpose "Sine of any finite binary64 angle in radians; finite result, error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (example ((pi)) => 1.2246467991473532e-16)
+    (body (prim "float.sin")))
+  (fn sinh
+    (purpose "Hyperbolic sine; overflow faults E-FLOAT; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (example (1e-300) => 1e-300)
+    (example (-1e-300) => -1e-300)
+    (body (prim "float.sinh")))
+  (fn sqrt
+    (purpose "Square root, correctly rounded; a negative argument is the fault E-FLOAT.")
+    (sig (x Float) -> Float)
+    (example (2.0) => 1.4142135623730951)
+    (example (0.0) => 0.0)
+    (body (prim "float.sqrt")))
+  (fn sum
+    (purpose "Sum from 0.0, left to right; a non-finite partial sum is the fault E-FLOAT.")
+    (sig (xs (List Float)) -> Float)
+    (example ((list 0.1 0.2)) => 0.30000000000000004)
+    (example ((list)) => 0.0)
+    (body (list.fold xs 0.0 +)))
+  (fn tan
+    (purpose "Tangent of any finite binary64 angle in radians; finite result, error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (body (prim "float.tan")))
+  (fn tanh
+    (purpose "Hyperbolic tangent for every finite Float; error at most 1 ulp.")
+    (sig (x Float) -> Float)
+    (example (0.0) => 0.0)
+    (example (1e-300) => 1e-300)
+    (example (-1e-300) => -1e-300)
+    (example (30.0) => 1.0)
+    (example (-30.0) => -1.0)
+    (body (prim "float.tanh")))
+  (fn trunc
+    (purpose "Int part of x, toward zero; outside the Int range is the fault E-OVERFLOW.")
+    (sig (x Float) -> Int)
+    (example (-1.7) => -1)
+    (example (1e+18) => 1000000000000000000)
+    (body (prim "float.trunc"))))

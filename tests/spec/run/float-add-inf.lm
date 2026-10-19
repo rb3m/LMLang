@@ -1,0 +1,7 @@
+(module float-add-inf
+  (purpose "A sum beyond the largest finite Float is the fault E-FLOAT.")
+  (fn grow
+    (purpose "p")
+    (sig (x Float) -> Float)
+    (example (1.7976931348623157e+308) => 0.0)
+    (body (+ x x))))

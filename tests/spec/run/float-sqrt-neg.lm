@@ -1,0 +1,8 @@
+(module float-sqrt-neg
+  (purpose "float.sqrt of a negative number is the fault E-FLOAT.")
+  (use float)
+  (fn root
+    (purpose "p")
+    (sig (x Float) -> Float)
+    (example (-1.0) => 0.0)
+    (body (float.sqrt x))))

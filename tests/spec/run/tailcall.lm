@@ -1,0 +1,73 @@
+(module tailcall
+  (purpose "Self tail-call evaluation and contract order.")
+  (use list)
+  (error Done)
+  (error First)
+  (error Second)
+  (fn captures
+    (purpose "Closures keep the iteration that created them.")
+    (sig (n Int) (saved (List (Fn (Int) Int))) -> (List Int))
+    (example (3 (list)) => (list 2 4 6))
+    (body
+      (if
+        (= n 0)
+        (list.map saved (lam ((cb (Fn (Int) Int))) (cb 0)))
+        (let ((offset n)) (captures (- n 1) (cons (lam ((x Int)) (+ n (+ offset x))) saved))))))
+  (fn checked
+    (purpose "Every saved invocation checks its own parameters.")
+    (sig (n Int) (acc Int) -> Int)
+    (ensures (= result (+ n acc)))
+    (example (100 0) => 100)
+    (body (if (= n 0) acc (checked (- n 1) (+ acc 1)))))
+  (fn entry-bad
+    (purpose "Preconditions run at every iteration.")
+    (sig (n Int) -> Int)
+    (requires (!= n 2))
+    (example (3) => 0)
+    (body (if (= n 0) 0 (entry-bad (- n 1)))))
+  (fn guarded
+    (purpose "Self calls inside try retain their handlers.")
+    (sig (n Int) -> Int)
+    (fails Done)
+    (example (3) => 99)
+    (body (if (= n 0) (fail Done) (try (guarded (- n 1)) (catch Done () 99)))))
+  (fn inner-bad
+    (purpose "The innermost failing postcondition wins.")
+    (sig (n Int) -> Int)
+    (ensures (!= n 2))
+    (ensures (!= n 3))
+    (example (3) => 0)
+    (body (if (= n 0) 0 (inner-bad (- n 1)))))
+  (fn loop
+    (purpose "A million steps through every supported tail context.")
+    (sig (n Int) (acc Int) -> (Opt Int))
+    (example (1000000 0) => (Some 1000000))
+    (body
+      (if
+        (= n 0)
+        (Some acc)
+        (let
+          ((next (- n 1)))
+          (let?
+            ((step (Some next)))
+            (do (note "step") (match (Some step) ((Some k) (loop k (+ acc 1))) (None None))))))))
+  (fn non-tail
+    (purpose "Non-tail recursion still exhausts the stack.")
+    (sig (n Int) -> Int)
+    (example (1000000) => 0)
+    (body (if (= n 0) 0 (+ 1 (non-tail (- n 1))))))
+  (fn order-check
+    (purpose "Only the first argument failure is observed.")
+    (sig -> Int)
+    (example () => 1)
+    (body (try (ordered 1 0 0) (catch First () 1) (catch Second () 2))))
+  (fn ordered
+    (purpose "Argument failures keep left-to-right priority.")
+    (sig (n Int) (a Int) (b Int) -> Int)
+    (fails First Second)
+    (body (if (= n 0) (+ a b) (ordered (- n 1) (fail First) (fail Second)))))
+  (fn swap
+    (purpose "New arguments use the old parameters.")
+    (sig (n Int) (a Int) (b Int) -> Int)
+    (example (3 1 2) => 21)
+    (body (if (= n 0) (+ (* a 10) b) (swap (- n 1) b a)))))

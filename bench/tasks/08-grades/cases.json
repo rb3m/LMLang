@@ -1,0 +1,6 @@
+[{"fn":"grade-of","args":[100],"want":{"$v":"Excellent","args":[]},"py_want":"Excellent"},
+ {"fn":"grade-of","args":[74],"want":{"$v":"Passing","args":[]},"py_want":"Passing"},
+ {"fn":"letter","args":[{"$v":"Good","args":[]}],"want":"B","py_args":["Good"]},
+ {"fn":"average","args":[[1,2]],"want":1},
+ {"fn":"report","args":[[100,100,70]],"want":"A"},
+ {"fn":"report","args":[[10]],"want":"F"}]

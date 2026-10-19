@@ -1,0 +1,6 @@
+(module lambda-mixed-params
+  (purpose "Mixing typed and untyped parameters in one lambda is an E-PARSE shape error.")
+  (fn test-mixed
+    (purpose "p")
+    (sig -> (Fn (Int Int) Int))
+    (body (lam ((a Int) b) (+ a b)))))

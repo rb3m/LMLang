@@ -1,0 +1,21 @@
+(module lib
+  (purpose "Library with no export clause.")
+  (use io)
+  (type Mode (sum Low (High (level Int))))
+  (type Point (rec (x Int) (y Int)))
+  (error BadMode (code Int))
+  (const max-level (purpose "Max.") (type Int) (value 10))
+  (fn add-one
+    (purpose "Add one.")
+    (sig (x Int) -> Int)
+    (example (1) => 2)
+    (body (+ x 1)))
+  (fn log-msg
+    (purpose "Log.")
+    (sig (s Str) -> Unit)
+    (eff io.out)
+    (body (io.print s)))
+  (fn helper
+    (purpose "Unused helper.")
+    (sig (x Int) -> Int)
+    (body x)))

@@ -1,0 +1,6 @@
+2b4971b59ef930ca Rectangle area	# approved 2026-10-18 by owner: "approved both ✅"
+33f6676a0fbe7599 Circle area uses real pi	# approved 2026-10-18 by owner: "approved both ✅"
+43d216559dfe4ed4 Scaling multiplies every dimension	# approved 2026-10-17 by owner: "approved all three ✅"
+72c0de7bc159765c Unsupported region is rejected
+a751caf370ad88e5 VAT rounds down to whole cents
+d0af76235f20c917 Order with Mexican VAT

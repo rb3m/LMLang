@@ -1,0 +1,8 @@
+(module overflow-neg
+  (purpose "p")
+  (use math)
+  (fn magnitude
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (-9223372036854775808) => 0)
+    (body (math.abs n))))

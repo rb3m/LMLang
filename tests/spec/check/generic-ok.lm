@@ -1,0 +1,6 @@
+(module generic-ok
+  (purpose "p")
+  (fn pick
+    (purpose "p")
+    (sig (x a) (y a) -> a)
+    (body x)))

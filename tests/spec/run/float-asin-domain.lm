@@ -1,0 +1,8 @@
+(module float-asin-domain
+  (purpose "float.asin outside the real domain faults E-FLOAT.")
+  (use float)
+  (fn arcsine
+    (purpose "Exercise the arcsine domain fault.")
+    (sig (x Float) -> Float)
+    (example (1.0000000000000002) => 0.0)
+    (body (float.asin x))))

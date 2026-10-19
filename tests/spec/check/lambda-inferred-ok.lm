@@ -1,0 +1,37 @@
+(module lambda-inferred-ok
+  (purpose "Inferred lambda parameter types (ADR-061 item C).")
+  (use io list str)
+  (fn test-captures-for
+    (purpose "Lambda capturing for binding.")
+    (sig (xs (List Int)) -> Unit)
+    (eff io.out)
+    (body
+      (for (factor xs) (let ((f (lam (x) (* x factor)))) (do (io.print (str.from-int (f 2))) unit)))))
+  (fn test-captures-let
+    (purpose "Lambda capturing let binding.")
+    (sig (xs (List Int)) -> (List Int))
+    (body (let ((factor 10)) (list.map xs (lam (x) (* x factor))))))
+  (fn test-default-int
+    (purpose "Untyped lambda defaulting to Int under operator constraints.")
+    (sig -> (Fn (Int Int) Int))
+    (body (lam (a b) (+ a b))))
+  (fn test-fold-float
+    (purpose "Fold with untyped lambda inferring Float.")
+    (sig (xs (List Float)) -> Float)
+    (body (list.fold xs 0.0 (lam (acc x) (+ acc x)))))
+  (fn test-map-str
+    (purpose "Map with untyped lambda inferring Str.")
+    (sig (xs (List Str)) -> (List Str))
+    (body (list.map xs (lam (s) (str.concat s "!")))))
+  (fn test-map2
+    (purpose "Map2 with untyped lambda multiplying elements.")
+    (sig (xs (List Int)) (ys (List Int)) -> (List Int))
+    (body (list.map2 xs ys (lam (a b) (* a b)))))
+  (fn test-rigid-ok
+    (purpose "Lambda passed to param with rigid sig variable.")
+    (sig (runner (Fn ((Fn (a) Bool)) Bool)) -> Bool)
+    (body (runner (lam (x) (= x x)))))
+  (fn test-typed-as-before
+    (purpose "Typed lambda behaves as before.")
+    (sig (xs (List Int)) -> (List Int))
+    (body (list.map xs (lam ((x Int)) (+ x 1))))))

@@ -1,0 +1,8 @@
+(module float-pow-domain
+  (purpose "float.pow of a negative base and fractional exponent faults E-FLOAT.")
+  (use float)
+  (fn power
+    (purpose "Exercise the power domain fault.")
+    (sig (x Float) (y Float) -> Float)
+    (example (-8.0 0.5) => 0.0)
+    (body (float.pow x y))))

@@ -1,0 +1,6 @@
+(module lambda-rigid-fail
+  (purpose "Rigid signature type variable is preserved and checks rigidly.")
+  (fn test-rigid-fail
+    (purpose "p")
+    (sig (runner (Fn ((Fn (a) Bool)) Bool)) -> Bool)
+    (body (runner (lam (x) (+ x 1))))))

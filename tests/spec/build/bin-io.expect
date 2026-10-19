@@ -1,0 +1,1 @@
+[{"args": ["$TMP", "a", "b"], "stdin": "1\n 2 \nx\r\n40", "exit": 1, "stdout": "lines 4 words 2\nexists\nmissing\ncaught\n43\n"}, {"args": [], "exit": 2, "stdout": "", "stderr": "usage: bin-io DIR\n"}]

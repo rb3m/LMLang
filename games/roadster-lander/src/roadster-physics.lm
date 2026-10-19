@@ -1,0 +1,195 @@
+(module roadster-physics
+  (purpose "Closed-form flying roadster dynamics and first contact with the parking surface.")
+  (use float)
+  (export State advance dry-mass exhaust-speed make max-burn minus-log step turn-length)
+  (type State (rec (time Float) (altitude Float) (speed Float) (fuel Float)))
+  (const dry-mass (purpose "Dry mass of the roadster in kilograms.") (type Float) (value 1000.0))
+  (const
+    exhaust-speed
+    (purpose "Effective rocket exhaust velocity in metres per second.")
+    (type Float)
+    (value 3000.0))
+  (const max-burn (purpose "Maximum fuel flow in kilograms per second.") (type Float) (value 12.0))
+  (const turn-length (purpose "Simulation turn duration in seconds.") (type Float) (value 10.0))
+  (fn advance
+    (purpose "Advance for a duration, splitting the trajectory exactly when fuel runs out.")
+    (sig (state State) (burn Float) (gravity Float) (duration Float) -> State)
+    (requires (and (>= burn 0.0) (<= burn max-burn) (>= duration 0.0) (> gravity 0.0)))
+    (ensures (and (>= (get result fuel) 0.0) (<= (get result fuel) (get state fuel))))
+    (example ((make 0.0 10.0 0.0 0.0) 12.0 2.0 1.0) => (make 1.0 9.0 2.0 0.0))
+    (example ((make 0.0 1000.0 0.0 100.0) 1e-308 2.0 10.0) => (make 10.0 900.0 20.0 100.0))
+    (example
+      ((make 0.0 1000.0 0.0 1.0) 12.0 9.81 10.0)
+      =>
+      (make 10.0 539.3600516383519 95.1014990007494 0.0))
+    (example
+      ((make 0.0 1.0 10.0 1000.0) 12.0 1.62 10.0)
+      =>
+      (make 10.0 738.5602524988881 -159.42621115426238 880.0))
+    (body
+      (if
+        (or (= burn 0.0) (= (get state fuel) 0.0))
+        (coast state gravity duration)
+        (let
+          (
+            (firing (if (>= (get state fuel) (* burn duration)) duration (/ (get state fuel) burn)))
+            (heated (powered state burn gravity firing)))
+          (coast heated gravity (- duration firing))))))
+  (fn coast
+    (purpose "Advance a fuel-free segment under constant gravity.")
+    (sig (state State) (gravity Float) (duration Float) -> State)
+    (example ((make 0.0 490.5 0.0 0.0) 9.81 10.0) => (make 10.0 0.0 98.10000000000001 0.0))
+    (body
+      (make
+        (+ (get state time) duration)
+        (-
+          (get state altitude)
+          (+ (* (get state speed) duration) (* 0.5 (* gravity (* duration duration)))))
+        (+ (get state speed) (* gravity duration))
+        (get state fuel))))
+  (fn contact-root
+    (purpose "Bisect the earliest surface crossing in a segment with a descending endpoint.")
+    (sig (state State) (burn Float) (gravity Float) (lo Float) (hi Float) (left Int) -> Float)
+    (example ((make 0.0 1.0 0.0 0.0) 0.0 1.62 0.0 0.0 0) => 0.0)
+    (body
+      (if
+        (= left 0)
+        hi
+        (let
+          ((mid (* 0.5 (+ lo hi))) (height (get (advance state burn gravity mid) altitude)))
+          (if
+            (> height 0.0)
+            (contact-root state burn gravity mid hi (- left 1))
+            (contact-root state burn gravity lo mid (- left 1)))))))
+  (fn lift-series
+    (purpose "Sum integrated logarithm terms without cancellation for tiny fuel flow.")
+    (sig (x Float) (power Float) (n Float) (total Float) -> Float)
+    (example (0.0 0.0 1.0 0.0) => 0.0)
+    (body
+      (let
+        ((next (+ total (/ power (* n (+ n 1.0))))))
+        (if (= next total) total (lift-series x (* power x) (+ n 1.0) next)))))
+  (fn lowest-time
+    (purpose "Find the powered segment minimum altitude so a rebound cannot hide touchdown.")
+    (sig (state State) (burn Float) (gravity Float) (duration Float) -> Float)
+    (example ((make 0.0 10.0 0.0 0.0) 0.0 1.62 10.0) => 10.0)
+    (body
+      (if
+        (or (= burn 0.0) (= duration 0.0))
+        duration
+        (let
+          (
+            (mass (+ dry-mass (get state fuel)))
+            (thrust (* exhaust-speed burn))
+            (end-mass (- mass (* burn duration)))
+            (peak
+              (if
+                (<= (* gravity mass) thrust)
+                0.0
+                (if (>= (* gravity end-mass) thrust) duration (/ (- mass (/ thrust gravity)) burn))))
+            (top-speed (get (powered state burn gravity peak) speed))
+            (end-speed (get (powered state burn gravity duration) speed)))
+          (if
+            (and (> top-speed 0.0) (< end-speed 0.0))
+            (velocity-root state burn gravity peak duration 48)
+            duration)))))
+  (fn make
+    (purpose "Construct a physical state using SI units and downward-positive speed.")
+    (sig (time Float) (altitude Float) (speed Float) (fuel Float) -> State)
+    (requires (>= fuel 0.0))
+    (ensures (>= (get result fuel) 0.0))
+    (example (0.0 1.0 0.0 0.0) => (new State (time 0.0) (altitude 1.0) (speed 0.0) (fuel 0.0)))
+    (body (new State (time time) (altitude altitude) (speed speed) (fuel fuel))))
+  (fn minus-log
+    (purpose "Negative natural log of one minus x, the fuel term of the rocket equation.")
+    (sig (x Float) -> Float)
+    (requires (and (>= x 0.0) (< x 1.0)))
+    (example (0.0) => 0.0)
+    (example (0.5) => 0.6931471805599453)
+    (body (- 0.0 (float.log1p (- 0.0 x)))))
+  (fn powered
+    (purpose "Advance one powered segment with the integrated rocket equation.")
+    (sig (state State) (burn Float) (gravity Float) (duration Float) -> State)
+    (example ((make 0.0 100.0 0.0 100.0) 1.0 1.62 0.0) => (make 0.0 100.0 0.0 100.0))
+    (body
+      (let
+        (
+          (mass (+ dry-mass (get state fuel)))
+          (used (* burn duration))
+          (ratio (/ used mass))
+          (logarithm (minus-log ratio))
+          (impulse (* exhaust-speed logarithm))
+          (lift (* exhaust-speed (* duration (lift-series ratio ratio 1.0 0.0)))))
+        (make
+          (+ (get state time) duration)
+          (+
+            (-
+              (get state altitude)
+              (+ (* (get state speed) duration) (* 0.5 (* gravity (* duration duration)))))
+            lift)
+          (- (+ (get state speed) (* gravity duration)) impulse)
+          (float.max 0.0 (- (get state fuel) used))))))
+  (fn segment
+    (purpose "Advance a single firing or coasting segment, stopping at the first ground contact.")
+    (sig (state State) (burn Float) (gravity Float) (duration Float) -> State)
+    (example ((make 0.0 1.0 0.0 0.0) 0.0 2.0 1.0) => (make 1.0 0.0 2.0 0.0))
+    (body
+      (let
+        (
+          (lowest (lowest-time state burn gravity duration))
+          (probe (advance state burn gravity lowest)))
+        (if
+          (<= (get probe altitude) 0.0)
+          (with
+            (advance state burn gravity (contact-root state burn gravity 0.0 lowest 48))
+            (altitude 0.0))
+          (advance state burn gravity duration)))))
+  (fn step
+    (purpose
+      "Take a ten-second turn, stopping at touchdown even if the car rebounds before turn end.")
+    (sig (state State) (burn Float) (gravity Float) -> State)
+    (requires (and (>= burn 0.0) (<= burn max-burn) (> gravity 0.0) (>= (get state fuel) 0.0)))
+    (ensures (and (>= (get result fuel) 0.0) (<= (get result fuel) (get state fuel))))
+    (example
+      ((make 0.0 1.0 0.0 0.0) 0.0 2.0)
+      =>
+      (make 1.0000000000000142 0.0 2.0000000000000284 0.0))
+    (example ((make 0.0 1000.0 0.0 100.0) 5e-324 2.0) => (make 10.0 900.0 20.0 100.0))
+    (example ((make 0.0 490.5 0.0 0.0) 0.0 9.81) => (make 10.0 0.0 98.10000000000001 0.0))
+    (example
+      ((make 0.0 1.0 10.0 1000.0) 12.0 1.62)
+      =>
+      (make 0.10989302405083826 0.0 8.199299849503706 998.6812837113899))
+    (body
+      (if
+        (<= (get state altitude) 0.0)
+        state
+        (if
+          (or (= burn 0.0) (= (get state fuel) 0.0))
+          (segment state 0.0 gravity turn-length)
+          (let
+            (
+              (firing
+                (if
+                  (>= (get state fuel) (* burn turn-length))
+                  turn-length
+                  (/ (get state fuel) burn)))
+              (first (segment state burn gravity firing)))
+            (if
+              (<= (get first altitude) 0.0)
+              first
+              (segment first 0.0 gravity (- turn-length firing))))))))
+  (fn velocity-root
+    (purpose "Bisect the downward-to-upward velocity crossing in a powered segment.")
+    (sig (state State) (burn Float) (gravity Float) (lo Float) (hi Float) (left Int) -> Float)
+    (example ((make 0.0 1.0 0.0 1.0) 1.0 1.62 0.0 0.0 0) => 0.0)
+    (body
+      (if
+        (= left 0)
+        hi
+        (let
+          ((mid (* 0.5 (+ lo hi))) (velocity (get (powered state burn gravity mid) speed)))
+          (if
+            (> velocity 0.0)
+            (velocity-root state burn gravity mid hi (- left 1))
+            (velocity-root state burn gravity lo mid (- left 1))))))))

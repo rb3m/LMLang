@@ -1,0 +1,22 @@
+(module fs
+  (purpose "UTF-8 file operations.")
+  (export IoError exists read write)
+  (error IoError (path Str) (msg Str))
+  (fn exists
+    (purpose "Test whether a filesystem path exists.")
+    (sig (path Str) -> Bool)
+    (eff fs.read)
+    (fails IoError)
+    (body (prim "fs.exists")))
+  (fn read
+    (purpose "Read a UTF-8 file.")
+    (sig (path Str) -> Str)
+    (eff fs.read)
+    (fails IoError)
+    (body (prim "fs.read")))
+  (fn write
+    (purpose "Replace a file with UTF-8 text.")
+    (sig (path Str) (text Str) -> Unit)
+    (eff fs.write)
+    (fails IoError)
+    (body (prim "fs.write"))))

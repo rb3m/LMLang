@@ -1,0 +1,223 @@
+(module roadster-autopilot
+  (purpose "Automatic parking assistant and tuning witnesses.")
+  (use float list roadster-format roadster-levels roadster-physics str)
+  (export Outcome all-craters all-perfect crater no-burn-report perfect play report-all)
+  (type Outcome (rec (turns Int) (impact Float) (fuel Float) (time Float)))
+  (fn all-craters
+    (purpose "Check every untouched-throttle flight ends in a crater.")
+    (sig -> Bool)
+    (example () => true)
+    (body
+      (list.all
+        (list 1 2 3)
+        (lam ((spot Int)) (list.all (list 1 2 3) (lam ((world Int)) (crater spot world)))))))
+  (fn all-perfect
+    (purpose "Check every parking spot on every world can be parked perfectly.")
+    (sig -> Bool)
+    (example () => true)
+    (body
+      (list.all
+        (list 1 2 3)
+        (lam ((spot Int)) (list.all (list 1 2 3) (lam ((world Int)) (perfect spot world)))))))
+  (fn choose
+    (purpose "Bisect burn rate to achieve the requested end-of-turn downward speed.")
+    (sig
+      (s roadster-physics.State)
+      (g Float)
+      (target Float)
+      (lo Float)
+      (hi Float)
+      (left Int)
+      ->
+      Float)
+    (requires (and (>= lo 0.0) (<= lo hi) (<= hi roadster-physics.max-burn)))
+    (ensures (and (>= result 0.0) (<= result roadster-physics.max-burn)))
+    (example
+      (
+        (new roadster-physics.State (time 0.0) (altitude 0.0) (speed 0.5) (fuel 100.0))
+        1.62
+        0.5
+        0.0
+        12.0
+        0)
+      =>
+      6.0)
+    (body
+      (if
+        (<= left 0)
+        (/ (+ lo hi) 2.0)
+        (let
+          (
+            (mid (/ (+ lo hi) 2.0))
+            (trial (roadster-physics.advance s mid g roadster-physics.turn-length)))
+          (if
+            (> (get trial speed) target)
+            (choose s g target mid hi (- left 1))
+            (choose s g target lo mid (- left 1)))))))
+  (fn crater
+    (purpose "Verify that leaving the throttle untouched ends in a crater.")
+    (sig (level-id Int) (gravity-id Int) -> Bool)
+    (example (1 1) => true)
+    (example (1 2) => true)
+    (example (1 3) => true)
+    (example (2 1) => true)
+    (example (2 2) => true)
+    (example (2 3) => true)
+    (example (3 1) => true)
+    (example (3 2) => true)
+    (example (3 3) => true)
+    (body
+      (match
+        (roadster-levels.level level-id)
+        (None false)
+        (
+          (Some s)
+          (match
+            (roadster-levels.gravity gravity-id)
+            (None false)
+            (
+              (Some g)
+              (let
+                ((ending (fly s g false 0)))
+                (and (> (get ending impact) 30.0) (< (get ending time) 250.0)))))))))
+  (fn fly
+    (purpose "Play up to 25 turns using the autopilot or an untouched throttle.")
+    (sig (s roadster-physics.State) (g Float) (automatic Bool) (turns Int) -> Outcome)
+    (example
+      ((new roadster-physics.State (time 0.0) (altitude 0.0) (speed 0.5) (fuel 100.0)) 1.62 true 0)
+      =>
+      (new Outcome (turns 0) (impact 0.5) (fuel 100.0) (time 0.0)))
+    (body
+      (if
+        (or (<= (get s altitude) 0.0) (>= turns 25))
+        (new Outcome (turns turns) (impact (get s speed)) (fuel (get s fuel)) (time (get s time)))
+        (fly (roadster-physics.step s (if automatic (throttle s g) 0.0) g) g automatic (+ turns 1)))))
+  (fn no-burn-report
+    (purpose "Show every crater impact when the throttle stays at zero.")
+    (sig -> Str)
+    (example
+      ()
+      =>
+      "Street lot / Moon: crater in 3 turns at 54.7 m/s\nStreet lot / Mars: crater in 2 turns at 79.6 m/s\nStreet lot / Earth: crater in 2 turns at 126.9 m/s\nGarage rooftop / Moon: crater in 3 turns at 67.2 m/s\nGarage rooftop / Mars: crater in 2 turns at 97.6 m/s\nGarage rooftop / Earth: crater in 2 turns at 155.5 m/s\nDowntown spot / Moon: crater in 3 turns at 78.0 m/s\nDowntown spot / Mars: crater in 3 turns at 113.0 m/s\nDowntown spot / Earth: crater in 2 turns at 179.7 m/s")
+    (body (report-grid false)))
+  (fn perfect
+    (purpose "Verify a perfect autopilot park takes between 8 and 25 turns.")
+    (sig (level-id Int) (gravity-id Int) -> Bool)
+    (example (1 1) => true)
+    (example (1 2) => true)
+    (example (1 3) => true)
+    (example (2 1) => true)
+    (example (2 2) => true)
+    (example (2 3) => true)
+    (example (3 1) => true)
+    (example (3 2) => true)
+    (example (3 3) => true)
+    (body
+      (match
+        (play level-id gravity-id)
+        (None false)
+        (
+          (Some ending)
+          (and
+            (>= (get ending turns) 8)
+            (<= (get ending turns) 25)
+            (>= (get ending impact) 0.0)
+            (<= (get ending impact) 1.0)
+            (< (get ending time) 250.0))))))
+  (fn play
+    (purpose "Play a selected spot and world to touchdown with the automatic parking assistant.")
+    (sig (level-id Int) (gravity-id Int) -> (Opt Outcome))
+    (example (0 1) => None)
+    (body
+      (let?
+        ((s (roadster-levels.level level-id)) (g (roadster-levels.gravity gravity-id)))
+        (Some (fly s g true 0)))))
+  (fn report-all
+    (purpose "Show the automatic parking result for every spot and world.")
+    (sig -> Str)
+    (example
+      ()
+      =>
+      "Street lot / Moon: perfect in 11 turns at 0.5 m/s\nStreet lot / Mars: perfect in 11 turns at 0.6 m/s\nStreet lot / Earth: perfect in 10 turns at 0.7 m/s\nGarage rooftop / Moon: perfect in 13 turns at 0.5 m/s\nGarage rooftop / Mars: perfect in 13 turns at 0.5 m/s\nGarage rooftop / Earth: perfect in 11 turns at 0.9 m/s\nDowntown spot / Moon: perfect in 14 turns at 0.5 m/s\nDowntown spot / Mars: perfect in 14 turns at 0.6 m/s\nDowntown spot / Earth: perfect in 13 turns at 0.6 m/s")
+    (body (report-grid true)))
+  (fn report-grid
+    (purpose "Report every spot and world in menu order.")
+    (sig (automatic Bool) -> Str)
+    (example
+      (false)
+      =>
+      "Street lot / Moon: crater in 3 turns at 54.7 m/s\nStreet lot / Mars: crater in 2 turns at 79.6 m/s\nStreet lot / Earth: crater in 2 turns at 126.9 m/s\nGarage rooftop / Moon: crater in 3 turns at 67.2 m/s\nGarage rooftop / Mars: crater in 2 turns at 97.6 m/s\nGarage rooftop / Earth: crater in 2 turns at 155.5 m/s\nDowntown spot / Moon: crater in 3 turns at 78.0 m/s\nDowntown spot / Mars: crater in 3 turns at 113.0 m/s\nDowntown spot / Earth: crater in 2 turns at 179.7 m/s")
+    (body
+      (str.join
+        (list.map
+          (list 1 2 3)
+          (lam
+            ((spot Int))
+            (str.join
+              (list.map (list 1 2 3) (lam ((world Int)) (report-row spot world automatic)))
+              "\n")))
+        "\n")))
+  (fn report-row
+    (purpose "Show one parking result with its turn count and impact speed.")
+    (sig (level-id Int) (gravity-id Int) (automatic Bool) -> Str)
+    (example (1 1 false) => "Street lot / Moon: crater in 3 turns at 54.7 m/s")
+    (example (0 1 true) => "Unknown parking spot or world.")
+    (body
+      (let
+        (
+          (flight
+            (let?
+              ((s (roadster-levels.level level-id)) (g (roadster-levels.gravity gravity-id)))
+              (Some (fly s g automatic 0)))))
+        (match
+          flight
+          (None "Unknown parking spot or world.")
+          (
+            (Some ending)
+            (str.join
+              (list
+                (spot-name level-id)
+                " / "
+                (world-name gravity-id)
+                ": "
+                (result-label (get ending impact))
+                " in "
+                (str.from-int (get ending turns))
+                " turns at "
+                (roadster-format.decimal (get ending impact))
+                " m/s")
+              ""))))))
+  (fn result-label
+    (purpose "Describe the impact category.")
+    (sig (speed Float) -> Str)
+    (example (1.0) => "perfect")
+    (example (30.0) => "hard landing")
+    (example (30.1) => "crater")
+    (body
+      (match (<= speed 1.0) (true "perfect") (false (if (> speed 30.0) "crater" "hard landing")))))
+  (fn spot-name
+    (purpose "Name a parking spot in reports.")
+    (sig (id Int) -> Str)
+    (example (2) => "Garage rooftop")
+    (example (0) => "Unknown spot")
+    (body (match id (1 "Street lot") (2 "Garage rooftop") (3 "Downtown spot") (_ "Unknown spot"))))
+  (fn throttle
+    (purpose "Aim for a gentle exponential descent, then a half-metre-per-second final approach.")
+    (sig (s roadster-physics.State) (g Float) -> Float)
+    (ensures (and (>= result 0.0) (<= result roadster-physics.max-burn)))
+    (example
+      ((new roadster-physics.State (time 0.0) (altitude 0.0) (speed 0.5) (fuel 0.0)) 1.62)
+      =>
+      11.999999999994543)
+    (body
+      (let
+        (
+          (target
+            (float.max 0.5 (float.min 25.0 (/ (- (get s altitude) (* 5.0 (get s speed))) 25.0)))))
+        (choose s g target 0.0 roadster-physics.max-burn 40))))
+  (fn world-name
+    (purpose "Name the gravity setting in reports.")
+    (sig (id Int) -> Str)
+    (example (3) => "Earth")
+    (example (4) => "Unknown world")
+    (body (match id (1 "Moon") (2 "Mars") (3 "Earth") (_ "Unknown world")))))

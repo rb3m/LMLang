@@ -1,0 +1,12 @@
+(module list
+  (purpose "List operations.")
+  (fn fold
+    (purpose "Combine elements left to right starting from init.")
+    (sig (xs (List a)) (init b) (step (Fn (b a) b)) -> b)
+    (example ((list 1 2 3) 0 +) => 6)
+    (body (prim "list.fold")))
+  (fn sum
+    (purpose "Sum of a list of integers.")
+    (sig (xs (List Int)) -> Int)
+    (example ((list 1 2 3)) => 6)
+    (body (fold xs 0 +))))

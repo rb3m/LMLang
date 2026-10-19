@@ -1,0 +1,7 @@
+(module effect-as-value
+  (purpose "p")
+  (use io list)
+  (fn f
+    (purpose "p")
+    (sig (xs (List Str)) -> (List Unit))
+    (body (list.map xs io.print))))

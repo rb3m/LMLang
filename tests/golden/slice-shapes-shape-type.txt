@@ -1,0 +1,3 @@
+(module shapes
+  (purpose "Areas and descriptions of simple shapes.")
+  (type Shape (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty)))

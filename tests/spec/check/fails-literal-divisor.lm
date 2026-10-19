@@ -1,0 +1,6 @@
+(module fails-literal-divisor
+  (purpose "p")
+  (fn half
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body (/ a 2))))

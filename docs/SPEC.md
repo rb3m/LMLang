@@ -1,0 +1,264 @@
+# LM Language Spec — v0
+
+Normative. If code and this file disagree, fix one of them in the same change. Examples here are test fixtures: each lives in `tests/spec/`.
+
+## 1. Lexical
+
+- UTF-8. Whitespace separates tokens. No comments.
+- Int: `-?[0-9]+`, signed 64-bit: a literal outside [-9223372036854775808, 9223372036854775807] is E-OVERFLOW at check time (in source, examples, scenarios and `lm run` arguments; ADR-029/030). Float: `-?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?` with at least a `.` or an exponent (`1.0`, `-0.5`, `2.5e-3`, `1e+16`; not `1.`, `.5`, `inf`, `nan`); IEEE-754 binary64, rounded to nearest (ties to even); a literal that is not finite in binary64 (`1e400`) is E-FLOAT at check time; underflow to a subnormal or zero is allowed (ADR-039). Str: `"..."` with escapes `\" \\ \n \t \u{H..}` (1-6 hex digits, a Unicode scalar value; empty, non-hex, > 0x10FFFF or a surrogate is E-PARSE at check time; ADR-063).
+- Value symbol: `[a-z][a-z0-9-]*` optionally qualified once: `module.name`. The one exception is the special form name `let?` (ADR-045).
+- Type / Variant / Error symbol: `[A-Z][A-Za-z0-9]*`. Type variable: single lowercase letter in a `sig` (`a`, `b`).
+- Reserved literals: `true false unit _`.
+- Operator symbols (the only non-alphabetic symbols): `+ - * / = != < <= > >= -> =>`.
+- Qualified Type/Variant/Error symbol: `module.Name`.
+- Delimiters: `( )` only. Strings are single-line; control characters inside a string are an error (use escapes).
+
+## 2. Canonical text form (the printer defines it; `lm fmt` applies it)
+
+1. A file holds exactly one `module` form; file name = `<module-name>.lm`; one trailing newline.
+2. `module` and `fn` forms print with each child clause on its own line, indented 2 spaces. `type` and `error` forms print like expressions (rule 3). No blank lines anywhere.
+3. An expression prints on one line if it fits in 100 columns; otherwise head on the first line and each argument on its own line indented 2 from the head's `(`. Width counts the form's own text only; closing parens contributed by ancestors are not counted.
+4. Single spaces between tokens; no spaces after `(` or before `)`.
+5. Clause order. Module: `purpose use export type error fn`. Fn: `purpose sig eff fails requires ensures example body`. Within a group, items are sorted by name (bytewise); `example`/`requires`/`ensures` keep written order.
+6. `eff`, `fails`, `use`, `export` lists are sorted; duplicates are E-DUP-NAME. Empty `(eff)`, `(fails)`, `(use)`, `(export)` clauses are dropped (canonical = absent). At most one each of `purpose`, `use`, `export` per module and `purpose sig eff fails body` per fn.
+7. Ints print normalized (`007` -> `7`, `-0` -> `0`). Floats print in canonical text = Python's `repr(float)`: the shortest digits that round-trip; positional when the decimal exponent is in [-4, 16), always with a `.` (`100.0`, `0.0001`, `1000000000000000.0`); otherwise `d[.ddd]e+XX`/`e-XX` with at least two exponent digits (`1e-05`, `1e+16`, `1.5e+300`); `-0.0` prints `0.0` (`1.50` -> `1.5`, `1E5` -> `100000.0`). A non-finite literal (E-FLOAT) keeps its text. Strings print with escapes `\" \\ \n \t` and `\u{..}` for control characters other than `\n` and `\t` (lowercase hex, no leading zeros; ADR-063).
+
+## 3. Module
+
+```
+(module billing
+  (purpose "Invoice totals.")
+  (use list money)
+  (export tax-rate total)
+  (type Cents Int)
+  (error BadRegion (region Str))
+  (const tax-rate (purpose "Standard tax rate.") (type Float) (value 0.08))
+  (fn total ...))
+```
+- `purpose`: required, one line, <= 100 chars.
+- `use`: modules referenced anywhere in this module. Reference only as `module.name`. Using an unlisted module: E-USE-MISSING. Listing an unused module: warning W-USE-UNUSED. Cycles between modules: E-CYCLE.
+- `export`: optional (ADR-061). Names visible to other modules. A module without an export clause exports every top-level function, type (with variants), error and constant; `(export)` with no names exports nothing; a non-empty list exports only the named items. Referencing a non-exported name: E-NOT-EXPORTED.
+- `const`: `(const NAME (purpose "...") (type T) (value E))`. `purpose` (<= 100 chars), `type` (no type variables) and `value` are all required, in this canonical order. Constants share the value namespace with functions (a collision is E-DUP-NAME). Exported through `(export ..)` or by default when the export clause is omitted. Value expression must be pure and fail-free. Cycles in the static reference graph involving constants are E-CYCLE.
+
+## 4. Types
+
+`Int Float Bool Str Unit`, `(List T)`, `(Opt T)`, `(Pair A B)`, `(Map K V)`, `(Set K)`, `(Fn (T...) R)`, type variables, and declared types:
+- alias: `(type Cents Int)` (transparent)
+- record: `(type Item (rec (name Str) (price Int)))`
+- sum: `(type Shape (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty))`
+- `Opt` is built in: `(Some x)`, `None`.
+- `Pair` is built in (ADR-059): type `(Pair a b)`. Values are written `(pair a b)` (section 6). Pair is not allowed as a Map key or Set element (suggesting a Str key or nested maps).
+- `Map` and `Set` are built in (ADR-049/050): immutable, with structural `=` that ignores insertion history. A key type `K` must be `Int`, `Float`, `Str` or `Bool` (E-TYPE otherwise), or a type variable of a signature in which it is a Map key or Set element somewhere; every use instantiating that variable is checked, after unification like the operator constraints of section 7. Every traversal (printing, `map.keys`/`values`/`fold`, `set.to-list`/`fold`) is in ascending key order: Int and Float numerically, Str by Unicode code point, `false < true`. Values are written `(mapof (k v)..)` / `(setof k..)` (section 6).
+Type names are module-scoped; other modules refer to them as `module.Type`. Variants and errors are likewise `module.Variant`. (Prelude's `Some`, `None`, `DivZero`, `OutOfRange`, `Pair` are unqualified.)
+
+## 5. Functions
+
+```
+(fn total
+  (purpose "Sum item prices and add tax for a region.")
+  (sig (items (List Cents)) (region Str) -> Cents)
+  (eff)                                   ; optional; absent = pure
+  (fails BadRegion)                       ; optional; absent = no recoverable LM errors (faults can still stop it)
+  (requires (> (len items) 0))            ; optional, repeatable
+  (ensures (>= result 0))                 ; optional, repeatable; `result` is bound
+  (example ((list 100 200) "MX") => 348)  ; >= 1 required if listed in export or referenced from another module (ADR-061)
+  (body ...))
+```
+- Params are immutable locals. `sig` annotations are required (no inference at function boundary).
+- A function without parameters is written `(sig -> Int)`.
+- `eff` names come from the closed set: `io.out io.in fs.read fs.write time.now rand`. A function's `eff` must include every effect of every function it calls (E-EFFECT-UNDECLARED). Declaring an unneeded effect: W-EFFECT-UNUSED.
+- `fails`: absent `fails` means no recoverable LM errors; faults (E-OVERFLOW, E-RECURSION-LIMIT, contract violations; section 13) can still stop any function. "Total" in this spec means exactly this. Every error that can escape the body — raised by `fail` or by a callee/primitive and not caught — must be listed (E-FAILS-UNDECLARED).
+- `requires`/`ensures` are boolean pure expressions, checked at runtime in `lm test` and `lm run --contracts` (default on); violation = E-REQUIRES-VIOLATED / E-ENSURES-VIOLATED.
+- `example`: `(example (arg-exprs...) => expected-expr)` or `=> (fail ErrorName field-exprs...)`. Arg/expected exprs are constant (literals, `list`, constructors, `new`). Only pure functions have examples in v0. A pure function needs at least one example if it is listed in `(export ..)`, or, in a module without an export clause, referenced from another module (ADR-061). Effectful functions never have examples.
+
+## 6. Expressions
+
+| Form | Meaning |
+|---|---|
+| `42` `1.5` `"s"` `true` `false` `unit` | literals |
+| `x` / `mod.x` | local or bare own constant / qualified reference (fn, const, ctor) |
+| `(f a b)` | call (arity checked) |
+| `(if c a b)` | c must be Bool; a, b same type |
+| `(let ((x e) (y e)) body)` | sequential immutable bindings |
+| `(let? ((x e) (y e)) body)` | short-circuit Opt binding (ADR-045): each `e` has type `(Opt T)` and binds `x` to its payload; sequential, each evaluated once, left to right; the first `None` skips the remaining bindings and the body and makes the form `None`; `body` and the form have type `(Opt R)`. Same as nested `(match e ((Some x) ..) (None None))` |
+| `(do e1 e2 ... en)` | sequence: evaluates left to right, `e1`..`e(n-1)` must be `Unit`, returns `en` |
+| `(for (x xs) body)` | per-element iteration with effects (ADR-060): `xs` is a `(List a)` evaluated once; binds `x` fresh per iteration in order; `body` must be `Unit`; returns `unit` |
+| `(match e (pat body)...)` | exhaustive; patterns: literal (not Float: E-TYPE, use comparisons), `x` (bind), `_`, `(Variant p...)`, `Variant`, `(list p...)`, `(cons h t)`, `(pair p q)` |
+| `(lam ((x T)...) body)` / `(lam (x...) body)` | anonymous function (typed or inferred parameter types, ADR-061) |
+| `(list e...)` | list literal |
+| `(mapof (k v)...)` `(setof k...)` | Map / Set literal (ADR-049): each `k` is an Int, Float, Str or Bool literal (E-TYPE otherwise), all of one type; a duplicate (by value: `1.0` = `1.00`) is E-DUP-NAME; `mapof` values are any expressions, evaluated left to right in source order. `(mapof)`/`(setof)` are empty, typed by use (an undetermined key type defaults to Int). `lm fmt` keeps the written order |
+| `(new Type (f e)...)` | record construction; all fields exactly once |
+| `(get r f)` | field read |
+| `(with r (f e)...)` | copy with updated fields |
+| `(and a b ...)` `(or a b ...)` | short-circuit, Bool |
+| `(fail Err e...)` | raise; type is any (bottom) |
+| `(try e (catch Err (x...) handler)...)` | handle listed errors |
+| `(note "text")` | no-op expression returning `unit`; carries prose inside a body |
+| `(prim "name")` | stdlib only: body implemented by a runtime primitive; typed by the fn's `sig` |
+
+Variants are called like functions: `(Circle 3)`; nullary variants are bare: `Empty`. Constants are referenced bare in their own module (`moon-gravity`) and qualified elsewhere (`roadster-levels.moon-gravity`), and are never called.
+
+## 7. Prelude (closed; the only unqualified names besides special forms)
+
+| Name | Type | Notes |
+|---|---|---|
+| `+ - *` | `n n -> n`, `n` = Int or Float | Int: a result outside the 64-bit range is the runtime fault E-OVERFLOW (not an error: never in `fails`, not catchable). Float: rounded to binary64; NaN or an infinity is the fault E-FLOAT; `-0.0` becomes `0.0` |
+| `/` | `n n -> n`, `n` = Int or Float | Int: floor semantics; fails DivZero unless the divisor is a nonzero Int literal or proven nonzero (ADR-061); min-int by -1 is E-OVERFLOW. Float: never fails; a zero divisor gives the fault E-FLOAT |
+| `mod` | `Int Int -> Int` | floor semantics; fails DivZero unless the divisor is a nonzero Int literal or proven nonzero (ADR-061); cannot overflow |
+| `= !=` | `a a -> Bool` | same-type structural equality; exact on Float |
+| `< <= > >=` | `n n -> Bool`, `n` = Int, Float or Str | |
+| `not` | `Bool -> Bool` | |
+| `len` | `(List a) -> Int` | lists only; strings use `str.length` |
+| `cons` | `a (List a) -> (List a)` | |
+| `pair` | `a b -> (Pair a b)` | constructs pairs; also a first-class function value |
+| `Some` `None` | `Opt` constructors | |
+| `DivZero` `OutOfRange` | errors, no fields |
+
+The operand constraints (`n` above) are checked after a function's types are solved, so `(list.fold xs 0.0 +)` works; an operand type nothing determines defaults to Int. Mixing Int and Float is E-TYPE: convert with `float.from-int`, `float.round`, `float.trunc`, `float.floor`, `float.ceil`. A `/` whose operand type is still unknown where it appears counts as Int `/` for DivZero (ADR-043). |
+
+## 8. Standard modules (v0; written in LM over primitives)
+
+- `list`: `map filter fold range sum nth at take drop sort-by reverse concat all any map2 index-of head tail last zip` (`concat(xs, ys)` joins two lists; nth fails OutOfRange unless the index k is an Int literal >= 0 and `(len xs) > k` is proven safe (ADR-061), `at(xs, i) -> (Opt a)` is None out of range; `take`/`drop(xs, n)` clamp `n` to 0..length; `sort-by(xs, less)` is stable, `less` should be a strict weak ordering, and every backend runs the same top-down merge sort (split at `len/2`, merge taking the right element only when `(less right left)`), so even an inconsistent `less` gives identical results; map2 requires equal lengths; index-of returns `(Opt Int)`; `head(xs) -> (Opt a)`, `tail(xs) -> (Opt (List a))`, `last(xs) -> (Opt a)` return `None` on empty list; `zip(xs, ys) -> (List (Pair a b))` requires equal lengths like map2; `any`/`all` take pure predicates) (ADR-045, ADR-059)
+- `str`: `length concat from-int from-float join split trim to-int to-float starts-with contains substring lines`. Subject first everywhere (ADR-037): `join(parts, sep)`; `split(s, sep)` splits literally and preserves empty fields; empty separator splits Unicode characters. `trim` strips Unicode whitespace (the pinned set U+0009..U+000D, U+001C..U+0020, U+0085, U+00A0, U+1680, U+2000..U+200A, U+2028..U+2029, U+202F, U+205F, U+3000; ADR-063). `to-int(s) -> (Opt Int)` returns `Some n` for `[+-]?[0-9]+` within signed 64-bit bounds and `None` otherwise (no whitespace or separators; never a failure or fault). `starts-with(s, prefix)` and `contains(s, part)` include the empty prefix/part. `substring(s, start, end)` uses Unicode character offsets, start inclusive/end exclusive; requires `0 <= start <= end <= length`, otherwise fails `OutOfRange`. `lines(s)` splits CRLF/LF/CR, preserves interior empty lines, omits an empty final field; empty input gives `(list)`.
+- `str` also (ADR-045; indices and widths count code points): `index-of(s, part) -> (Opt Int)` (first match; empty `part` is `Some 0`); `replace(s, old, replacement)` (every non-overlapping occurrence, left to right; empty `old` returns `s`); `repeat(s, n)` requires `n >= 0`; `pad-left`/`pad-right(s, width, fill)` require `(str.length fill) = 1` and return `s` unchanged when it is at least `width` long (no promise about terminal display width); `upper-ascii`/`lower-ascii` change only `a-z`/`A-Z`. `upper` and `lower` perform Unicode simple case mapping (one scalar to one scalar; length never changes; `ß` stays `ß`; no locale rules; unmapped, unassigned and noncharacter scalars unchanged) from Unicode 16.0.0 `UnicodeData.txt` (ADR-063). Warning: simple casing is lossy: upper and lower are not inverses and not a case-insensitive comparison (`ß` stays `ß`, `İ` lowercases to `i`, `ǅ` uppercases to `Ǆ`). `to-codes(s) -> (List Int)` returns Unicode scalar values. `from-codes(cs) -> Str` builds a string from scalar values, failing exported `str.BadCode (code Int)` on the first value, left to right, that is negative, above 0x10FFFF, or a surrogate (0xD800-0xDFFF), checked before any host conversion (ADR-063).
+- `map` (ADR-049/050/059; `(Map k v)`): `put(m, key, value)` (replaces an existing binding), `at(m, key) -> (Opt v)` (named like `list.at`: `get` is reserved, ADR-047), `has`, `remove(m, key)` (absent key: unchanged), `size`, `keys -> (List k)` and `values -> (List v)` in key order, `fold(m, init, step)` with `step (Fn (b k v) b)` in key order, `update(m, key, default, f)` binds `key` to `f` of its value or of `default` when absent, `to-list(m) -> (List (Pair k v))` in ascending key order, `from-list(ps) -> (Map k v)` (later duplicate keys replace earlier ones like `put`).
+- `set` (ADR-049; `(Set a)`): `add`, `has`, `remove` (absent: unchanged), `size`, `to-list` (ascending), `from-list`, `fold(s, init, step)` with `step (Fn (b a) b)` in ascending order, `union`, `intersect`, `diff(s, t)` (elements of `s` not in `t`).
+- `pair` (ADR-059): `first(p) -> a`, `second(p) -> b`, `swap(p) -> (Pair b a)`.
+- `opt` (ADR-045): `unwrap-or(o, d) -> a` (`d` is evaluated eagerly, like every argument), `map(o, f) -> (Opt b)`, `is-some(o) -> Bool`.
+- `float` (ADR-039): `from-int` (nearest, ties to even), `floor ceil round trunc` (Float -> Int; `round` halves away from zero; the rounded mathematical integer outside the Int range is E-OVERFLOW, e.g. `float.trunc` of 2^63 = `(float.from-int (math.int-max))`), `sqrt` (correctly rounded; negative is E-FLOAT), `abs min max`, `sum` (`(list.fold xs 0.0 +)`, so a non-finite partial sum is E-FLOAT through `+`).
+- `float` math (ADR-057): zero-parameter `pi` and `e` return binary64 constants with exact bit patterns `0x400921fb54442d18` and `0x4005bf0a8b145769`. `exp(x Float) -> Float` computes the exponential; overflow is E-FLOAT, underflow to zero or a subnormal is allowed. `log1p(x Float) -> Float` computes ln(1+x) and `expm1(x Float) -> Float` computes exp(x)-1, preserving accuracy for tiny x. `log1p` with x <= -1.0 faults E-FLOAT with op `float.log1p`; `expm1` overflow (above approximately 709.78) faults E-FLOAT with op `float.expm1`, while arbitrarily negative finite inputs are allowed. Exactly `log1p(0.0) = expm1(0.0) = 0.0`, `log1p(1e-300) = expm1(1e-300) = 1e-300`, `log1p(1.0)` equals `(float.ln 2.0)` bit for bit, and `expm1(-1000.0) = -1.0`; negative zero is normalized. `sinh cosh tanh` each take `(x Float) -> Float` and compute the hyperbolic sine, cosine and tangent. `sinh`/`cosh` result overflow (|x| above approximately 710.4758600739439) faults E-FLOAT with op `float.sinh`/`float.cosh`; values just below that boundary remain finite even when exp(|x|) overflows. `tanh` is finite for every finite x and saturates to signed 1.0 for large |x|. Exactly `sinh(0.0) = tanh(0.0) = 0.0`, `cosh(0.0) = 1.0`, `sinh(1e-300) = tanh(1e-300) = 1e-300`, `tanh(30.0) = 1.0`, and `tanh(-30.0) = -1.0`. `sinh` and `tanh` are odd and `cosh` is even, bit-exact under negation apart from normalized zero; negative zero results normalize to positive zero. `ln log2 log10` take one Float and return its natural, base-two or base-ten logarithm; `x <= 0.0` is E-FLOAT, including either signed zero. `pow(x Float, y Float) -> Float` returns x raised to y: `pow(x, 0.0) = 1.0` for every finite x, including zero; `pow(1.0, y) = 1.0`; zero with a negative exponent and a negative base with a non-integer exponent fault E-FLOAT. Negative bases with integer exponents give the signed real result, e.g. `pow(-2.0, 3.0) = -8.0`. Overflow faults; underflow to zero or a subnormal is allowed. `cbrt(x Float) -> Float` returns the real cube root, with exact cubes exact, including `cbrt(-8.0) = -2.0`. `hypot(x Float, y Float) -> Float` returns the Euclidean length: `hypot(3.0, 4.0) = 5.0`; intermediate overflow is avoided (`hypot(1e300, 1e300)` is finite), and only result overflow faults. Any non-finite result is E-FLOAT with op `float.pow`, `float.cbrt` or `float.hypot` respectively. `sin cos tan` each take `(x Float) -> Float`, with x in radians. Every finite binary64 argument is valid and the result is finite, including tangent (no E-FLOAT for finite inputs); the common non-finite result guard still applies. Exactly `sin(0.0) = 0.0`, `cos(0.0) = 1.0`, and `tan(0.0) = 0.0`. Arguments are binary64 numbers: `sin((float.pi)) = 1.2246467991473532e-16`, not `0.0`, because the constant is binary64 pi rather than mathematical pi. `asin acos atan` each take `(x Float) -> Float` and return radians; `asin` and `acos` fault E-FLOAT with op `float.asin` and `float.acos` respectively when |x| > 1.0. Exactly `asin(0.0) = 0.0`, `asin(1.0)` is binary64 pi/2, `acos(1.0) = 0.0`, `acos(-1.0) = (float.pi)`, `atan(0.0) = 0.0`, and `(* 4.0 (float.atan 1.0)) = (float.pi)`. `atan2(y Float, x Float) -> Float` returns the quadrant-aware angle in radians, with argument order (y, x): `atan2(0.0, 0.0) = 0.0`, `atan2(0.0, negative x)` is binary64 pi, `atan2(1.0, -1.0)` is binary64 3pi/4, and `atan2(-1.0, -1.0)` is binary64 -3pi/4. `atan` and `atan2` accept all finite inputs. Signed zero inputs are normalized as elsewhere. Results normalize negative zero. These functions use the versioned reference algorithms in the `float_math*.py` and `floatmath*.go` families: deterministic, identical on every platform, error <= 1 ulp; high-precision vectors are evidence, not proof. `sqrt` remains correctly rounded. `ln 1.0` is exactly `0.0`; `log2` of binary64 powers of two is exact. `log10` of exact powers `10^N`, N = 0..22, returns the exact exponent. The v1 implementation uses Go's pure-Go exp/ln and FreeBSD msun's compensated log2/log10, s_log1p.c/s_expm1.c, e_sinh.c/e_cosh.c/s_tanh.c with k_exp.c scaling, and pow/cbrt/hypot/sin/cos/tan/asin/acos/atan/atan2 (the trigonometric functions share msun range reduction, including Payne-Hanek for large arguments); the literal Go logarithm wrappers do not meet the bound (log2 suffers cancellation near 1, and log10 can err by 2 ulps and gives `14.999999999999998` for `1e15`). A later change to result bits requires a compatibility ADR.
+- `str` also: `from-float(x)` = canonical text (section 2 rule 7); `to-float(s) -> (Opt Float)` accepts `[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?` (so also `1.`, `.5`, `+2`, `7`) and returns `None` for anything else (whitespace, `_`, hex, `inf`, `nan`) and for text that rounds to an infinity; underflow gives `Some 0.0` or a subnormal; never a failure or fault.
+- `math`: `abs min max int-min int-max` (`int-min`/`int-max` are zero-argument functions returning the Int bounds; `abs` of min-int is E-OVERFLOW)
+- `io`: `print(s)` and `eprint(s)` write a line to stdout/stderr (eff io.out), flushing each line. `args` has signature `-> (List Str)` (eff io.in); program arguments that are not valid UTF-8 have each invalid byte sequence replaced by U+FFFD identically in all targets (ADR-063). `read-line` returns `(Opt Str)` (eff io.in), removes LF and an optional preceding CR, returns `Some ""` for an empty line and `None` at EOF; a final unterminated line is returned. `read-all` returns the remaining text unchanged (eff io.in). Both reads use strict UTF-8 and fail exported `io.IoError (msg Str)` for I/O/decoding errors.
+- `fs`: `read(path) -> Str` (eff fs.read), `write(path, text) -> Unit` (eff fs.write), `exists(path) -> Bool` (eff fs.read); all declare exported `fs.IoError (path Str) (msg Str)` for OS/encoding errors, including invalid UTF-8. Reads/writes preserve newline text; writes replace/create, without atomicity. `exists` follows symlinks, returns false for missing targets and fails for other stat errors. Error messages are host dependent.
+
+- `time` (ADR-051): `now-ms -> Int` returns Unix epoch milliseconds; `mono-ms -> Int` returns monotonic milliseconds from an arbitrary origin (only differences are meaningful). Both have effect `time.now`. Wall-clock adjustments may move `now-ms` backwards.
+- `rand` (ADR-051; effect `rand`): `int(lo Int, hi Int) -> Int` is uniform over the inclusive interval, requires `lo <= hi`, and supports the full Int64 span. `float -> Float` returns `(next() >> 11) * 2^-53` in [0, 1). One SplitMix64 state per execution, initialized from the seed interpreted as uint64 (two's complement). Each `next()` adds `0x9E3779B97F4A7C15`, then mixes with xor-right-shifts 30, 27, 31, multiplying after the first two by `0xBF58476D1CE4E5B9` and `0x94D049BB133111EB`; all arithmetic wraps at 64 bits. For `int`, compute unsigned `span = hi - lo`; if `span = 2^64 - 1`, return `lo + next()` wrapped and reinterpreted as Int64. Otherwise `n = span + 1`, `limit = 2^64 - (2^64 mod n)`; draw until `x < limit`, then return `lo + (x mod n)` wrapped and reinterpreted as Int64. Even `lo = hi` consumes one draw. These functions cannot have examples because they are effectful.
+
+- `json` (ADR-051 item 4): exported sum `Json` = `JNull | (JBool (b Bool)) | (JInt (n Int)) | (JFloat (x Float)) | (JStr (s Str)) | (JArr (items (List Json))) | (JObj (fields (Map Str Json)))`; exported error `BadJson (pos Int) (msg Str)`. `parse(s Str) -> Json` declares `fails BadJson`; `print(j Json) -> Str` and `field(j Json, key Str) -> (Opt Json)` are pure and total. `field` returns None for non-objects or missing keys, and `Some JNull` for an explicit null.
+  Parsing follows strict RFC 8259: exactly one value, surrounding whitespace restricted to space, tab, CR and LF; ASCII decimal numbers with optional minus, no leading zeros except zero itself, mandatory digits after a decimal point or exponent sign. Numbers without `.`/`e`/`E` fitting signed Int64 become JInt; all others become JFloat. Non-finite binary64 results fail BadJson (never E-FLOAT); underflow is zero or subnormal. Negative zero normalises to 0 or 0.0. Duplicate decoded object keys and unpaired surrogate escapes fail; a high/low surrogate escape pair decodes to one code point. Object source order is discarded.
+  `print` produces compact JSON, object keys ascending by code point, Int decimal and Float using section 2's canonical LM Float rule. Strings escape quote and backslash, use `\n \r \t \b \f`, and escape other U+0000..U+001F as `\u00XX` with uppercase hex digits; slash and every other character are literal UTF-8.
+  BadJson messages are exactly: `"unexpected character"`, `"unexpected end"`, `"bad escape"`, `"unpaired surrogate"`, `"duplicate key"`, `"number out of range"`, `"trailing data"`, `"control character in string"`. `pos` is the zero-based code-point cursor at detection (EOF is the string length), identical in both backends. Required missing characters/digits/hex digits give unexpected end; a wrong grammar character gives unexpected character; a bad escape letter or non-hex Unicode escape digit gives bad escape at that character. A literal control character inside a string reports its position. A low surrogate alone reports the cursor after its four hex digits; a high surrogate without an immediately following `\u` reports the cursor after its own digits; a second escape that is not a low surrogate reports the cursor after the second escape's digits (malformed/truncated second hex digits use bad escape/unexpected end). Duplicate keys report immediately after the second key's closing quote, before its colon/value is read. Number out of range reports immediately after the complete number token. Trailing data reports the first non-whitespace character after the value; thus `01` is trailing data at 1, whereas `[01]` is unexpected character at 2.
+
+## 9. Diagnostics
+
+One JSON object per line:
+```
+{"code":"E-NAME-UNRESOLVED","severity":"error","file":"src/billing.lm","line":12,"col":9,
+ "path":"billing/total/body/1/0","msg":"unknown name `list.mapp`",
+ "expected":"one of: list.map list.filter ...","found":"list.mapp",
+ "fix":[{"op":"replace-ref","path":"billing/total/body/1/0","to":"list.map"}]}
+```
+- `path` = slash-separated: module, fn (or Type/Error), clause head (repeatable clauses get `#k`: `example#0`), then child indexes into the clause's items (index 0 is the head symbol). Example: `billing/total/body/1/0`. Stable under reformatting.
+- E-PARSE for an unclosed `(` points to the innermost open form at the first later line-leading `(` at the same or lower indentation. If there is no such boundary, it points to the deepest form still open at EOF. This is a diagnostic heuristic only; indentation does not affect syntax. An unexpected `)` points to that character.
+- `fix` may be empty. Each fix is an `lm edit`-compatible operation.
+- `data` (optional, omitted when empty): code-specific structured fields. E-OVERFLOW (runtime) has `op`, `operands`, `bounds`, `frames` (at most 3 names, innermost first, keeping the nearest user frame; a prelude fn applied by a stdlib prim appears as "`+` (callback)", a lambda as "(lam) in mod.fn"), `frames_omitted`, `user_path` (call site in the nearest user frame) and `replay`: a shell-quoted `python3 -m lm run MOD.FN ARG..` of the innermost user call when its arguments are constants and the command is <= 400 characters, otherwise `unavailable (<reason>)`. Its `msg` ends with "Fix the arithmetic, validate input, or add a justified precondition; overflow cannot be caught." E-OVERFLOW at check time (a literal) has no `data`. E-FLOAT (runtime: a Float operation whose result is NaN or an infinity) has the same shape: `op` (`+ - * /`, `float.sqrt`, `float.exp`, `float.ln`, `float.log2` or `float.log10`), `operands`, `bounds` = the largest finite Floats, and a `msg` ending "...; a non-finite Float cannot be caught." `float.floor/ceil/round/trunc` outside the Int range give E-OVERFLOW with `op` = the function name and one Float operand. E-FLOAT at check time (a literal) has no `data`.
+- Codes (each has a test): E-PARSE, E-NONCANONICAL(warning), E-PURPOSE-MISSING, E-PURPOSE-LONG, E-NAME-UNRESOLVED, E-USE-MISSING, E-NOT-EXPORTED, E-CYCLE, E-DUP-NAME, E-ARITY, E-TYPE, E-EFFECT-UNDECLARED, E-FAILS-UNDECLARED, E-MATCH-NONEXHAUSTIVE, E-EXAMPLE-MISSING, E-EXAMPLE-FAILED, E-REQUIRES-VIOLATED, E-ENSURES-VIOLATED, E-EFFECT-DENIED, E-RECURSION-LIMIT, E-OVERFLOW, E-FLOAT, E-PROOF-VIOLATED, E-CONST-BUDGET, E-EXIT-RANGE (built binaries only, section 16), W-USE-UNUSED, W-EFFECT-UNUSED, W-FAILS-UNUSED, W-FOR-PURE.
+- Fix ops used so far: `replace-ref`, `add-use`, `remove-use`, `add-eff`, `add-fails`, `fmt`.
+
+## 10. Content hash
+
+`lm hash SYM` = first 8 hex of sha256 over the canonical text of the fn or const form with `purpose` and `example` clauses removed. Local names are not normalized in v0 (known limitation; alpha-normalization is future work).
+
+## 11. Evaluation
+
+Strict, left-to-right, tree-walking in the reference implementation. Int is signed 64-bit; every intermediate `+ - * /` result is checked in this left-to-right order, and leaving the range is the runtime fault E-OVERFLOW (`(- 0 x)` of min-int included; reductions such as `list.sum` or `list.fold` with `+` fault through the same operators). Float is IEEE-754 binary64: every `+ - * /` result is rounded to nearest (ties to even), never fused with another operation, and checked; NaN or an infinity is the runtime fault E-FLOAT and `-0.0` is normalized to `0.0`, so every Float is finite and `=` is exact, total and reflexive. These checks are semantics, not contracts: `--no-contracts` does not disable them. `and`/`or`/`if`/`match`/`try`/`for` are the only non-strict forms. Contracts are checked on entry (`requires`) and exit (`ensures`). Effects execute only if allowed by `--allow`; otherwise E-EFFECT-DENIED.
+
+Module constants are evaluated at check time on every `lm check` run under a step budget of 1,000,000 steps. A runtime fault (e.g. E-OVERFLOW), an unhandled failure, or an exhausted budget (E-CONST-BUDGET) is reported at the constant's node path. The interpreter uses the values computed at load time. Native builds compile constant value expressions into package-level variables initialized in dependency order at startup (`init`).
+
+A direct call by the enclosing function's own name in tail position runs as a loop in both
+the interpreter and native binaries (ADR-051 item 1). Tail positions are the function body,
+both `if` branches, the body of `let`/`let?`, the last expression of `do`, and every `match`
+arm body, recursively through these positions. Nothing inside `for`, `try` (including handlers),
+lambdas, contracts or examples is a tail position. Calls through function values and mutual
+recursion are ordinary calls. Every new argument is evaluated left to right into a temporary
+before any parameter is replaced. Each iteration binds fresh locals, so closures retain the
+values of the iteration that created them.
+
+With contracts enabled, `requires` runs on every iteration. If the function has `ensures`,
+each invocation's parameters are saved on the heap; after the body returns, its result is
+checked against each saved invocation's `ensures`, innermost first and clauses in written
+order, stopping at the first violation and reporting that invocation's arguments. This uses
+O(iterations) heap space, not stack. Without `ensures`, or with `--no-contracts`, no invocation
+history is kept. Failure or a fault in the body skips pending postconditions as for ordinary calls.
+
+## 12. Checking rules (as implemented in M1)
+
+- **Own names are unqualified; other modules' names are always qualified.** This applies inside module source, including examples. External constant contexts (`lm run` arguments and scenario `run` arguments, `expect` values and `expect-fail` arguments) have no own module: every module-defined variant, constant, record/type name in `new`, and error must be qualified, including names from the target function's module. This applies throughout nested values. An unqualified name belonging to the target module is E-NAME-UNRESOLVED, with the qualified spelling suggested. Prelude names (`Some`, `None`, `list`, `mapof`, `setof`, `DivZero`, `OutOfRange`, literals) stay unqualified. `m.x` for a module not in `(use ...)` is E-USE-MISSING (module exists) or E-NAME-UNRESOLVED (it does not). Referring to an unexported name is E-NOT-EXPORTED. Exporting a sum type exports its variants.
+- **No shadowing.** A parameter, `let`/`let?`/`for`/`lam`/pattern/`catch` binding may not reuse a reserved word, a prelude name, a function or constant of the same module, `result`, or a binding already in scope (E-DUP-NAME; colliding with `pair` suggests `p`). A module-level name may not reuse a prelude name.
+- **Function values are pure and total** (total = no recoverable LM errors; section 5). `Fn` types carry no effects or failures. A lambda body, or a named function passed as a value, may not have effects (E-EFFECT-UNDECLARED) or failures (E-FAILS-UNDECLARED). `/` and `mod` cannot be passed as values.
+- **Contracts and examples are pure and total** (section 5) and are checked in their own scope: `requires` sees parameters, `ensures` also sees `result`, examples see no locals. Examples on effectful functions are rejected.
+- **Failures:** a `fail` or a callee's `fails` that is not caught by an enclosing `try` must be in the fn's `fails` (E-FAILS-UNDECLARED). Declared but impossible: W-FAILS-UNUSED. Same for `eff`: W-EFFECT-UNUSED. (Prim-backed stdlib functions are exempt from both warnings.)
+- **Proven-safe operations** (ADR-061): when an integer division `/` or `mod` divisor is known nonzero, or a `(list.nth xs k)` index literal $k \ge 0$ is known strictly less than `(len xs)`, the operation does not fail `DivZero` or `OutOfRange` and does not require a `fails` declaration. Facts are collected from top-level `requires` conjuncts, `if` test condition (in then-branch) or negation (in else-branch), and left operands of `and` for subsequent operands. Facts track Int bindings and `(len xs)` terms with lower/upper bounds, normalized without integer overflow (clamped at `math.int-min` and `math.int-max`). Bindings are tracked lexically so facts do not leak to sibling bindings or outside their scope. A function's own `requires` is not assumed while evaluating that `requires`. If contracts are disabled at run time (`--no-contracts`) and a call violates the precondition so a discharged operation sees an invalid operand (such as division by 0 or an out-of-range index), both the interpreter and native binary abort with the uncatchable fault `E-PROOF-VIOLATED` (exit 70).
+- **Generics:** single-letter type variables, only in `sig`/`lam`-free positions. Inside the declaring function they are rigid (a value of type `a` is only usable as `a`); at call sites each use gets fresh variables.
+- **Inferred lambda parameter types** (ADR-061): `(lam (a b) body)`; all parameters must be typed or all untyped per lambda (mixing is E-PARSE). Parameter types are solved by unification with contextual constraints before the existing default-to-Int rule; rigid signature generics are preserved. Any parameter whose type remains unresolved outside that rule is E-TYPE naming the parameter.
+- **Equality excludes functions:** `=`/`!=` on a type containing `Fn` (directly, in a List/Opt/Map value, or in a record/sum field) is E-TYPE, also when `=` is passed as a value; function identity is not defined (ADR-037). Rigid type variables are not checked.
+- **Exhaustive match:** Bool needs `true` and `false`; `Opt`/sum types need every variant with irrefutable sub-patterns (names or `_`); `Pair` needs `(pair _ _)` with irrefutable sub-patterns; `List` needs `(list)` and `(cons _ _)` with irrefutable sub-patterns (exact-length `(list p1 ... pk)` patterns with $k \ge 1$ are allowed and type-checked, but require `(cons _ _)` or a catch-all to complete coverage); anything else needs a catch-all. Nested refutable patterns do not count toward coverage (conservative; restructure with an inner `match`).
+- **`let?`** (ADR-045): a binding expression that is not an `(Opt T)` is E-TYPE, as is a body that is not an `(Opt R)`; effects and failures of the bindings and body count for the enclosing function exactly as in `let`, including those of bindings that a `None` may skip at run time. Fixtures: `tests/spec/check/letq-*.lm`, `tests/spec/run/m10.lm` (short-circuit: a later binding that fails or overflows is not run after a `None`), `tests/spec/build/letq-sort.lm` (a skipped binding's output never appears).
+- **`for`** (ADR-060): `xs` must be a `(List a)` evaluated once; `x` is bound fresh per iteration in order. `body` must be `Unit`; the form is `Unit`. Effects and failures of `xs` and `body` count for the enclosing function. A failure escaping `body` stops iteration immediately and propagates. A body with no effect and no possible failure is a warning `W-FOR-PURE` (its result is discarded). `break`, `continue` and `return` inside `for` report that LM has no early exit (E-NAME-UNRESOLVED).
+- **Map keys** (ADR-049/050/059): a Map key or Set element type that is not Int, Float, Str or Bool is E-TYPE (using `Pair` suggests a Str key or nested maps): in a type expression at once; for a type variable instantiated at a call, an example or an `lm run` argument once the fn's types are solved (one diagnostic per bad type and fn). Inside a generic fn, a rigid type variable may be a key only if the signature itself uses it as a Map key or Set element. Fixtures: `tests/spec/check/map-*.lm`, `mapof-*.lm`.
+- **Reserved words** (cannot be names): `if let let? do for match lam list new get with and or fail try catch note prim mapof setof true false unit result` and every prelude value name. Names never get exceptions: when a name collides, pick another (ADR-047).
+- **Module/file:** file `x.lm` must contain `(module x ...)`; a module name found in two search locations is E-DUP-NAME.
+
+## 13. Runtime (as implemented in M2)
+
+- **Values:** Int = signed 64-bit integer (min-int -9223372036854775808, max-int 9223372036854775807), Float = finite binary64 (never NaN, an infinity or `-0.0`), Bool, Str, List (immutable), Pair (two-field value `(pair a b)`, structural equality), Unit, records and variants (structural equality), Map and Set (persistent balanced search trees, O(log n) `put`/`at`/`remove`; equality compares the bindings in key order, never the tree shape; ADR-049), closures. `/` and `mod` use floor semantics (`-7 / 2 = -4`, `-7 mod 2 = 1`).
+- **Random seed:** `lm run --seed N` accepts `[+-]?[0-9]+` within signed Int64 bounds (including leading zeros); malformed or missing values exit 3. Without `--seed`, initialize from OS entropy. `lm run` does not read `LM_SEED`. Runtime fixture and compiled differential harness cases reset seed 0 before each case; ordinary effectful examples remain rejected.
+- **Calls:** a function with `eff` runs only if every effect is allowed (`lm run --allow io.out`); otherwise E-EFFECT-DENIED at entry. `requires` is checked on entry, `ensures` on exit (default on; `lm run --no-contracts` disables).
+- **`lm test`:** runs `check` first and stops if it has errors; then evaluates every `example` of every target module. Result equality is structural and type-strict. Mismatch is E-EXAMPLE-FAILED (expected/found in LM syntax); a contract violated while running an example reports the violated clause (E-REQUIRES-VIOLATED / E-ENSURES-VIOLATED) with the arguments. Summary on stderr: examples run, failures, pure functions without examples.
+- **`lm run MOD.FN [ARG...] [--seed N] [--allow EFF] [--no-contracts] [-- PROGRAM-ARGS...]`:** each ARG is an LM constant expression (quote it for the shell: `'(list 1 2)'`, `'"MX"'`), type-checked against the signature (errors use file `<arg>`, path `arg#k`); external arguments have no own module, so all module-defined names must be qualified (e.g. `(shapes.Circle 2)`), while prelude names stay unqualified. Unqualified target-module names are E-NAME-UNRESOLVED; printed values can be pasted back unchanged. Success prints the result in LM syntax on stdout (exit 0). Words after `--` are literal program arguments returned by `io.args`; they are never parsed as LM or runner flags. An uncaught failure prints `(fail Err args...)` on stderr (exit 1). Variants and records print module-qualified (`billing.BadRegion`); pairs print as `(pair a b)`; maps and sets print as `(mapof (k v)..)` / `(setof k..)` in ascending key order, so a printed value is a valid external constant. Runtime faults (E-OVERFLOW, E-FLOAT, E-RECURSION-LIMIT, E-REQUIRES-VIOLATED, E-ENSURES-VIOLATED, E-PROOF-VIOLATED) print one JSON diagnostic on stderr and exit 70 (ADR-031 item 3); E-EFFECT-DENIED (a missing `--allow`, impossible in binaries) prints on stderr and exits 1; stdout is flushed first. Int results are still printed as values and success exits 0.
+- **Faults:** E-OVERFLOW, E-FLOAT, E-RECURSION-LIMIT, E-PROOF-VIOLATED and contract violations stop the program; `try` cannot catch them and no signature declares them. An example that overflows reports E-OVERFLOW in `lm test` (an example cannot expect overflow). The bounds are pinned by `tests/spec/run/overflow-*.lm` (each overflows) and the `int-*` cases of `semantics.lm` (results exactly at the bounds); Float by `tests/spec/run/floats.lm` (rounding, ties, subnormals, `-0.0`, conversions, text) and `float-*.lm` (each faults).
+- **Recursion:** self tail calls follow section 11 and do not count toward E-RECURSION-LIMIT. Other calls consume stack; exceeding the host/interpreter stack or the native runtime's call-depth limit is E-RECURSION-LIMIT. An infinite self tail loop does not hit this limit.
+
+## 14. Queries (as implemented in M3)
+
+All queries load the named module (and what it `use`s), check it, and read the recorded reference graph; none re-parse text.
+- `lm index [PATH..] [--stdlib] [--exported]`: one line per symbol, per module (`*` marks exported):
+  `*fn billing.total  (items (List Cents)) (region Str) -> Cents  [fails BadRegion]  -- purpose`, `type m.T  <body>`, `error m.E  (field Type)..`. Default scope = target modules (src, examples or given PATHs); `--stdlib` adds the standard library.
+- `lm slice SYM [--bodies] [--depth N] [--budget T]`: canonical LM text, grouped by module, containing (1) SYM in full; (2) every directly referenced function as a signature block `(fn name purpose sig eff fails requires ensures)` (its contract; examples and body omitted, ADR-028), or in full with `--bodies`; (3) every referenced type and error in full, plus the types/errors those mention (transitively), plus the types/errors in included signature blocks, contracts included. Functions called inside a callee's contract are not added (contracts are pure and total; slice them if needed). `--depth N` follows references N levels and only has effect with `--bodies`. `--budget T` (tokens, ADR-012) drops the highest-priority-number (deepest, then least direct) items first, never the root; dropped symbols are listed on stderr. SYM may name a variant (resolves to its type). Stderr reports symbols, tokens, and total tokens of loaded modules.
+- `lm callers SYM [PATH..]`: `caller  node-path..` lines (default scope src, examples).
+- `lm deps SYM [--depth N]`: `depth kind symbol` lines, nearest first.
+- `lm hash SYM`: 8-hex content hash (section 10).
+- **Slice sufficiency property** (tested): with a signature-only slice of SYM, any edit to a function body elsewhere, to an unrelated function, or to an unrelated module leaves the slice text unchanged; any edit to SYM, to a referenced signature block (including its `requires`/`ensures`), or to a referenced type changes it; editing a callee's `example` does not.
+
+## 15. Edit operations (as implemented in M4)
+
+`lm edit OP ARGS.. [--in PATH].. [--dry-run] [--force]` changes the canonical AST and reprints the module canonically; only the touched modules are rewritten. Project scope is `src` + `examples`, or the `--in` paths (then default dirs are not searched). Afterwards the project is re-checked: diagnostics print as JSON lines, summary on stderr, exit 1 if errors remain. An op that would produce an invalid module (shape/duplicate errors) is refused and writes nothing.
+
+| Op | Args | Effect |
+|---|---|---|
+| `replace-body` | SYM EXPR | replace a fn body |
+| `replace-decl` | SYM FORM | replace a whole fn/const/type/error (name must match) |
+| `add-decl` | MODULE FORM | add a fn/const/type/error |
+| `remove-decl` | SYM [--force] | delete a fn or const and its export; refuses while references exist (`remove-fn` remains an alias) |
+| `remove-fn` | SYM [--force] | alias for `remove-decl` |
+| `rename` | SYM NEW [--force] | fn/const/type/error/variant: definition, export, and every reference in the project (found through the reference graph, so qualified and unqualified uses, `fails`, `fail`, `catch`, `new`, types in signatures, variant constructors and patterns). Variant rename (spelling `mod.Variant`) updates definition, constructors and patterns; refuses if scenarios mention it unless `--force` (then rewrites scenario text and sets status to proposed). Rolled back if it introduces any new error |
+| `set-purpose` | SYM or MODULE, TEXT | |
+| `set-sig` | SYM, `(sig ..)` | callers are re-checked, so breakage shows immediately |
+| `add-use` `remove-use` `add-export` | MODULE NAME | idempotent |
+| `add-eff` `add-fails` | SYM NAME | idempotent; creates the clause if needed |
+| `add-example` | SYM FORM | |
+| `replace-ref` | NODE-PATH NEW | replace one name atom addressed by a diagnostic path |
+| `apply` | JSON | a diagnostic's `fix` object (or a list): `add-use remove-use add-eff add-fails replace-ref`; `{"op":"fmt","file":..}` formats that file |
+
+`--dry-run` prints a unified diff and writes nothing. Exit codes: 0 clean, 1 refused or errors remain, 3 usage.
+
+## 16. Native builds (as implemented in M8(c)/(d); ADR-026, ADR-031, ADR-035, ADR-036)
+
+`lm build MOD.FN [PATH..] [-o OUT] [--os linux|darwin] [--arch amd64|arm64] [--no-contracts] [--keep-go DIR]` checks the program, lowers the functions reachable from `MOD.FN` to the IR (`lm/ir.py`), prints one Go `package main` plus the runtime in `lm/runtime/go/`, and runs `go build` into one static binary (default `./MOD` for `main`, else `./MOD-FN`). `--keep-go DIR` keeps the Go sources. PATHs are searched like `lm check`.
+- **Entry:** no parameters, result `Unit` (exit 0) or `Int` (the exit status, 0-255; anything else is the fault E-EXIT-RANGE). Nothing is printed for the result. The entry's declared `eff` set is granted; binaries take no `--allow`.
+- **Outcomes** (identical to the interpreter's, ADR-031): success exits 0 or the returned status; an uncaught failure prints `(fail Err args..)` on stderr and exits 1; a fault (E-OVERFLOW, E-FLOAT, E-RECURSION-LIMIT, E-REQUIRES-VIOLATED, E-ENSURES-VIOLATED, E-EXIT-RANGE, E-PROOF-VIOLATED) prints one JSON diagnostic (section 9 shape) on stderr and exits 70.
+- **Semantics:** the interpreter is the oracle. Int is signed 64-bit; `+ - *` and `/` of min-int by -1 that leave the range are the fault E-OVERFLOW, also under `--no-contracts`. `/` and `mod` floor. Float is `float64`: each operation is wrapped in an explicit `float64(..)` so Go cannot fuse `x*y+z` into an FMA (it may on arm64), checked for NaN/infinity (E-FLOAT) and normalized from `-0.0`; literals are emitted as exact bit patterns; canonical text is implemented explicitly (`strconv`'s `g` format differs, e.g. `100`), and `tests/unit/test_float.py` compares it, `str.to-float` and `+ - * /` with the interpreter on random inputs. Contracts are checked unless built with `--no-contracts`. Recursion is bounded at 1,000,000 nested calls (E-RECURSION-LIMIT), deeper than the interpreter allows. Map and Set use the interpreter's AVL algorithm (`lm/runtime/go/coll.go`, twin of `lm/tree.py`). Values print in LM syntax exactly as `lm run` prints them.
+- **Output:** stdout is line-buffered on a terminal, block-buffered otherwise, and flushed at exit and before a failure or fault is reported.
+- **Random seed:** binaries read `LM_SEED` at startup, using the same decimal Int64 grammar as `lm run --seed`. An absent variable selects OS entropy; an empty, malformed or out-of-range value prints a usage error and exits 3 before executing the entry, even if it never calls `rand`. The seeded stream matches the interpreter exactly.
+- **Toolchain:** `go` (>= 1.21) from `$LM_GO` or PATH is needed only to build; missing Go is a usage error (exit 3), as are a bad entry signature, an unknown function and a bad flag. Check errors exit 1.
+- **Tests:** every example in stdlib, examples, tests/spec/run and bench/tasks must give the same outcome compiled and interpreted (value, failure, or fault code); `tests/spec/build/NAME.lm` + `NAME.expect` pin binary behavior. Without Go these tests skip visibly.
+
+### Python target (`--target py`; ADR-062)
+
+`lm build --target py MOD.FN [PATH..] [-o OUT] [--no-contracts]` checks the program, lowers the reachable functions to the IR, and emits one self-contained, dependency-free Python script (default `<fn>.py` or given by `-o OUT`, with `#!/usr/bin/env python3` shebang and executable bit set `0o755`). No Go toolchain or external compiler is required. `--os`, `--arch`, and `--keep-go` are rejected with exit code 3 when `--target py` is given.
+- **Entry & Outcomes:** Identical to Go binaries: entry has no parameters, returns Unit (exit 0) or Int (0-255, else E-EXIT-RANGE). Failures print `(fail Err args..)` on stderr and exit 1; runtime faults (E-OVERFLOW, E-FLOAT, E-RECURSION-LIMIT, E-REQUIRES-VIOLATED, E-ENSURES-VIOLATED, E-EXIT-RANGE, E-PROOF-VIOLATED) print one JSON diagnostic on stderr and exit 70.
+- **Execution model & Stack:** The runtime runs the entry in a dedicated runner thread configured with a 64 MB stack (`threading.stack_size(64 * 1024 * 1024)`) and sets `sys.setrecursionlimit(550000)`. Explicit call depth accounting bounds non-tail recursion at 500,000 calls (E-RECURSION-LIMIT). Self tail calls are lowered to loops with simultaneous parameter updates and snapshot capture preservation.
+- **Full Feature Support:** All language constructs and standard library features are supported: Map and Set (`map`/`set` modules, `mapof`/`setof`, ascending printing, structural equality), all float math prims (`float.exp`..`tanh`, `pi`, `e`, `sqrt`, `from-int`, rounding with `E-OVERFLOW`), `rand` (SplitMix64 seeded from `LM_SEED` or OS entropy, matching the interpreter and Go streams), `json` (`parse`, `print`, `field`, identical `BadJson` positions and diagnostics), `fs` (`read`, `write`, `exists` failing `fs.IoError`, strict UTF-8), and `time` (`now-ms`, `mono-ms`).
+- **Mechanical Runtime Embedding:** Runtime algorithms from `lm/` sources (`lm/tree.py`, `lm/float_math*.py`, and prim implementations) are mechanically embedded at build time, including only the components reachable by the program.
+

@@ -1,0 +1,31 @@
+(module io
+  (purpose "Console input, output, and program arguments.")
+  (export IoError args eprint print read-all read-line)
+  (error IoError (msg Str))
+  (fn args
+    (purpose "Program arguments after the command separator.")
+    (sig -> (List Str))
+    (eff io.in)
+    (body (prim "io.args")))
+  (fn eprint
+    (purpose "Write a line to standard error.")
+    (sig (s Str) -> Unit)
+    (eff io.out)
+    (body (prim "io.eprint")))
+  (fn print
+    (purpose "Write a line of text to standard output.")
+    (sig (s Str) -> Unit)
+    (eff io.out)
+    (body (prim "io.print")))
+  (fn read-all
+    (purpose "Read the remaining UTF-8 input.")
+    (sig -> Str)
+    (eff io.in)
+    (fails IoError)
+    (body (prim "io.read-all")))
+  (fn read-line
+    (purpose "Read a line without its terminator; None at EOF.")
+    (sig -> (Opt Str))
+    (eff io.in)
+    (fails IoError)
+    (body (prim "io.read-line"))))

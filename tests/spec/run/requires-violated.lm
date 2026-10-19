@@ -1,0 +1,8 @@
+(module requires-violated
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (requires (> a 0))
+    (example (-1) => 0)
+    (body a)))

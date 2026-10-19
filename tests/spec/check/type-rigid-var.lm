@@ -1,0 +1,6 @@
+(module type-rigid-var
+  (purpose "p")
+  (fn bad
+    (purpose "p")
+    (sig (x a) -> Int)
+    (body x)))

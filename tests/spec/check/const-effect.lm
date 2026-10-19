@@ -1,0 +1,4 @@
+(module const-effect
+  (purpose "Const with effect.")
+  (use io)
+  (const bad (purpose "bad") (type Unit) (value (io.print "hi"))))

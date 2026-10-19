@@ -1,0 +1,45 @@
+(module shapes
+  (purpose "Areas and descriptions of simple shapes.")
+  (use float math str)
+  (export Shape area describe longest-side scale)
+  (type Shape (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty))
+  (fn area
+    (purpose "Area in square units; circles use float.pi.")
+    (sig (s Shape) -> Float)
+    (example ((Rect 2 3)) => 6.0)
+    (example ((Circle 2)) => 12.566370614359172)
+    (example (Empty) => 0.0)
+    (body
+      (match
+        s
+        ((Circle r) (* (float.pi) (float.from-int (* r r))))
+        ((Rect w h) (float.from-int (* w h)))
+        (Empty 0.0))))
+  (fn describe
+    (purpose "One-line text description.")
+    (sig (s Shape) -> Str)
+    (example ((Circle 2)) => "circle r=2")
+    (example ((Rect 2 3)) => "rect 2x3")
+    (example (Empty) => "nothing")
+    (body
+      (match
+        s
+        ((Circle r) (str.concat "circle r=" (str.from-int r)))
+        (
+          (Rect w h)
+          (str.concat "rect " (str.concat (str.from-int w) (str.concat "x" (str.from-int h)))))
+        (Empty "nothing"))))
+  (fn longest-side
+    (purpose "Largest dimension; circles use the diameter.")
+    (sig (s Shape) -> Int)
+    (example ((Rect 2 5)) => 5)
+    (example ((Circle 3)) => 6)
+    (example (Empty) => 0)
+    (body (match s ((Circle r) (* 2 r)) ((Rect w h) (math.max w h)) (Empty 0))))
+  (fn scale
+    (purpose "Multiply every dimension by k.")
+    (sig (s Shape) (k Int) -> Shape)
+    (requires (> k 0))
+    (example ((Rect 1 2) 3) => (Rect 3 6))
+    (example (Empty 2) => Empty)
+    (body (match s ((Circle r) (Circle (* r k))) ((Rect w h) (Rect (* w k) (* h k))) (Empty Empty)))))

@@ -1,0 +1,8 @@
+(module overflow-lambda
+  (purpose "p")
+  (use list)
+  (fn doubled
+    (purpose "p")
+    (sig (xs (List Int)) -> (List Int))
+    (example ((list 1 4611686018427387904)) => (list))
+    (body (list.map xs (lam ((x Int)) (* x 2))))))

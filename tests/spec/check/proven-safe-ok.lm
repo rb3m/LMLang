@@ -1,0 +1,94 @@
+(module proven-safe-ok
+  (purpose "Operations proven safe by requires, if, and or len need no fails.")
+  (use list)
+  (export
+    avg
+    bounds-int-max
+    bounds-int-min
+    div-ge1
+    div-gt0
+    div-in-and
+    div-lt-rev
+    div-neq0
+    div-not-eq
+    div-two-req
+    first
+    gcd
+    third-ok)
+  (fn avg
+    (purpose "Divide by len xs under requires (> (len xs) 0).")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (len xs) 0))
+    (example ((list 10 20)) => 15)
+    (body (/ (list.sum xs) (len xs))))
+  (fn bounds-int-max
+    (purpose "Literal at int-max bound.")
+    (sig (d Int) -> Int)
+    (requires (>= d 9223372036854775807))
+    (example (9223372036854775807) => 1)
+    (body (/ 9223372036854775807 d)))
+  (fn bounds-int-min
+    (purpose "Literal at int-min bound.")
+    (sig (d Int) -> Int)
+    (requires (<= d -9223372036854775808))
+    (example (-9223372036854775808) => 1)
+    (body (/ -9223372036854775808 d)))
+  (fn div-ge1
+    (purpose "Divide under requires (>= d 1).")
+    (sig (x Int) (d Int) -> Int)
+    (requires (>= d 1))
+    (example (10 2) => 5)
+    (body (/ x d)))
+  (fn div-gt0
+    (purpose "Divide under requires (> d 0).")
+    (sig (x Int) (d Int) -> Int)
+    (requires (> d 0))
+    (example (10 2) => 5)
+    (body (/ x d)))
+  (fn div-in-and
+    (purpose "Divide in right operand of and.")
+    (sig (x Int) (d Int) -> Bool)
+    (example (10 2) => true)
+    (body (and (!= d 0) (= (mod x d) 0))))
+  (fn div-lt-rev
+    (purpose "Divide under requires (< 0 d).")
+    (sig (x Int) (d Int) -> Int)
+    (requires (< 0 d))
+    (example (10 2) => 5)
+    (body (/ x d)))
+  (fn div-neq0
+    (purpose "Divide under requires (!= d 0).")
+    (sig (x Int) (d Int) -> Int)
+    (requires (!= d 0))
+    (example (10 2) => 5)
+    (body (/ x d)))
+  (fn div-not-eq
+    (purpose "Divide under requires (not (= d 0)).")
+    (sig (x Int) (d Int) -> Int)
+    (requires (not (= d 0)))
+    (example (10 2) => 5)
+    (body (/ x d)))
+  (fn div-two-req
+    (purpose "Divide under a fact in a second requires clause.")
+    (sig (x Int) (d Int) -> Int)
+    (requires (> x 0))
+    (requires (!= d 0))
+    (example (10 2) => 5)
+    (body (/ x d)))
+  (fn first
+    (purpose "Index 0 under requires (> (len xs) 0).")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (len xs) 0))
+    (example ((list 10 20)) => 10)
+    (body (list.nth xs 0)))
+  (fn gcd
+    (purpose "Greatest common divisor.")
+    (sig (a Int) (b Int) -> Int)
+    (example (12 8) => 4)
+    (body (if (= b 0) a (gcd b (mod a b)))))
+  (fn third-ok
+    (purpose "Index 2 under requires (> (len xs) 2).")
+    (sig (xs (List Int)) -> Int)
+    (requires (> (len xs) 2))
+    (example ((list 10 20 30)) => 30)
+    (body (list.nth xs 2))))

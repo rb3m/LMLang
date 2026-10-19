@@ -1,0 +1,8 @@
+(module fail-field-type
+  (purpose "p")
+  (error Neg (n Int))
+  (fn root
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (fails Neg)
+    (body (if (< n 0) (fail Neg "x") n))))

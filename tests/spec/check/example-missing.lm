@@ -1,0 +1,7 @@
+(module example-missing
+  (purpose "p")
+  (export f)
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body a)))

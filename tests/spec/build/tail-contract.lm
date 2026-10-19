@@ -1,0 +1,21 @@
+(module tail-contract
+  (purpose "Tail-call contract diagnostics preserve the inner invocation.")
+  (use io)
+  (fn main
+    (purpose "Choose a contract fault to report.")
+    (sig -> Int)
+    (eff io.in)
+    (body (match (io.args) ((list "pre") (pre 3)) (_ (post 3)))))
+  (fn post
+    (purpose "Postconditions unwind innermost first, clauses in order.")
+    (sig (n Int) -> Int)
+    (ensures (!= n 2))
+    (ensures (!= n 3))
+    (example (1) => 0)
+    (body (if (= n 0) 0 (post (- n 1)))))
+  (fn pre
+    (purpose "Check preconditions again at the next iteration.")
+    (sig (n Int) -> Int)
+    (requires (!= n 2))
+    (example (1) => 0)
+    (body (if (= n 0) 0 (pre (- n 1))))))

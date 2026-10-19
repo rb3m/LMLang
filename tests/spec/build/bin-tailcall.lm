@@ -1,0 +1,13 @@
+(module bin-tailcall
+  (purpose "Ten million self tail calls in a native binary.")
+  (use io str)
+  (fn count
+    (purpose "Count without growing the stack.")
+    (sig (n Int) (acc Int) -> Int)
+    (example (3 0) => 3)
+    (body (if (= n 0) acc (count (- n 1) (+ acc 1)))))
+  (fn main
+    (purpose "Print the result of ten million iterations.")
+    (sig -> Unit)
+    (eff io.out)
+    (body (io.print (str.from-int (count 10000000 0))))))

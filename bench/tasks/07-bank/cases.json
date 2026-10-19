@@ -1,0 +1,5 @@
+[{"fn":"open","args":["bo"],"want":{"owner":"bo","balance":0}},
+ {"fn":"deposit","args":[{"$new":"Account","owner":"bo","balance":0},3],"want":{"owner":"bo","balance":3}},
+ {"fn":"withdraw","args":[{"$new":"Account","owner":"bo","balance":3},3],"want":{"owner":"bo","balance":0}},
+ {"fn":"withdraw","args":[{"$new":"Account","owner":"bo","balance":3},4],"want":{"fail":"InsufficientFunds"}},
+ {"fn":"statement","args":[{"$new":"Account","owner":"bo","balance":-2}],"want":"bo: -2"}]

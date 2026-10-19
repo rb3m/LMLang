@@ -1,0 +1,29 @@
+(module float-ok
+  (purpose "Float arithmetic, comparisons, folds with + and Float / without DivZero are clean.")
+  (use float list)
+  (type Point (rec (x Float) (y Float)))
+  (fn avg
+    (purpose "p")
+    (sig (xs (List Float)) -> Float)
+    (example ((list 1.0 2.0)) => 1.5)
+    (body (/ (list.fold xs 0.0 +) (float.from-int (len xs)))))
+  (fn dist
+    (purpose "p")
+    (sig (p Point) -> Float)
+    (example ((new Point (x 3.0) (y 4.0))) => 5.0)
+    (body (float.sqrt (+ (* (get p x) (get p x)) (* (get p y) (get p y))))))
+  (fn ratio
+    (purpose "p")
+    (sig (a Float) (b Float) -> Float)
+    (example (1.0 4.0) => 0.25)
+    (body (/ a b)))
+  (fn smaller
+    (purpose "p")
+    (sig (a Float) (b Float) -> Bool)
+    (example (1.5 2.5) => true)
+    (body (and (< a b) (<= a b) (not (> a b)) (not (>= a b)) (!= a b))))
+  (fn twice
+    (purpose "p")
+    (sig (xs (List Float)) -> (List Float))
+    (example ((list 1.5)) => (list 3.0))
+    (body (list.map xs (lam ((x Float)) (* x 2.0))))))

@@ -1,0 +1,21 @@
+(module roadster-format
+  (purpose "Shared one-decimal SI values and vertical direction for Roadster Lander reports.")
+  (use float str)
+  (export decimal direction)
+  (fn decimal
+    (purpose "Format an SI value rounded to one decimal place.")
+    (sig (value Float) -> Str)
+    (example (1.26) => "1.3")
+    (example (-2.04) => "-2.0")
+    (example (0.0) => "0.0")
+    (body (str.from-float (/ (float.from-int (float.round (* value 10.0))) 10.0))))
+  (fn direction
+    (purpose "Describe downward-positive speed as falling or rising in metres per second.")
+    (sig (speed Float) -> Str)
+    (example (20.0) => "falling 20.0 m/s")
+    (example (-50.24) => "rising 50.2 m/s")
+    (example (0.0) => "falling 0.0 m/s")
+    (body
+      (str.concat
+        (if (< speed 0.0) "rising " "falling ")
+        (str.concat (decimal (float.abs speed)) " m/s")))))

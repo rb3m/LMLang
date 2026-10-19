@@ -1,0 +1,42 @@
+(scenarios
+  (scenario "Earth free fall matches familiar gravity"
+    (status approved)
+    (why "From rest at 490.5 m on Earth, no fuel means contact after 10 seconds.")
+    (run roadster-lander.turn-report 490.5 0.0 0.0 0.0 3)
+    (expect "touchdown at 10.0 s, 98.1 m/s, fuel 0.0 kg"))
+  (scenario "An overambitious burn runs dry safely"
+    (status approved)
+    (why "A 12 kg/s request with only 1 kg runs dry mid-turn; the remaining fuel is visible.")
+    (run roadster-lander.turn-report 1000.0 0.0 1.0 12.0 3)
+    (expect "airborne at 10.0 s: altitude 539.4 m, falling 95.1 m/s, fuel 0.0 kg"))
+  (scenario "Pulling up after contact does not undo a crash"
+    (status approved)
+    (why "First contact ends the turn even if the powered trajectory would rise again.")
+    (run roadster-lander.turn-report 1.0 10.0 1000.0 12.0 1)
+    (expect "touchdown at 0.1 s, 8.2 m/s, fuel 998.7 kg"))
+  (scenario "One metre per second is a perfect park"
+    (status approved)
+    (why "Exactly 1 m/s earns the best grade.")
+    (run roadster-grade.grade 1.0)
+    (expect "Perfect parking, right between the lines!"))
+  (scenario "Thirty-one metres per second makes a crater"
+    (status approved)
+    (why "At 31 m/s the car makes an underground parking level.")
+    (run roadster-grade.grade 31.0)
+    (expect "New underground parking level installed."))
+  (scenario "Every spot on every world can be parked perfectly"
+    (status approved)
+    (why "See all nine impact speeds and turn counts.")
+    (run roadster-autopilot.report-all )
+    (expect "Street lot / Moon: perfect in 11 turns at 0.5 m/s\nStreet lot / Mars: perfect in 11 turns at 0.6 m/s\nStreet lot / Earth: perfect in 10 turns at 0.7 m/s\nGarage rooftop / Moon: perfect in 13 turns at 0.5 m/s\nGarage rooftop / Mars: perfect in 13 turns at 0.5 m/s\nGarage rooftop / Earth: perfect in 11 turns at 0.9 m/s\nDowntown spot / Moon: perfect in 14 turns at 0.5 m/s\nDowntown spot / Mars: perfect in 14 turns at 0.6 m/s\nDowntown spot / Earth: perfect in 13 turns at 0.6 m/s"))
+  (scenario "Untouched throttle makes nine craters"
+    (status approved)
+    (why "See all nine crater impact speeds.")
+    (run roadster-autopilot.no-burn-report )
+    (expect "Street lot / Moon: crater in 3 turns at 54.7 m/s\nStreet lot / Mars: crater in 2 turns at 79.6 m/s\nStreet lot / Earth: crater in 2 turns at 126.9 m/s\nGarage rooftop / Moon: crater in 3 turns at 67.2 m/s\nGarage rooftop / Mars: crater in 2 turns at 97.6 m/s\nGarage rooftop / Earth: crater in 2 turns at 155.5 m/s\nDowntown spot / Moon: crater in 3 turns at 78.0 m/s\nDowntown spot / Mars: crater in 3 turns at 113.0 m/s\nDowntown spot / Earth: crater in 2 turns at 179.7 m/s"))
+  (scenario "Street lot on the Moon with no burns"
+    (status approved)
+    (why "An empty burn script coasts to contact and prints the same ending as interactive play.")
+    (run roadster-lander.play-scripted 1 1 (list))
+    (expect "New underground parking level installed. Impact speed: 54.7 m/s | fuel left: 1200.0 kg | time 21.4 s | turns 3"))
+)

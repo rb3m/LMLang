@@ -1,0 +1,148 @@
+(module list
+  (purpose "List operations.")
+  (export
+    all
+    any
+    at
+    concat
+    drop
+    filter
+    fold
+    head
+    index-of
+    last
+    map
+    map2
+    nth
+    range
+    reverse
+    sort-by
+    sum
+    tail
+    take
+    zip)
+  (fn all
+    (purpose "True when every element satisfies pred (true for an empty list).")
+    (sig (xs (List a)) (pred (Fn (a) Bool)) -> Bool)
+    (example ((list 2 4) (lam ((x Int)) (> x 1))) => true)
+    (example ((list 2 0) (lam ((x Int)) (> x 1))) => false)
+    (body (prim "list.all")))
+  (fn any
+    (purpose "True when some element satisfies pred (false for an empty list).")
+    (sig (xs (List a)) (pred (Fn (a) Bool)) -> Bool)
+    (example ((list 2 0) (lam ((x Int)) (> x 1))) => true)
+    (example ((list) (lam ((x Int)) (> x 1))) => false)
+    (body (prim "list.any")))
+  (fn at
+    (purpose "Element at zero-based index i, or None out of range (the Opt twin of nth).")
+    (sig (xs (List a)) (i Int) -> (Opt a))
+    (example ((list 5 6) 1) => (Some 6))
+    (example ((list 5 6) 2) => None)
+    (example ((list 5 6) -1) => None)
+    (body (prim "list.at")))
+  (fn concat
+    (purpose "Concatenate two lists.")
+    (sig (xs (List a)) (ys (List a)) -> (List a))
+    (example ((list 1) (list 2 3)) => (list 1 2 3))
+    (body (prim "list.concat")))
+  (fn drop
+    (purpose "The list without its first n elements (n clamps to 0..length).")
+    (sig (xs (List a)) (n Int) -> (List a))
+    (example ((list 1 2 3) 1) => (list 2 3))
+    (example ((list 1 2 3) 5) => (list))
+    (example ((list 1 2) -1) => (list 1 2))
+    (body (prim "list.drop")))
+  (fn filter
+    (purpose "Keep the elements for which keep returns true.")
+    (sig (xs (List a)) (keep (Fn (a) Bool)) -> (List a))
+    (example ((list 1 2 3 4) (lam ((x Int)) (> x 2))) => (list 3 4))
+    (body (prim "list.filter")))
+  (fn fold
+    (purpose "Combine elements left to right starting from init.")
+    (sig (xs (List a)) (init b) (step (Fn (b a) b)) -> b)
+    (example ((list 1 2 3) 0 +) => 6)
+    (body (prim "list.fold")))
+  (fn head
+    (purpose "First element, or None when empty.")
+    (sig (xs (List a)) -> (Opt a))
+    (example ((list 1 2)) => (Some 1))
+    (example ((list)) => None)
+    (body (match xs ((list) None) ((cons h _) (Some h)))))
+  (fn index-of
+    (purpose "Index of the first element equal to target, if any.")
+    (sig (xs (List a)) (target a) -> (Opt Int))
+    (example ((list 5 6 7) 7) => (Some 2))
+    (example ((list 5 6 7) 9) => None)
+    (body (prim "list.index-of")))
+  (fn last
+    (purpose "Last element, or None when empty.")
+    (sig (xs (List a)) -> (Opt a))
+    (example ((list 1 2 3)) => (Some 3))
+    (example ((list 1)) => (Some 1))
+    (example ((list)) => None)
+    (body (at xs (- (len xs) 1))))
+  (fn map
+    (purpose "Apply f to every element.")
+    (sig (xs (List a)) (f (Fn (a) b)) -> (List b))
+    (example ((list 1 2) (lam ((x Int)) (* x 2))) => (list 2 4))
+    (body (prim "list.map")))
+  (fn map2
+    (purpose "Combine elements pairwise with f.")
+    (sig (xs (List a)) (ys (List b)) (f (Fn (a b) c)) -> (List c))
+    (requires (= (len xs) (len ys)))
+    (example ((list 1 2) (list 10 20) +) => (list 11 22))
+    (body (prim "list.map2")))
+  (fn nth
+    (purpose "Element at zero-based index i.")
+    (sig (xs (List a)) (i Int) -> a)
+    (fails OutOfRange)
+    (example ((list 5 6) 1) => 6)
+    (example ((list 5) 3) => (fail OutOfRange))
+    (body (prim "list.nth")))
+  (fn range
+    (purpose "Integers from start up to but excluding stop.")
+    (sig (start Int) (stop Int) -> (List Int))
+    (example (1 4) => (list 1 2 3))
+    (body (prim "list.range")))
+  (fn reverse
+    (purpose "Elements in opposite order.")
+    (sig (xs (List a)) -> (List a))
+    (example ((list 1 2 3)) => (list 3 2 1))
+    (body (prim "list.reverse")))
+  (fn sort-by
+    (purpose
+      "Stable sort by less, a strict weak ordering (top-down merge sort, same in every backend).")
+    (sig (xs (List a)) (less (Fn (a a) Bool)) -> (List a))
+    (example ((list 3 1 2) <) => (list 1 2 3))
+    (example
+      ((list 21 10 20 11) (lam ((a Int) (b Int)) (< (/ a 10) (/ b 10))))
+      =>
+      (list 10 11 21 20))
+    (example ((list) <) => (list))
+    (body (prim "list.sort-by")))
+  (fn sum
+    (purpose "Sum of a list of integers.")
+    (sig (xs (List Int)) -> Int)
+    (example ((list 1 2 3)) => 6)
+    (body (fold xs 0 +)))
+  (fn tail
+    (purpose "List without its first element, or None when empty.")
+    (sig (xs (List a)) -> (Opt (List a)))
+    (example ((list 1 2 3)) => (Some (list 2 3)))
+    (example ((list 1)) => (Some (list)))
+    (example ((list)) => None)
+    (body (match xs ((list) None) ((cons _ t) (Some t)))))
+  (fn take
+    (purpose "The first n elements (n clamps to 0..length).")
+    (sig (xs (List a)) (n Int) -> (List a))
+    (example ((list 1 2 3) 2) => (list 1 2))
+    (example ((list 1 2) 5) => (list 1 2))
+    (example ((list 1 2) -1) => (list))
+    (body (prim "list.take")))
+  (fn zip
+    (purpose "Combine elements of two equal-length lists into pairs.")
+    (sig (xs (List a)) (ys (List b)) -> (List (Pair a b)))
+    (requires (= (len xs) (len ys)))
+    (example ((list 1 2) (list "a" "b")) => (list (pair 1 "a") (pair 2 "b")))
+    (example ((list) (list)) => (list))
+    (body (map2 xs ys pair))))

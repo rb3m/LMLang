@@ -1,0 +1,20 @@
+(module fizz
+  (purpose "FizzBuzz words and lines.")
+  (use list str)
+  (fn upto
+    (purpose "Words for 1..n joined by commas.")
+    (sig (n Int) -> Str)
+    (example (5) => "1,2,Fizz,4,Buzz")
+    (body (str.join (list.map (list.range 1 (+ n 1)) word) ",")))
+  (fn word
+    (purpose "Fizz for multiples of 3, Buzz for 5, FizzBuzz for both, else the number.")
+    (sig (n Int) -> Str)
+    (example (3) => "Fizz")
+    (example (5) => "Buzz")
+    (example (15) => "FizzBuzz")
+    (example (7) => "7")
+    (body
+      (if
+        (= (mod n 15) 0)
+        "FizzBuzz"
+        (if (= (mod n 3) 0) "Fizz" (if (= (mod n 5) 0) "Buzz" (str.from-int n)))))))

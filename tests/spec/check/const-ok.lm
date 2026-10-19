@@ -1,0 +1,16 @@
+(module const-ok
+  (purpose "Constant declarations and references.")
+  (const base (purpose "Base constant.") (type Int) (value 10))
+  (const derived (purpose "Derived constant.") (type Int) (value (+ base (double 5))))
+  (fn double
+    (purpose "Double an integer.")
+    (sig (x Int) -> Int)
+    (example (5) => 10)
+    (body (* x 2)))
+  (fn test-contracts
+    (purpose "Use const in contracts and example.")
+    (sig (x Int) -> Int)
+    (requires (> x base))
+    (ensures (= result derived))
+    (example (15) => 20)
+    (body derived)))

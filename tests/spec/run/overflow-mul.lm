@@ -1,0 +1,7 @@
+(module overflow-mul
+  (purpose "p")
+  (fn square
+    (purpose "p")
+    (sig (n Int) -> Int)
+    (example (3037000500) => 0)
+    (body (* n n))))

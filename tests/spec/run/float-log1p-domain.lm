@@ -1,0 +1,8 @@
+(module float-log1p-domain
+  (purpose "float.log1p at minus one faults E-FLOAT.")
+  (use float)
+  (fn logarithm
+    (purpose "Exercise the log1p domain fault.")
+    (sig (x Float) -> Float)
+    (example (-1.0) => 0.0)
+    (body (float.log1p x))))

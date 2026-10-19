@@ -1,0 +1,195 @@
+(module strings
+  (purpose "String parsing semantics.")
+  (use fs io str)
+  (fn case-0
+    (purpose "Check string behavior.")
+    (sig -> (List Str))
+    (example () => (list "a" "" "b" ""))
+    (body (str.split "a,,b," ",")))
+  (fn case-1
+    (purpose "Check string behavior.")
+    (sig -> (List Str))
+    (example () => (list "é" "🙂"))
+    (body (str.split "é🙂" "")))
+  (fn case-10
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => (Some -9223372036854775808))
+    (body (str.to-int "-9223372036854775808")))
+  (fn case-11
+    (purpose "Check string behavior.")
+    (sig -> Bool)
+    (example () => true)
+    (body (str.starts-with "abc" "ab")))
+  (fn case-12
+    (purpose "Check string behavior.")
+    (sig -> Bool)
+    (example () => true)
+    (body (str.starts-with "abc" "")))
+  (fn case-13
+    (purpose "Check string behavior.")
+    (sig -> Bool)
+    (example () => false)
+    (body (str.starts-with "abc" "b")))
+  (fn case-14
+    (purpose "Check string behavior.")
+    (sig -> Bool)
+    (example () => true)
+    (body (str.contains "abc" "b")))
+  (fn case-15
+    (purpose "Check string behavior.")
+    (sig -> Bool)
+    (example () => true)
+    (body (str.contains "abc" "")))
+  (fn case-16
+    (purpose "Check string behavior.")
+    (sig -> Bool)
+    (example () => false)
+    (body (str.contains "abc" "z")))
+  (fn case-17
+    (purpose "Check string behavior.")
+    (sig -> Str)
+    (fails OutOfRange)
+    (example () => "é🙂")
+    (body (str.substring "aé🙂z" 1 3)))
+  (fn case-18
+    (purpose "Check string behavior.")
+    (sig -> Str)
+    (fails OutOfRange)
+    (example () => "")
+    (body (str.substring "abc" 3 3)))
+  (fn case-2
+    (purpose "Check string behavior.")
+    (sig -> (List Str))
+    (example () => (list ""))
+    (body (str.split "" ",")))
+  (fn case-20
+    (purpose "Check string behavior.")
+    (sig -> (List Str))
+    (example () => (list))
+    (body (str.lines "")))
+  (fn case-21
+    (purpose "Check string behavior.")
+    (sig -> (List Str))
+    (example () => (list ""))
+    (body (str.lines "\n")))
+  (fn case-22
+    (purpose "Check string behavior.")
+    (sig -> (List Str))
+    (example () => (list "a" "" "b"))
+    (body (str.lines "a\n\nb")))
+  (fn case-23
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int "")))
+  (fn case-24
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int " 1")))
+  (fn case-25
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int "1 ")))
+  (fn case-26
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int "1_0")))
+  (fn case-27
+    (purpose "Reject non-ASCII decimal digits.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int "١")))
+  (fn case-28
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int "9223372036854775808")))
+  (fn case-29
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int "-9223372036854775809")))
+  (fn case-3
+    (purpose "Check string behavior.")
+    (sig -> (List Str))
+    (example () => (list))
+    (body (str.split "" "")))
+  (fn case-31
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int "+")))
+  (fn case-32
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => None)
+    (body (str.to-int "1.0")))
+  (fn case-33
+    (purpose "Check string behavior.")
+    (sig -> Str)
+    (fails OutOfRange)
+    (example () => (fail OutOfRange))
+    (body (str.substring "abc" -1 1)))
+  (fn case-34
+    (purpose "Check string behavior.")
+    (sig -> Str)
+    (fails OutOfRange)
+    (example () => (fail OutOfRange))
+    (body (str.substring "abc" 0 4)))
+  (fn case-35
+    (purpose "Check string behavior.")
+    (sig -> Str)
+    (fails OutOfRange)
+    (example () => (fail OutOfRange))
+    (body (str.substring "abc" 2 1)))
+  (fn case-4
+    (purpose "Check string behavior.")
+    (sig -> Str)
+    (example () => "a")
+    (body (str.trim "  a\t\n")))
+  (fn case-5
+    (purpose "Trim Unicode whitespace.")
+    (sig -> Str)
+    (example () => "x")
+    (body (str.trim " x ")))
+  (fn case-6
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => (Some 0))
+    (body (str.to-int "0")))
+  (fn case-7
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => (Some 42))
+    (body (str.to-int "+42")))
+  (fn case-8
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => (Some -42))
+    (body (str.to-int "-42")))
+  (fn case-9
+    (purpose "Check string behavior.")
+    (sig -> (Opt Int))
+    (example () => (Some 9223372036854775807))
+    (body (str.to-int "9223372036854775807")))
+  (fn catch-read
+    (purpose "Catch a file read failure as text.")
+    (sig (path Str) -> Str)
+    (eff fs.read)
+    (body (try (fs.read path) (catch fs.IoError (bad-path msg) bad-path))))
+  (fn read-pair
+    (purpose "Read two lines and then the remainder from one stream.")
+    (sig -> Str)
+    (eff io.in)
+    (fails io.IoError)
+    (body
+      (let
+        ((first (io.read-line)) (second (io.read-line)) (rest (io.read-all)))
+        (match
+          first
+          ((Some a) (match second ((Some b) (str.concat (str.concat a b) rest)) (None a)))
+          (None rest))))))

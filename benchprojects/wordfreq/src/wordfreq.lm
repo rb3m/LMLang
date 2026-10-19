@@ -1,0 +1,145 @@
+(module wordfreq
+  (purpose "Count ASCII words and print the most frequent words in deterministic order.")
+  (use fs io list map pair str)
+  (export main)
+  (fn before
+    (purpose "Compare frequency entries by descending count then ascending word.")
+    (sig (a (Pair Str Int)) (b (Pair Str Int)) -> Bool)
+    (example ((pair "a" 2) (pair "b" 1)) => true)
+    (example ((pair "a" 1) (pair "b" 1)) => true)
+    (example ((pair "b" 1) (pair "a" 1)) => false)
+    (body
+      (or
+        (> (pair.second a) (pair.second b))
+        (and (= (pair.second a) (pair.second b)) (< (pair.first a) (pair.first b))))))
+  (fn count-word
+    (purpose "Increment one word in an immutable frequency map.")
+    (sig (counts (Map Str Int)) (word Str) -> (Map Str Int))
+    (example ((mapof ("cat" 1)) "cat") => (mapof ("cat" 2)))
+    (body (map.update counts word 0 (lam ((n Int)) (+ n 1)))))
+  (fn format-entry
+    (purpose "Format a frequency entry as COUNT WORD.")
+    (sig (entry (Pair Str Int)) -> Str)
+    (example ((pair "cat" 2)) => "2 cat")
+    (body (str.concat (str.from-int (pair.second entry)) (str.concat " " (pair.first entry)))))
+  (fn limit-digit
+    (purpose "Accumulate decimal digits, saturating at the largest representable limit.")
+    (sig (value Int) (code Int) -> Int)
+    (example (12 51) => 123)
+    (example (922337203685477580 56) => 9223372036854775807)
+    (body
+      (let
+        ((digit (- code 48)))
+        (if
+          (or (> value 922337203685477580) (and (= value 922337203685477580) (> digit 7)))
+          9223372036854775807
+          (+ (* value 10) digit)))))
+  (fn main
+    (purpose "Read FILE and optional N, report usage errors, and return the process exit status.")
+    (sig -> Int)
+    (eff fs.read io.in io.out)
+    (body (run-args (io.args))))
+  (fn parse-limit
+    (purpose
+      "Parse an optional positive decimal limit, defaulting to ten and saturating huge limits.")
+    (sig (args (List Str)) -> (Opt Int))
+    (example ((list)) => (Some 10))
+    (example ((list "2")) => (Some 2))
+    (example ((list "0002")) => (Some 2))
+    (example ((list "0")) => None)
+    (example ((list "000")) => None)
+    (example ((list "-1")) => None)
+    (example ((list "+2")) => None)
+    (example ((list "x")) => None)
+    (example ((list "")) => None)
+    (example ((list "1.5")) => None)
+    (example ((list " 2")) => None)
+    (example ((list "9223372036854775808")) => (Some 9223372036854775807))
+    (example ((list "2" "3")) => None)
+    (body
+      (match
+        args
+        ((list) (Some 10))
+        (
+          (list raw)
+          (if
+            (and
+              (> (str.length raw) 0)
+              (list.all (str.to-codes raw) (lam ((c Int)) (and (>= c 48) (<= c 57)))))
+            (let ((n (list.fold (str.to-codes raw) 0 limit-digit))) (if (> n 0) (Some n) None))
+            None))
+        (_ None))))
+  (fn print-file
+    (purpose "Read a file and print its top word frequencies, returning an exit status.")
+    (sig (path Str) (limit Int) -> Int)
+    (eff fs.read io.out)
+    (body
+      (try
+        (let ((text (fs.read path))) (do (for (line (top-lines text limit)) (io.print line)) 0))
+        (catch
+          fs.IoError
+          (failed-path message)
+          (do (io.print (str.concat "error: cannot read " path)) 1)))))
+  (fn run-args
+    (purpose "Validate command arguments and either print an error or process the requested file.")
+    (sig (args (List Str)) -> Int)
+    (eff fs.read io.out)
+    (body
+      (match
+        args
+        ((list) (do (io.print "usage: wordfreq FILE [N]") 2))
+        (
+          (cons path rest)
+          (match
+            (parse-limit rest)
+            (None (do (io.print "error: N must be a positive integer") 2))
+            ((Some limit) (print-file path limit)))))))
+  (fn token-step
+    (purpose "Accumulate a word and completed words while scanning characters.")
+    (sig (state (Pair Str (List Str))) (ch Str) -> (Pair Str (List Str)))
+    (example ((pair "hi" (list)) "!") => (pair "" (list "hi")))
+    (body
+      (let
+        ((current (pair.first state)) (done (pair.second state)))
+        (if
+          (list.all (str.to-codes ch) word-code)
+          (pair (str.concat current (str.lower-ascii ch)) done)
+          (pair "" (if (= current "") done (cons current done)))))))
+  (fn top-lines
+    (purpose "Return the top N formatted word frequencies.")
+    (sig (text Str) (limit Int) -> (List Str))
+    (example ("b A b a C" 2) => (list "2 a" "2 b"))
+    (example ("" 10) => (list))
+    (example ("z1 Z1,2_2 éa" 10) => (list "2 2" "2 z1" "1 a"))
+    (example
+      ("the cat and the hat\nThe CAT sat; the end.\n" 10)
+      =>
+      (list "4 the" "2 cat" "1 and" "1 end" "1 hat" "1 sat"))
+    (body
+      (list.map
+        (list.take
+          (list.sort-by (map.to-list (list.fold (words text) (mapof) count-word)) before)
+          limit)
+        format-entry)))
+  (fn word-code
+    (purpose "Whether a code point is an ASCII letter or digit.")
+    (sig (code Int) -> Bool)
+    (example (65) => true)
+    (example (57) => true)
+    (example (233) => false)
+    (body
+      (or
+        (and (>= code 48) (<= code 57))
+        (and (>= code 65) (<= code 90))
+        (and (>= code 97) (<= code 122)))))
+  (fn words
+    (purpose "Split maximal ASCII alphanumeric runs and lowercase ASCII letters.")
+    (sig (text Str) -> (List Str))
+    (example ("Cat,CAT! a1_2 éZ") => (list "cat" "cat" "a1" "2" "z"))
+    (example ("") => (list))
+    (example ("---é😀") => (list))
+    (example ("LAST") => (list "last"))
+    (body
+      (let
+        ((state (list.fold (str.split (str.concat text " ") "") (pair "" (list)) token-step)))
+        (list.reverse (pair.second state))))))

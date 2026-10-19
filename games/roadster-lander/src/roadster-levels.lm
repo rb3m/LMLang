@@ -1,0 +1,48 @@
+(module roadster-levels
+  (purpose "Roadster Lander levels.")
+  (use roadster-physics)
+  (export gravity level)
+  (const
+    earth-gravity
+    (purpose "Earth surface gravity in metres per second squared.")
+    (type Float)
+    (value 9.81))
+  (const
+    mars-gravity
+    (purpose "Mars surface gravity in metres per second squared.")
+    (type Float)
+    (value 3.71))
+  (const
+    moon-gravity
+    (purpose "Moon surface gravity in metres per second squared.")
+    (type Float)
+    (value 1.62))
+  (fn gravity
+    (purpose "Select Moon, Mars or Earth gravity in metres per second squared.")
+    (sig (id Int) -> (Opt Float))
+    (example (0) => None)
+    (example (1) => (Some 1.62))
+    (example (2) => (Some 3.71))
+    (example (3) => (Some 9.81))
+    (example (4) => None)
+    (body
+      (if
+        (= id 1)
+        (Some moon-gravity)
+        (if (= id 2) (Some mars-gravity) (if (= id 3) (Some earth-gravity) None)))))
+  (fn level
+    (purpose "Starting altitude, downward speed and fuel for each parking spot.")
+    (sig (id Int) -> (Opt roadster-physics.State))
+    (example (0) => None)
+    (example
+      (1)
+      =>
+      (Some (new roadster-physics.State (time 0.0) (altitude 800.0) (speed 20.0) (fuel 1200.0))))
+    (body
+      (if
+        (= id 1)
+        (Some (roadster-physics.make 0.0 800.0 20.0 1200.0))
+        (if
+          (= id 2)
+          (Some (roadster-physics.make 0.0 1200.0 25.0 1400.0))
+          (if (= id 3) (Some (roadster-physics.make 0.0 1600.0 30.0 1600.0)) None))))))

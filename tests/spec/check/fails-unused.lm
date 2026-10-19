@@ -1,0 +1,7 @@
+(module fails-unused
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (fails DivZero)
+    (body a)))

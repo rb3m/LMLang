@@ -1,0 +1,1 @@
+(module m (fn b (body 1)) (fn a (body 2)))

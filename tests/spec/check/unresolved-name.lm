@@ -1,0 +1,6 @@
+(module unresolved-name
+  (purpose "p")
+  (fn f
+    (purpose "p")
+    (sig (a Int) -> Int)
+    (body (nope a))))

@@ -1,0 +1,8 @@
+(module for-shadow
+  (purpose "p")
+  (use io)
+  (fn f
+    (purpose "p")
+    (sig (x Str) (xs (List Str)) -> Unit)
+    (eff io.out)
+    (body (for (x xs) (io.print x)))))

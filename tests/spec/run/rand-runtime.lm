@@ -1,0 +1,52 @@
+(module rand-runtime
+  (purpose "Seed-zero random sequences, bounds, rejection sampling, and clocks.")
+  (use rand time)
+  (fn bad-bounds
+    (purpose "Check bad-bounds with seed zero.")
+    (sig -> Int)
+    (eff rand)
+    (body (rand.int 2 1)))
+  (fn equal-bounds
+    (purpose "Check equal-bounds with seed zero.")
+    (sig -> (List Int))
+    (eff rand)
+    (body
+      (list
+        (rand.int -9223372036854775808 -9223372036854775808)
+        (rand.int 9223372036854775807 9223372036854775807)
+        (rand.int 0 99))))
+  (fn float-range
+    (purpose "Check float-range with seed zero.")
+    (sig -> Bool)
+    (eff rand)
+    (body (let ((a (rand.float)) (b (rand.float))) (and (>= a 0.0) (< a 1.0) (>= b 0.0) (< b 1.0)))))
+  (fn float-sequence
+    (purpose "Check float-sequence with seed zero.")
+    (sig -> (List Float))
+    (eff rand)
+    (body (list (rand.float) (rand.float) (rand.float))))
+  (fn full-span
+    (purpose "Check full-span with seed zero.")
+    (sig -> Int)
+    (eff rand)
+    (body (rand.int -9223372036854775808 9223372036854775807)))
+  (fn monotonic-clock
+    (purpose "Check monotonic-clock with seed zero.")
+    (sig -> Bool)
+    (eff time.now)
+    (body (let ((a (time.mono-ms)) (b (time.mono-ms))) (>= b a))))
+  (fn rejection
+    (purpose "Check rejection with seed zero.")
+    (sig -> Int)
+    (eff rand)
+    (body (rand.int -9223372036854775808 0)))
+  (fn sequence
+    (purpose "Check sequence with seed zero.")
+    (sig -> (List Int))
+    (eff rand)
+    (body (list (rand.int 0 99) (rand.int 0 99) (rand.int 0 99) (rand.int 0 99) (rand.int 0 99))))
+  (fn wall-clock
+    (purpose "Check wall-clock with seed zero.")
+    (sig -> Bool)
+    (eff time.now)
+    (body (> (time.now-ms) 1700000000000))))

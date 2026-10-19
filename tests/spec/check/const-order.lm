@@ -1,0 +1,16 @@
+(module const-order
+  (purpose "Const evaluation on demand regardless of declaration order.")
+  (const a (purpose "Depends on b defined later.") (type Int) (value (+ b 1)))
+  (const b (purpose "Base const.") (type Int) (value (double 20)))
+  (const c (purpose "Calls fn that reads d defined later.") (type Int) (value (read-d 5)))
+  (const d (purpose "Base const d.") (type Int) (value 10))
+  (fn double
+    (purpose "Double.")
+    (sig (n Int) -> Int)
+    (example (20) => 40)
+    (body (* 2 n)))
+  (fn read-d
+    (purpose "Read d.")
+    (sig (n Int) -> Int)
+    (example (5) => 15)
+    (body (+ n d))))

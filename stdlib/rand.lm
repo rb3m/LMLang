@@ -1,0 +1,14 @@
+(module rand
+  (purpose "Seedable SplitMix64 random numbers.")
+  (export float int)
+  (fn float
+    (purpose "Uniform random Float in [0, 1) using 53 random bits.")
+    (sig -> Float)
+    (eff rand)
+    (body (prim "rand.float")))
+  (fn int
+    (purpose "Uniform random Int in the inclusive range lo..hi.")
+    (sig (lo Int) (hi Int) -> Int)
+    (eff rand)
+    (requires (<= lo hi))
+    (body (prim "rand.int"))))

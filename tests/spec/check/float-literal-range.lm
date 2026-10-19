@@ -1,0 +1,16 @@
+(module float-literal-range
+  (purpose "A Float literal that is not finite in binary64 is E-FLOAT at check time.")
+  (fn big
+    (purpose "p")
+    (sig -> Float)
+    (body 1e400))
+  (fn neg
+    (purpose "p")
+    (sig (x Float) -> Float)
+    (example (-1.8e308) => 0.0)
+    (body x))
+  (fn tiny
+    (purpose "Subnormal literals are finite.")
+    (sig -> Float)
+    (example () => 5e-324)
+    (body 5e-324)))

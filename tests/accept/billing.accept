@@ -1,0 +1,16 @@
+(scenarios
+  (scenario "Order with Mexican VAT"
+    (status approved)
+    (why "Items of 100 and 200 cents in Mexico total 348: 300 plus 16% VAT (48).")
+    (run billing.total (list 100 200) "MX")
+    (expect 348))
+  (scenario "VAT rounds down to whole cents"
+    (status approved)
+    (why "A single 99-cent item gets 15 cents of VAT (15.84 is cut, not rounded up), total 114. Is cutting what you want?")
+    (run billing.total (list 99) "MX")
+    (expect 114))
+  (scenario "Unsupported region is rejected"
+    (status approved)
+    (why "Only region MX is supported; any other region must fail with BadRegion and name the region.")
+    (run billing.total (list 100) "US")
+    (expect-fail billing.BadRegion "US")))
