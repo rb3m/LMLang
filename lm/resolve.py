@@ -135,7 +135,7 @@ class Resolver(GenericMixin):
             m.exported_fns, m.exported_consts, m.exported_caps = set(m.fns), set(m.consts), set(m.types) | set(m.errors)
             return
         mp = m.name
-        for ex in m.export_nodes:
+        for i, ex in enumerate(m.export_nodes, 1):
             nm = ex.value
             if ex.kind == "sym":
                 if nm in m.fns:
@@ -148,6 +148,18 @@ class Resolver(GenericMixin):
             elif nm in m.types or nm in m.errors:
                 m.exported_caps.add(nm)
             else:
+                # Exports precede variant-table construction; inspect the sum declarations.
+                parent = next((t.name for t in m.types.values() if head(t.node.items[2]) == "sum"
+                               and any((v.value if isinstance(v, Atom) else head(v)) == nm
+                                       for v in t.node.items[2].items[1:])), None)
+                if parent:
+                    path = f"{mp}/export/{i}"
+                    fix = [] if any(a.value == parent for a in m.export_nodes) else [
+                        {"op": "replace-ref", "path": path, "to": parent}]
+                    self.diag(m, "E-NAME-UNRESOLVED", ex, path,
+                              f"export `{nm}`: a variant of `{parent}`; export `{parent}` (exports its variants)",
+                              expected=parent, found=nm, fix=fix)
+                    continue
                 self.diag(m, "E-NAME-UNRESOLVED", ex, f"{mp}/export", f"export `{nm}`: no such type or error", found=nm)
 
     def _purpose_len(self, m, text, node, path):
@@ -207,8 +219,7 @@ class Resolver(GenericMixin):
                 return
             nm = p.items[0].value
             if nm in RESERVED_VALUES or nm in m.fns or nm in seen:
-                hint = "; `pair` is the prelude pair constructor, name it `p` instead" if nm == "pair" else ""
-                self.diag(m, "E-DUP-NAME", p.items[0], pp, f"parameter `{nm}` collides with a reserved word, function, or earlier parameter{hint}")
+                self.diag(m, "E-DUP-NAME", p.items[0], pp, self._local_collision(m, nm, seen))
             seen.add(nm)
             f.params.append((nm, self.resolve_type(m, p.items[1], tv, pp + "/1")))
         f.ret = self.resolve_type(m, items[-1], tv, f"{fp}/sig/{len(items)}")
@@ -216,6 +227,17 @@ class Resolver(GenericMixin):
 
     def fn_type(self, f: FnInfo, mapping=None):
         return self.s.inst(fn([t for _, t in f.params], f.ret), {} if mapping is None else mapping)
+
+    def _local_collision(self, m, name, env):
+        if name == "result":
+            return "`result` is reserved (bound to the return value in `ensures`); rename it, e.g. `res`"
+        reason = ("a reserved word" if name in RESERVED_VALUES else
+                  "a function of this module" if name in m.fns else
+                  "a constant of this module" if name in m.consts else
+                  "a binding already in scope" if name in env else
+                  "a binding already introduced here")
+        hint = "; `pair` is the prelude pair constructor, name it `p` instead" if name == "pair" else ""
+        return f"`{name}` collides with {reason}{hint}"
 
     # ---- lookups ----------------------------------------------------------------------------
     def find_module(self, m, q, node, path, near=None):

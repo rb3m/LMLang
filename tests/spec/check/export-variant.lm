@@ -1,0 +1,4 @@
+(module export-variant
+  (purpose "Export a variant instead of its sum type.")
+  (export Choice)
+  (type Options (sum Choice Other)))

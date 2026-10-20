@@ -44,7 +44,7 @@ LM is a programming language for AI agents: s-expression syntax, every function 
 - Worked programs to copy patterns from: `{repo}/examples/README.md`. Full language rules: `{repo}/docs/SPEC.md` (search by heading, only when `lm guide` is not enough).
 ## Loop
 1. Orient: `lm index`; `lm index --stdlib --modules`, then `--module M`; `lm slice {name}.FN`.
-2. Change code with `lm edit` ops (`lm help edit`), not by rewriting files.
+2. Change code with `lm edit` ops (`lm help edit`), not by rewriting files. `lm fmt` sorts definitions by name; use `lm edit` ops, or re-read the file after fmt before text edits.
 3. `lm check` then `lm test` until both are clean; fix diagnostics by their code and path.
 4. `lm run {name}.main --allow io.in --allow io.out -- ARGS` to try it; `lm build {name}.main` for a native binary (needs Go) or `--target py`.
 ## Scenarios (the human's spec)

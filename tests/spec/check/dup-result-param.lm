@@ -1,0 +1,7 @@
+(module dup-result-param
+  (purpose "Reject the reserved return value binding as a parameter.")
+  (export)
+  (fn value
+    (purpose "Return the parameter.")
+    (sig (result Int) -> Int)
+    (body result)))

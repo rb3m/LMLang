@@ -2,6 +2,7 @@
   (purpose "String operations.")
   (export
     BadCode
+    cat
     concat
     contains
     from-codes
@@ -27,6 +28,12 @@
     upper
     upper-ascii)
   (error BadCode (code Int))
+  (fn cat
+    (purpose "Join strings without a separator.")
+    (sig (parts (List Str)) -> Str)
+    (example ((list "a" "b" "c")) => "abc")
+    (example ((list)) => "")
+    (body (join parts "")))
   (fn concat
     (purpose "Join two strings.")
     (sig (a Str) (b Str) -> Str)

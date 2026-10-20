@@ -124,7 +124,7 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
 
     def local_ok(self, m, name, node, path, env, extra=None):
         if name in RESERVED_VALUES or name in m.fns or name in m.consts or name in env or (extra is not None and name in extra):
-            self.diag(m, "E-DUP-NAME", node, path, f"`{name}` collides with a reserved word, a function or constant of this module, or a binding already in scope{'; `pair` is the prelude pair constructor, name it `p` instead' if name == 'pair' else ''}")
+            self.diag(m, "E-DUP-NAME", node, path, self._local_collision(m, name, env))
             return False
         return True
 

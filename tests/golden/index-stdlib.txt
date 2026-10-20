@@ -185,6 +185,7 @@ module shapes  -- Areas and descriptions of simple shapes.  (use float math str)
 *fn shapes.scale  (s Shape) (k Int) -> Shape  -- Multiply every dimension by k.
 module str  -- String operations.
 *error str.BadCode  (code Int)
+*fn str.cat  (parts (List Str)) -> Str  -- Join strings without a separator.
 *fn str.concat  (a Str) (b Str) -> Str  -- Join two strings.
 *fn str.contains  (s Str) (part Str) -> Bool  -- Test for a literal substring.
 *fn str.from-codes  (cs (List Int)) -> Str  [fails BadCode]  -- Build a string from Unicode scalar values; fails BadCode on invalid values.
