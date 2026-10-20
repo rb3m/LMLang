@@ -75,7 +75,7 @@ The agent walks you through each scenario. Only after your explicit yes may it r
 
 ## Status
 
-Research prototype **v0.11.1**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
+Research prototype **v0.11.2**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
 
 | Metric | Target | Recorded result |
 |---|---|---|
@@ -83,10 +83,10 @@ Research prototype **v0.11.1**, with a standard-library-only Python reference im
 | S2 edit operations vs regenerated file | <= 30% median | 10.4% |
 | S3 invented names/effects caught before runtime | >= 90% | 42/43 (98%) |
 | S4 tasks green within two agent iterations | >= 80% | 13/13 (100%) |
-| S5 LM tokens vs equivalent full Python | <= 1.3x | **OPEN**: 1.28x, heuristic tokens |
-| S6 approved scenarios pass, guard intact | 100% | 6/6 pass, guard OK |
+| S5 LM tokens vs equivalent full Python | <= 1.3x | **OPEN**: 1.30x (1.302x), Anthropic tokenizer |
+| S6 approved scenarios pass, guard intact | 100% | 13/13 pass, guard OK |
 
-S5 remains OPEN until the real-tokenizer re-measure, despite the current heuristic ratio of 1.28x versus the 1.3x target (ADR-025, ADR-061). See [the benchmark summary](bench/results/summary.md), [PRD](PRD.md), and [evidence](docs/EVIDENCE.md) for methodology and caveats.
+S5 remains OPEN: measured with the Anthropic tokenizer, the median ratio is 1.302x against the 1.3x target, a miss of 0.002 (the ADR-012 heuristic gives 1.28x on the same sources; ADR-025, ADR-061). See [the benchmark summary](bench/results/summary.md), [PRD](PRD.md), and [evidence](docs/EVIDENCE.md) for methodology and caveats.
 
 ## Contributing and documentation
 

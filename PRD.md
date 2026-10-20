@@ -79,7 +79,7 @@ Quality
 | S5 | LM source tokens vs equivalent Python (incl. contracts/examples) | <= 1.3x |
 | S6 | Human acceptance: approved scenarios pass, and zero approved scenarios modified by the agent | 100% |
 
-Token counts use a documented heuristic (ADR-012) until a real tokenizer is available; ratios, not absolutes, matter.
+Token counts use a documented heuristic (ADR-012); the Anthropic tokenizer (`lm bench --tokenizer anthropic`, ADR-052) is the reference for S5. Ratios, not absolutes, matter.
 
 ## 8. Risks
 
@@ -97,4 +97,4 @@ Name `LM` / `.lm`; reference implementation in Python stdlib-only; S-expressions
 
 ## 10. Milestones
 
-M0 reader/printer through M12 are done (history in docs/archive/milestones-M0-M12.md); open work is in docs/ROADMAP.md. Gate outcome: S1-S4 and S6 met on the benchmark (with the caveats in ADR-024), S5 open at 1.34x with an owner waiver (ADR-025).
+M0 reader/printer through M12 are done (history in docs/archive/milestones-M0-M12.md); open work is in docs/ROADMAP.md. Gate outcome: S1-S4 and S6 met on the benchmark (with the caveats in ADR-024), S5 open with an owner waiver (ADR-025): 1.34x at the gate, now 1.302x with the Anthropic tokenizer (1.28x heuristic).
