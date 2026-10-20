@@ -1,11 +1,12 @@
 # AGENTS.md: LMLang (read this first; read other docs only when the index says so)
 
 ## What and why
-LM is a programming language and toolchain authored and read by AI agents. It features small dependency-closed slices, exact name resolution, declared contracts/effects, edit-by-operation, and structured JSON diagnostics. It tests a falsifiable thesis (PRD.md section 2); the owner judges intent and does not read code.
-Pipeline: `.lm` text -> reader -> AST (stable node paths) -> module graph -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go -> static native binary (`lm build`). Python reference impl, stdlib only; s-expression syntax.
+**Writing a program IN LM, not changing LM? Skip this file:** run `<this repo>/bin/lm new NAME` in your own dir and follow the AGENTS.md it creates.
+LM is a programming language and toolchain authored and read by AI agents: dependency-closed slices, exact name resolution, declared contracts/effects, edit-by-operation, JSON diagnostics. It tests a falsifiable thesis (PRD.md section 2); the owner judges intent and does not read code.
+Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go -> native binary (`lm build`). Python reference impl, stdlib only; s-expressions.
 
 ## Current step
-- Backlog 3-6, 8, 9, 13-20, 22-26 done (ADR-058..076). 21 left: a program the owner uses daily (S5 and DreamHost CGI done, docs/EVIDENCE.md). Public v0.11.2, export only.
+- Backlog 3-6, 8, 9, 13-20, 22-26 done (ADR-058..076). 21 left: a program the owner uses daily (S5 and DreamHost CGI done, docs/EVIDENCE.md). Public v0.11.3, export only.
 - Open: S5 real tokenizer 1.302x vs target <= 1.3x (ADR-025), OPEN by 0.002. Never call it passed.
 
 ## Rules
@@ -24,7 +25,7 @@ Pipeline: `.lm` text -> reader -> AST (stable node paths) -> module graph -> res
 ## Index
 - `PRD.md`: goals, thesis, metrics S1-S6. Read before touching benchmark or thesis.
 - `lm guide` (source lm/guide.md): compact LM syntax, workflow, stdlib reminder. Read before writing/reviewing `.lm` code.
-- `docs/SPEC.md`: normative language rules (sections 1-16). Search by heading when `lm guide` is insufficient.
+- `docs/SPEC.md`: normative rules (sections 1-16). Search by heading when `lm guide` is insufficient.
 - `docs/COMMANDS.md`: every `lm` command, flag and exit code. Read before using unfamiliar commands.
 - `docs/ARCHITECTURE.md`: module layout, pipeline, mechanisms, adding prims. Read before changing `lm/`.
 - `docs/TESTING.md`: test layers, fixtures, goldens, acceptance format, human routine. Read before adding tests.
@@ -32,7 +33,7 @@ Pipeline: `.lm` text -> reader -> AST (stable node paths) -> module graph -> res
 - `docs/EVIDENCE.md`: thesis datapoints. Append when an experiment yields a measurement.
 - `docs/EXPERIMENTS.md`: trying LM on real programs; known gaps. Read when writing in `src/`.
 - `docs/DEPLOY-CGI.md`: deploying a `--serve` handler as CGI. Read before deploying.
-- `docs/ENVIRONMENT.md` (private checkouts; public: `docs/ENVIRONMENT.example.md`): machines, Go paths, remotes, other agents. Read before building, pushing or switching hosts.
+- `docs/ENVIRONMENT.md` (public: `ENVIRONMENT.example.md`): machines, Go, remotes, agents. Read before building, pushing or switching hosts.
 - `docs/decisions/`: one ADR per file, indexed in README; read matching ADR before changing behavior it covers.
-- `docs/archive/`: finished milestones (M0-M12) and AGY's 2026-10-16 review (history).
-- Code: `bin/lm` (wrapper), `lm/` (Python package; `lm/runtime/go/` Go runtime), `stdlib/*.lm`, `src/` (user programs), `games/`, `benchprojects/` (own LM projects; run `../../bin/lm` inside), `examples/`, `tests/{unit,spec,accept,golden}`, `bench/`.
+- `docs/archive/`: finished milestones (M0-M12), old reviews (history).
+- Code: `bin/lm` (wrapper), `lm/` (Python package; `lm/runtime/go/` Go runtime), `stdlib/*.lm`, `src/` (user programs), `games/`, `benchprojects/` (run `../../bin/lm` inside), `examples/` (index: README.md), `tests/{unit,spec,accept,golden}`, `bench/`.

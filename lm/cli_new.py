@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 NAME_RE = re.compile(r"[a-z][a-z0-9-]*")
+REPO = Path(__file__).resolve().parent.parent
 
 PROGRAM = '''(module {name}
   (purpose "Starter program: greets the names given on the command line.")
@@ -38,6 +39,9 @@ SCENARIOS = '''(scenarios
 
 AGENT_GUIDE = '''# AGENTS.md: {name} (an LM project)
 LM is a programming language for AI agents: s-expression syntax, every function declares purpose, signature, effects, failures and examples, and the toolchain answers structured queries. Run `lm guide` once before writing code (syntax, workflow, stdlib); `lm help CMD` for any command.
+## Where things are
+- Toolchain: `{repo}/bin/lm` (use this path if `lm` is not on PATH).
+- Worked programs to copy patterns from: `{repo}/examples/README.md`. Full language rules: `{repo}/docs/SPEC.md` (search by heading, only when `lm guide` is not enough).
 ## Loop
 1. Orient: `lm index`; `lm index --stdlib --modules`, then `--module M`; `lm slice {name}.FN`.
 2. Change code with `lm edit` ops (`lm help edit`), not by rewriting files.
@@ -67,7 +71,7 @@ def _write_project(target: Path, name: str) -> None:
         Path("src") / f"{name}.lm": PROGRAM.format(name=name),
         Path("tests") / "accept" / f"{name}.accept": SCENARIOS.format(name=name),
         Path(".gitignore"): f"/{name}\n",
-        Path("AGENTS.md"): AGENT_GUIDE.format(name=name),
+        Path("AGENTS.md"): AGENT_GUIDE.format(name=name, repo=REPO),
         Path("CLAUDE.md"): "See AGENTS.md.\n",
         Path("GEMINI.md"): "See AGENTS.md.\n",
     }

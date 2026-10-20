@@ -29,6 +29,8 @@ class LmNew(unittest.TestCase):
             self.assertIn("lm slice greet-app.FN", instructions)
             self.assertIn("explicit yes", instructions)
             self.assertIn("lm accept --guard", instructions)
+            self.assertIn(f"{ROOT}/bin/lm", instructions)
+            self.assertIn(f"{ROOT}/examples/README.md", instructions)
             self.assertLessEqual(len(instructions.splitlines()), 25)
             for filename in ("CLAUDE.md", "GEMINI.md"):
                 self.assertEqual((proj / filename).read_text(), "See AGENTS.md.\n")
