@@ -83,3 +83,4 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-073](0073-subprocesses-proposal.md) Backlog 25: subprocesses, effect `proc.run`, absolute argv, no inherited env, fixed limits (2026-10-19, agent consensus, owner approved)
 - [ADR-074](0074-persistent-vector.md) Backlog 17: persistent `(Vec a)`, 32-way trie, Opt access by default, nth/put with ADR-061 literal proofs (2026-10-19, agent consensus)
 - [ADR-075](0075-text-patterns.md) Backlog 19: bounded Unicode-scalar Pike VM, opaque `pat.Pat`, captures and literal compile proofs (2026-10-19, agent consensus)
+- [ADR-076](0076-http-server.md) Backlog 15: HTTP server, named handler served as CGI or a sequential loopback listener (`--public` to expose), fixed limits and rejection codes (2026-10-19, agent consensus)

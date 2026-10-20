@@ -1,0 +1,62 @@
+(module cgi-echo
+  (purpose "Echo the HTTP request as JSON; a first CGI deployment probe.")
+  (use http json list pair str)
+  (export handle)
+  (fn handle
+    (purpose "Return the request as JSON.")
+    (sig (req http.Request) -> http.Response)
+    (example
+      ((new http.Request (method "GET") (target "/") (query "") (headers (list)) (body "")))
+      =>
+      (new
+        http.Response
+        (status 200)
+        (headers (list (pair "content-type" "application/json") (pair "cache-control" "no-store")))
+        (body
+          "{\"body\":\"\",\"body_length\":0,\"headers\":[],\"method\":\"GET\",\"probe\":\"lm-cgi-echo/1\",\"query\":\"\",\"query_pairs\":[],\"target\":\"/\"}")))
+    (body
+      (new
+        http.Response
+        (status 200)
+        (headers (list (pair "content-type" "application/json") (pair "cache-control" "no-store")))
+        (body
+          (json.print
+            (json.JObj
+              (mapof
+                ("probe" (json.JStr "lm-cgi-echo/1"))
+                ("method" (json.JStr (get req method)))
+                ("target" (json.JStr (get req target)))
+                ("query" (json.JStr (get req query)))
+                ("query_pairs" (query-json (get req query)))
+                ("headers" (pairs-json (list.map (get req headers) redact)))
+                ("body" (json.JStr (get req body)))
+                ("body_length" (json.JInt (str.length (get req body)))))))))))
+  (fn pairs-json
+    (purpose "Pairs as a JSON array of two-element arrays, order kept.")
+    (sig (ps (List (Pair Str Str))) -> json.Json)
+    (example ((list)) => (json.JArr (list)))
+    (example
+      ((list (pair "a" "1")))
+      =>
+      (json.JArr (list (json.JArr (list (json.JStr "a") (json.JStr "1"))))))
+    (body
+      (json.JArr
+        (list.map
+          ps
+          (lam (p) (json.JArr (list (json.JStr (pair.first p)) (json.JStr (pair.second p)))))))))
+  (fn query-json
+    (purpose "Decoded query pairs, or null when the query is malformed.")
+    (sig (q Str) -> json.Json)
+    (example ("a=1+2") => (json.JArr (list (json.JArr (list (json.JStr "a") (json.JStr "1 2"))))))
+    (example ("a=%FF") => json.JNull)
+    (body (try (pairs-json (http.query-pairs q)) (catch http.BadEncoding (s) json.JNull))))
+  (fn redact
+    (purpose "Hide credential headers so the echo never reflects them.")
+    (sig (p (Pair Str Str)) -> (Pair Str Str))
+    (example ((pair "cookie" "s=1")) => (pair "cookie" "<redacted>"))
+    (example ((pair "accept" "*/*")) => (pair "accept" "*/*"))
+    (body
+      (if
+        (or (= (pair.first p) "cookie") (= (pair.first p) "authorization"))
+        (pair (pair.first p) "<redacted>")
+        p))))

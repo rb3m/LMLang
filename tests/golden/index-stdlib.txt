@@ -1,6 +1,8 @@
 module billing  -- Invoice totals.  (use list)
 *error billing.BadRegion  (region Str)
 *fn billing.total  (items (List Cents)) (region Str) -> Cents  [fails BadRegion]  -- Sum item prices and add Mexican VAT.
+module cgi-echo  -- Echo the HTTP request as JSON; a first CGI deployment probe.  (use http json list pair str)
+*fn cgi-echo.handle  (req http.Request) -> http.Response  -- Return the request as JSON.
 module colsum  -- Sum a CSV column per key, keys ascending: colsum FILE KEY-COL VALUE-COL (zero-based).  (use fs io list map str)
 *fn colsum.main  -> Int  [eff fs.read io.in io.out]  -- Entry point: parse arguments, run, map I/O errors to exit status 1.
 *fn colsum.summarize  (rows (List Str)) (kcol Int) (vcol Int) -> Summary  -- Totals per key (a Map, so in ascending key order), and the number of unparsable rows.

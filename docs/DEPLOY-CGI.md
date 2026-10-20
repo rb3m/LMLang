@@ -38,3 +38,17 @@ is 127.0.0.1. Another loopback port can be chosen with `--port`; `--port 0` sele
 a free port and prints the actual address on stderr. A non-loopback `--host`
 requires `--public`. The listener has no TLS and serves one request at a time;
 a slow client can occupy it for up to 30 seconds.
+
+Caching: some shared hosts add their own expiry headers to every response (one
+DreamHost site added `cache-control: max-age=172800` and an `expires` two days
+out, next to a handler's `no-store`). This is normal host behavior and harmless
+for tests. If a project's dynamic responses must not be cached, generate an
+`.htaccess` for that project's CGI directory, for example (untested on the host):
+
+```apache
+<IfModule mod_expires.c>
+  ExpiresActive Off
+</IfModule>
+```
+
+Then check with `curl -sI URL` that only the handler's cache headers remain.

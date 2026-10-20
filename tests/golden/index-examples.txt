@@ -2,6 +2,11 @@ module billing  -- Invoice totals.  (use list)
  type billing.Cents  Int
 *error billing.BadRegion  (region Str)
 *fn billing.total  (items (List Cents)) (region Str) -> Cents  [fails BadRegion]  -- Sum item prices and add Mexican VAT.
+module cgi-echo  -- Echo the HTTP request as JSON; a first CGI deployment probe.  (use http json list pair str)
+*fn cgi-echo.handle  (req http.Request) -> http.Response  -- Return the request as JSON.
+ fn cgi-echo.pairs-json  (ps (List (Pair Str Str))) -> json.Json  -- Pairs as a JSON array of two-element arrays, order kept.
+ fn cgi-echo.query-json  (q Str) -> json.Json  -- Decoded query pairs, or null when the query is malformed.
+ fn cgi-echo.redact  (p (Pair Str Str)) -> (Pair Str Str)  -- Hide credential headers so the echo never reflects them.
 module colsum  -- Sum a CSV column per key, keys ascending: colsum FILE KEY-COL VALUE-COL (zero-based).  (use fs io list map str)
  type colsum.Summary  (rec (totals (Map Str Int)) (bad Int))
  type colsum.Total  (rec (key Str) (amount Int))

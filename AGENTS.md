@@ -5,8 +5,8 @@ LM is a programming language and toolchain authored and read by AI agents. It fe
 Pipeline: `.lm` text -> reader -> AST (stable node paths) -> module graph -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go -> static native binary (`lm build`). Python reference impl, stdlib only; s-expression syntax.
 
 ## Current step
-- Backlog 3-6, 8, 9, 13-20, 22-26 done (ADR-058..076); 21 part 1 (S5 1.30x). Public v0.11.0 (github.com/rb3m/LMLang): publish only via scripts/export-public.sh. Next: 21 (DreamHost CGI run, owner server).
-- Blocker: S5 heuristic 1.28x vs 1.3x after ADR-061 (was 1.34x), still OPEN (ADR-025) until the real-tokenizer re-measure (needs ANTHROPIC_API_KEY). Never call it passed.
+- Backlog 3-6, 8, 9, 13-20, 22-26 done (ADR-058..076). 21 left: a program the owner uses daily (S5 and DreamHost CGI done, docs/EVIDENCE.md). Public v0.11.1, export only.
+- Open: S5 real tokenizer 1.302x vs target <= 1.3x (ADR-025), OPEN by 0.002. Never call it passed.
 
 ## Rules
 1. Orient with `lm index` (`--stdlib` for stdlib), then `lm slice mod.fn` before opening files; read a whole module only when a slice is insufficient (say why). Run `lm callers` before changing signatures.
@@ -31,6 +31,7 @@ Pipeline: `.lm` text -> reader -> AST (stable node paths) -> module graph -> res
 - `docs/ROADMAP.md`: open backlog and current milestone. Read when picking or scoping work.
 - `docs/EVIDENCE.md`: thesis datapoints. Append when an experiment yields a measurement.
 - `docs/EXPERIMENTS.md`: trying LM on real programs; known gaps. Read when writing in `src/`.
+- `docs/DEPLOY-CGI.md`: deploying a `--serve` handler as CGI. Read before deploying.
 - `docs/ENVIRONMENT.md` (private checkouts; public: `docs/ENVIRONMENT.example.md`): machines, Go paths, remotes, other agents. Read before building, pushing or switching hosts.
 - `docs/decisions/`: one ADR per file, indexed in README; read matching ADR before changing behavior it covers.
 - `docs/archive/`: finished milestones (M0-M12) and AGY's 2026-10-16 review (history).
