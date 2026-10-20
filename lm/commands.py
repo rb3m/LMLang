@@ -26,7 +26,11 @@ COMMANDS = {
                 "Interpret a function with explicit effect permissions; prints its "
                 "return value and exits 0 (use build for a real exit status).",
                 "lm.cli_run:cmd_run"),
-        Command("build", "build MOD.FN [PATH..] [-o OUT] [--target go|py] "
+        Command("serve", "serve MOD.FN [PATH..] [--cgi] [--port N] [--host H] "
+                "[--public] [--allow EFF]..",
+                "Serve an HTTP handler using CGI or a sequential listener.",
+                "lm.cli_serve:cmd_serve"),
+        Command("build", "build [--serve] MOD.FN [PATH..] [-o OUT] [--target go|py] "
                 "[--os linux|darwin] [--arch amd64|arm64] [--no-contracts] "
                 "[--keep-go DIR]", "Build a native binary or Python script.",
                 "lm.build:cmd_build"),

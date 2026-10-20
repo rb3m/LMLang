@@ -641,10 +641,10 @@
   }
  ],
  "s6": {
-  "approved": 6,
+  "approved": 13,
   "fail": 0,
   "guard": "OK",
-  "pass": 6,
+  "pass": 13,
   "proposed": 0
  },
  "tasks": 13

@@ -1,0 +1,29 @@
+(module entry
+  (purpose "Invalid server entry selections.")
+  (use http)
+  (fn declared-fails
+    (purpose "Reject a handler with declared failures.")
+    (sig (request http.Request) -> http.Response)
+    (eff io.out)
+    (fails DivZero)
+    (body (new http.Response (status 200) (headers (list)) (body ""))))
+  (fn no-params
+    (purpose "Reject missing request parameter.")
+    (sig -> Int)
+    (example () => 0)
+    (body 0))
+  (fn two-params
+    (purpose "Reject a handler with more than one request argument.")
+    (sig (first http.Request) (second http.Request) -> http.Response)
+    (eff io.out)
+    (body (new http.Response (status 200) (headers (list)) (body ""))))
+  (fn wrong-param
+    (purpose "Reject non-request parameter independently of result type.")
+    (sig (n Int) -> http.Response)
+    (example (0) => (new http.Response (status 200) (headers (list)) (body "")))
+    (body (new http.Response (status 200) (headers (list)) (body ""))))
+  (fn wrong-return
+    (purpose "Reject non-response result.")
+    (sig (request http.Request) -> Int)
+    (eff io.out)
+    (body 0)))

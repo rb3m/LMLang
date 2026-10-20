@@ -97,19 +97,21 @@ def _check_prims(irp):
         raise BuildError(f"no Go implementation for prim(s): {names}; add them to lm/runtime/go/prims.go")
 
 
-def build(prog, f, out: Path, goos=None, goarch=None, contracts=True, keep_go=None, go=None):
+def build(prog, f, out: Path, goos=None, goarch=None, contracts=True,
+          keep_go=None, go=None, serve=False):
     """Compile entry fn `f` (FnInfo) of a checked program to the binary `out`."""
     go = go or find_go()
     if go is None:
         raise BuildError(GO_MISSING, 3)
-    problem = entry_problem(f)
+    from .serve_entry import serve_problem
+    problem = serve_problem(f) if serve else entry_problem(f)
     if problem:
         raise BuildError(problem, 3)
     irp = lower(prog, [f.qual])
     _check_prims(irp)
     node = f.node
     site = Site(f.mod.file, node.line, node.col, f"{f.mod.name}/{f.name}", f.qual)
-    src = gobackend.emit_main(irp, f.qual, site, contracts)
+    src = gobackend.emit_main(irp, f.qual, site, contracts, serve=serve)
     if keep_go:
         write_sources(src, Path(keep_go))
         go_build(go, Path(keep_go), out, goos, goarch)
@@ -119,16 +121,17 @@ def build(prog, f, out: Path, goos=None, goarch=None, contracts=True, keep_go=No
         go_build(go, Path(tmp), out, goos, goarch)
 
 
-def build_py(prog, f, out: Path, contracts: bool = True):
+def build_py(prog, f, out: Path, contracts: bool = True, serve=False):
     """Compile entry fn `f` (FnInfo) of a checked program to a self-contained Python script."""
-    problem = entry_problem(f)
+    from .serve_entry import serve_problem
+    problem = serve_problem(f) if serve else entry_problem(f)
     if problem:
         raise BuildError(problem, 3)
     irp = lower(prog, [f.qual])
     pybackend.check_features(irp)
     node = f.node
     site = Site(f.mod.file, node.line, node.col, f"{f.mod.name}/{f.name}", f.qual)
-    src = pybackend.emit_main(irp, f.qual, site, contracts)
+    src = pybackend.emit_main(irp, f.qual, site, contracts, serve=serve)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(src, encoding="utf-8")
     out.chmod(out.stat().st_mode | 0o755)
@@ -178,7 +181,8 @@ def run_examples_go(prog, modules, go=None, keep_go=None) -> dict:
 
 def _parse(args):
     """-> (flags, positionals); raises BuildError(code 3) on bad usage."""
-    spec = {"-o": True, "--os": True, "--arch": True, "--keep-go": True, "--no-contracts": False, "--target": True}
+    spec = {"-o": True, "--os": True, "--arch": True, "--keep-go": True,
+            "--no-contracts": False, "--target": True, "--serve": False}
     flags, pos, i = {}, [], 0
     while i < len(args):
         a = args[i]
@@ -218,29 +222,35 @@ def cmd_build(args, static, report) -> int:
     try:
         flags, pos = _parse(args)
         target = flags.get("--target", "go")
-        go = None
-        if target == "go":
-            go = find_go()
-            if go is None:
-                raise BuildError(GO_MISSING, 3)
         mname, fname = pos[0].split(".", 1)
         for p in pos[1:]:
             if not Path(p).exists():
                 raise BuildError(f"no such path: {p}", 3)
         prog, _ = static(pos[1:], extra=[mname])
-        if report(prog.diags, lambda e, w: ""):
+        serve = "--serve" in flags
+        if serve:
+            from .serve_entry import check_serve
+            check_serve(prog, pos[0])
+        if report(prog.diags, lambda e, w: "",
+                  stream=sys.stderr if serve else None):
             return 1
+        go = None
+        if target == "go":
+            go = find_go()
+            if go is None:
+                raise BuildError(GO_MISSING, 3)
         if mname not in prog.modules or fname not in prog.modules[mname].fns:
             raise BuildError(f"no function `{pos[0]}`", 3)
         fn_info = prog.modules[mname].fns[fname]
         if target == "py":
             out = Path(flags.get("-o", f"{fname}.py"))
-            build_py(prog, fn_info, out, "--no-contracts" not in flags)
+            build_py(prog, fn_info, out, "--no-contracts" not in flags, serve=serve)
             sys.stderr.write(f"build: wrote {out} ({out.stat().st_size // 1024} KB, python)\n")
         else:
             out = Path(flags.get("-o", mname if fname == "main" else f"{mname}-{fname}"))
             build(prog, fn_info, out, flags.get("--os"), flags.get("--arch"),
-                  "--no-contracts" not in flags, flags.get("--keep-go"), go)
+                  "--no-contracts" not in flags, flags.get("--keep-go"), go,
+                  serve=serve)
             target_str = f"{flags.get('--os', 'host')}/{flags.get('--arch', 'host')}"
             sys.stderr.write(f"build: wrote {out} ({out.stat().st_size // 1024} KB, {target_str})\n")
     except (BuildError, pybackend.BuildError) as ex:

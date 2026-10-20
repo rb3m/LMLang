@@ -34,8 +34,9 @@ class SpecFixtures(unittest.TestCase):
         covered = set()
         for e in list(CHECK.glob("*.expect")) + list(CHECK.glob("*/expect")) + list((ROOT / "tests/spec/run").glob("*.expect")):
             covered |= set(e.read_text().split())
-        # E-EFFECT-DENIED needs CLI flags; E-PROOF-VIOLATED needs --no-contracts (ADR-061)
-        later = {"E-EFFECT-DENIED", "E-PROOF-VIOLATED"}
+        # These need entry flags; E-SERVE fixtures live in tests/spec/serve
+        # and run through test_serve_entry.py for both adapter commands.
+        later = {"E-EFFECT-DENIED", "E-PROOF-VIOLATED", "E-SERVE"}
         from lm.diag import CODES
         # Acceptance files have fixtures in test_accept_validation.py.
         separate = {"E-NONCANONICAL", "E-SCENARIO"}

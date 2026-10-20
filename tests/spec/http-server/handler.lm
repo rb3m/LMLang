@@ -1,0 +1,65 @@
+(module handler
+  (purpose "HTTP adapter fixture with deterministic valid and faulty responses.")
+  (use http list math str)
+  (fn contracted
+    (purpose "Trigger a runtime postcondition fault for adapter isolation.")
+    (sig (text Str) -> Str)
+    (ensures (= result "okay"))
+    (example ("okay") => "okay")
+    (body text))
+  (fn handle
+    (purpose "Echo request fields or exercise a response validation boundary.")
+    (sig (req http.Request) -> http.Response)
+    (example
+      ((new http.Request (method "GET") (target "/") (query "x=1") (headers (list)) (body "")))
+      =>
+      (new http.Response (status 200) (headers (list (pair "X-Reply" "yes"))) (body "GET|/|x=1||")))
+    (body
+      (let
+        (
+          (path (get req target))
+          (text
+            (str.join
+              (list
+                (get req method)
+                path
+                (get req query)
+                (str.join
+                  (list.map
+                    (get req headers)
+                    (lam (p) (match p ((pair k v) (str.concat (str.concat k "=") v)))))
+                  ";")
+                (get req body))
+              "|")))
+        (new
+          http.Response
+          (status
+            (if
+              (= path "/high-status")
+              600
+              (if
+                (= path "/bad-status")
+                199
+                (if
+                  (= path "/no-content")
+                  204
+                  (if (= path "/reset-content") 205 (if (= path "/not-modified") 304 200))))))
+          (headers
+            (if
+              (= path "/bad-header-name")
+              (list (pair "bad name" "yes"))
+              (if
+                (= path "/bad-header-value")
+                (list (pair "X-Test" "é"))
+                (if
+                  (= path "/framing")
+                  (list (pair "cOnTeNt-LeNgTh" "0"))
+                  (if
+                    (= path "/injection")
+                    (list (pair "X-Test" "bad\u{d}\nvalue"))
+                    (list (pair "X-Reply" "yes")))))))
+          (body
+            (if
+              (= path "/contract")
+              (contracted (get req body))
+              (if (= path "/fault") (str.from-int (+ (math.int-max) 1)) text))))))))

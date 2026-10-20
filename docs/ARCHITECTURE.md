@@ -53,6 +53,9 @@ lm/
   cli_query.py index/slice/callers/deps/hash/explain commands
   cli_edit.py  edit operation CLI
   cli_run.py   function runner CLI
+  cli_serve.py named HTTP handler interpreter entry; serve_entry.py E-SERVE selection checks; serve_options.py shared Python entry flags
+  http_server.py shared CGI, response validation, own sequential HTTP parser/listener for interpreter and embedded Python target
+  http_helpers.py strict percent/UTF-8 decoding; query field splitting stays in stdlib/http.lm
   cli_accept.py acceptance scenario CLI
   ir.py        target-neutral IR (expression tree, LM names unmangled) + free_locals (ADR-035)
   lower.py     checked Program -> IR for the fns reachable from roots; lower_examples() for the differential harness
@@ -62,13 +65,15 @@ lm/
   pybackend.py PyGen core: linear code emitter, function generation, contract wrappers, emit_main/emit_cases (ADR-062)
   pybackend_expr.py PyExprMixin: expression emitters, pattern matching, loop lowering
   pybackend_embed.py mechanical embedding and reachability filtering of runtime sources (tree, float math, coll/rand/json/io/http/proc prims)
+  pybackend_source.py shared source cleaning and namespace wrapping for mechanical embedding
   pybackend_names.py shared Python name mangling and literal formatting
   build.py     `lm build`: target dispatch (`go` or `py`), entry check (ADR-031), write sources, invoke compiler/set executable; run_examples_go(), run_examples_py()
   runtime/go/  Go runtime copied next to the generated main.go: value.go (values, equality, show),
                rt.go (fail/fault, checked Int ops, calls, stdout, entry/harness), prims.go (ONE func per prim; prims_text.go: M10 str prims; prims_system.go: env and filesystem additions; prims_http.go: HTTP client; prims_proc.go and proc_*.go: subprocesses; http_wire.go: bounded header/trailer capture; http_roots.go: system TLS roots without environment overrides; link_darwin.go/link_other.go: hard links without following symlinks),
                float.go (checked Float ops without FMA, canonical text = Python repr, Float prims),
+               server_http.go (CGI, validation, framing, URL decoder), server_listener.go (net.Listen and own HTTP/1 parser), server_entry.go (CGI/listener startup),
                coll.go (Map/Set AVL tree, mapOf/setOf, map/set prims), rand.go (clock/random), json.go (JSON), pat*.go (pattern compiler and Pike VM)
-  runtime/py/  Python runtime embedded into standalone Python build outputs: rt.py (values, checked Int/Float ops, calls, depth accounting, prims), entry.py (CLI entry/runner, diagnostics, seed)
+  runtime/py/  Python runtime embedded into standalone Python build outputs: rt.py (values, checked Int/Float ops, calls, depth accounting, prims), entry.py (CLI entry/runner, diagnostics, seed), serve.py (named handler conversion and CGI/listener entry)
 stdlib/        list.lm vec.lm pair.lm str.lm opt.lm map.lm set.lm math.lm float.lm io.lm env.lm fs.lm http.lm proc.lm time.lm date.lm rand.lm json.lm pat.lm (LM source over lm/prims.py primitives; date is pure LM)
 src/           user programs
 examples/      sample projects used by tests and bench
@@ -116,6 +121,8 @@ Entry points: `sexpr` (Atom kinds int|str|sym|type; SList) -> `ast.canonicalize(
 - **Native and script builds** (ADR-026/032/033/062): the interpreter is the oracle. `lower.py` makes every runtime decision of `interp.py` explicit (call kinds, captures, match tests, fail/try, contracts with sites); a backend is a printer plus a runtime. `gobackend` targets Go (`Value = any`, fail as panic caught by try's deferred recover, faults as panics caught by entry); `pybackend` targets Python (emits a standalone self-contained script with embedded runtime `lm/runtime/py/rt.py`). Both count LM call depth so runaway recursion is a fault (E-RECURSION-LIMIT) instead of an uncontrolled host stack crash.
 - **Adding a prim**: Python in `lm/prims.py` (PRIMS table), Go in `lm/runtime/go/prims.go` or a family sibling (`func prim_<name>(args Value..) Value`, `.`/`-` -> `_`), and Python backend runtime in `lm/runtime/py/rt.py` (`prim_<name>(*args)`) or an embedded source plus wrappers in `pybackend_embed.py` (filesystem and env share `io_prims.py`, HTTP shares `http_prims.py`, subprocesses share `proc_prims.py`); `tests/unit/test_gobackend.py` fails if the Go twin is missing. Every effectful primitive needs fake-world routing or an explicit check-time rejection of unsupported examples; missing routes fault without accessing the host.
 
+- **HTTP server** (ADR-076): handlers are named `http.Request -> http.Response` functions selected by `serve`/`build --serve`, checked by `serve_entry.py` before lowering. The interpreter and standalone Python share mechanically embedded `http_server.py` and `serve_options.py`; Go uses `server_*.go`, `net.Listen` and its own bounded parser (no net/http server). Adapters construct Request values, invoke one handler, validate the entire Response, then frame bytes. Handler output goes to stderr and faults produce JSON there; stdout remains CGI protocol only. CGI reads one environment/stdin request; listener connections are sequential and close after one request. Host-free memory/pipe tests and three-target CGI/raw-socket fixtures pin parity, limits and fault recovery.
+
 ## Error handling policy
 
 Effects/fails are accumulated during checking (not a separate pass): `Checker.effs` and a stack of `frames` (one per active `try`); `sandbox()` isolates lambdas, contracts and examples. Callee effects/fails come from the callee's *declared* signature, so check order never matters.
@@ -124,4 +131,4 @@ Phases never raise on user-program faults; they append `Diagnostic`. Exceptions 
 
 ## Future (not in v0)
 
-Content-addressed store (`.lm/store`, hash -> AST) with text as a rendered view; a Python backend over the M8 IR for the server (ADR-027); `lm serve` (JSON-RPC, keeps Program in memory); alpha-normalized hashes.
+Content-addressed store (`.lm/store`, hash -> AST) with text as a rendered view; WSGI and richer HTTP hosting; alpha-normalized hashes.

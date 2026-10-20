@@ -172,6 +172,7 @@ class GoGen(GoExprMixin):
         for r in sorted(self.prog.records):
             fields = ", ".join(golit(x) for x in self.prog.records[r])
             value = ("httpResponseType" if r == "http.Response" else
+                     "httpRequestType" if r == "http.Request" else
                      "procResultType" if r == "proc.Result" else
                      "patMatchType" if r == "pat.Match" else
                      f"&RecType{{{golit(r)}, []string{{{fields}}}}}")
@@ -199,10 +200,13 @@ class GoGen(GoExprMixin):
         return "\n".join(self.header(const_lines) + body + self.lifted + main_lines) + "\n"
 
 
-def emit_main(prog: ir.Program, entry: str, entry_site: ir.Site, contracts: bool = True) -> str:
+def emit_main(prog: ir.Program, entry: str, entry_site: ir.Site,
+              contracts: bool = True, serve=False) -> str:
     g = GoGen(prog, contracts)
     s = g.site(entry_site)
-    main = ["func main() {", f"\trunMain(func() Value {{ return {mangle(entry, 'F_')}() }}, {s})", "}"]
+    call = (f"runServe(func(req Value) Value {{ return {mangle(entry, 'F_')}(req) }}, {s})"
+            if serve else f"runMain(func() Value {{ return {mangle(entry, 'F_')}() }}, {s})")
+    main = ["func main() {", f"\t{call}", "}"]
     return g.program(main)
 
 

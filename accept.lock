@@ -1,6 +1,13 @@
 2b4971b59ef930ca Rectangle area	# approved 2026-10-18 by owner: "approved both ✅"
 33f6676a0fbe7599 Circle area uses real pi	# approved 2026-10-18 by owner: "approved both ✅"
+3f3d85910b2b7fc6 Subprocess signal is a result	# approved 2026-10-19 by owner: "sounds good. all approved."
 43d216559dfe4ed4 Scaling multiplies every dimension	# approved 2026-10-17 by owner: "approved all three ✅"
+51c44ce72876184b Subprocess nonzero exit is a result	# approved 2026-10-19 by owner: "sounds good. all approved."
 72c0de7bc159765c Unsupported region is rejected
+9a4c4ca0ebca10e3 Subprocess receives exactly the explicit environment	# approved 2026-10-19 by owner: "sounds good. all approved."
+a042fbd469bd7de0 Subprocess uses the requested working directory	# approved 2026-10-19 by owner: "sounds good. all approved."
 a751caf370ad88e5 VAT rounds down to whole cents
+b48b7e96f129665d Subprocess captures separate output streams	# approved 2026-10-19 by owner: "sounds good. all approved."
 d0af76235f20c917 Order with Mexican VAT
+f777fbd9def4114d Subprocess bounds captured output	# approved 2026-10-19 by owner: "sounds good. all approved."
+f7f07eb2b92393da Subprocess rejects invalid UTF-8 output	# approved 2026-10-19 by owner: "sounds good. all approved."

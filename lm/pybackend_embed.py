@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from . import ir
+from .pybackend_source import clean_source, wrap_module
 
 LM_DIR = Path(__file__).resolve().parent
 
@@ -72,31 +73,6 @@ FLOAT_PRIM_DEFS = {
     "float.hypot": 'prim_float_hypot = float_math_prim("float.hypot", hypot)',
     "float.pow": 'prim_float_pow = float_math_prim("float.pow", pow)',
 }
-
-
-def clean_source(text: str) -> str:
-    lines = []
-    for line in text.splitlines():
-        trimmed = line.strip()
-        if trimmed.startswith("from .") or trimmed.startswith("from __future__"):
-            continue
-        lines.append(line)
-    return "\n".join(lines)
-
-
-def wrap_module(text: str, ns_name: str) -> str:
-    cleaned = clean_source(text)
-    indented = "\n".join(("\t" + l if l.strip() else "") for l in cleaned.splitlines())
-    return (
-        f"def _make_{ns_name}():\n"
-        f"{indented}\n"
-        f"\tclass _Mod: pass\n"
-        f"\t_m = _Mod()\n"
-        f"\tfor _k, _v in list(locals().items()):\n"
-        f"\t\tif not _k.startswith('_make_'): setattr(_m, _k, _v)\n"
-        f"\treturn _m\n"
-        f"{ns_name} = _make_{ns_name}()\n"
-    )
 
 
 def _has_map_set(e) -> bool:
@@ -268,7 +244,8 @@ def prim_time_mono_ms(): return time.monotonic_ns() // 1_000_000
 """
 
 
-def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False) -> str:
+def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False,
+                              serve=False) -> str:
     parts = [
         "class _It:",
         "\t@staticmethod",
@@ -276,6 +253,17 @@ def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False) -> s
         "_it = _It()",
         "",
     ]
+
+    if serve:
+        parts.append(wrap_module(
+            (LM_DIR / "http_server.py").read_text(encoding="utf-8"), "server_mod"))
+        parts.append(clean_source(
+            (LM_DIR / "serve_options.py").read_text(encoding="utf-8")))
+
+    if "http.url-decode" in prog.prims:
+        parts.append(wrap_module(
+            (LM_DIR / "http_helpers.py").read_text(encoding="utf-8"), "http_helpers_mod"))
+        parts.append("def prim_http_url_decode(s): return http_helpers_mod.url_decode(None, s)")
 
     if vec_literals or has_vec(prog):
         parts.extend([

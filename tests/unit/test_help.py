@@ -103,7 +103,12 @@ class HelpTests(unittest.TestCase):
                 self.assertTrue(any(isinstance(node, ast.FunctionDef)
                                     and node.name == function
                                     for node in tree.body))
-                literals = [node.value for node in ast.walk(tree)
+                # Server entry parsing is shared with standalone Python builds.
+                trees = [tree]
+                if name == "serve":
+                    trees.append(ast.parse(
+                        (ROOT / "lm/serve_options.py").read_text()))
+                literals = [node.value for tree in trees for node in ast.walk(tree)
                             if isinstance(node, ast.Constant)
                             and isinstance(node.value, str)]
                 for flag in re.findall(r"--[a-z][a-z-]*", command.synopsis):

@@ -105,6 +105,9 @@ boolean sanity checks rather than comparing host timestamps.
 
 HTTP tests compare the interpreter, standalone Python output and Go binary against offline servers bound to loopback. A threaded `http.server`/`socketserver` fixture covers ordinary requests and a raw-socket fixture pins duplicate-header arrival order, chunked and truncated bodies, oversized headers/bodies, slow responses, invalid UTF-8 and 3xx responses without redirect following. HEAD and empty bodies are explicit cases; truncated bodies must fail with category `connect`. A self-signed loopback HTTPS server must fail `tls`. No test contacts the internet.
 
+If the host denies loopback binding, the client fixture and server socket suite
+report explicit skips; their host-free wire and pipe suites still run.
+
 Complementary host-free wire tests feed in-memory sockets to the interpreter and emitted Python runtime, while Go uses `net.Pipe`. These pin framing, header-byte and field-count boundaries, duplicate ordering, UTF-8, fixed error categories and deadlines without a listening socket. Aggregate header limits include informational blocks, final headers and trailers; only final response headers are returned. These tests complement the real loopback suite and can run where binding a server socket is unavailable.
 
 Request validation is exercised before host access: schemes, hosts, ports, methods, forbidden headers, header injection and size limits. Tests also pin localhost's direct loopback connection, ignored proxy settings, verified system TLS trust, no automatic decompression and category-only error messages. Network mocks in examples remain unsupported; a spec fixture pins the check-time E-EXAMPLE and unit tests pin fail-closed fake-world dispatch.
@@ -116,6 +119,42 @@ Production limits remain 5 seconds to connect and a 30-second total deadline inc
 `test_proc.py` runs the same real-process assertions in the interpreter, standalone Python and Go. Absolute `/bin/sh -c` scripts cover capture, nonzero exit, signals, exact environment, cwd, large simultaneous input/output, strict UTF-8, start failures, validation boundaries, timeout and combined output overflow. Timeout tests record a grandchild PID and check that process-group cleanup removes it with `kill -0`. Limits may be shortened only by patching internal constants in temporary runtime copies or in the interpreter test process; shipped limits stay fixed and no environment variable/flag changes them. The added suite targets less than 20 seconds with cached Go builds and skips Go visibly when unavailable.
 
 `given (proc (argv S...) (stdin S)? (cwd S)? (env K V)* OUTCOME)` scripts exact calls in order. Outcomes are `(exited N (stdout S)? (stderr S)?)`, `(signaled N)` or `(error "category")`; SPEC 5 lists categories and validation. The fake world validates requests first, never spawns, and fails with a call index for mismatches, exhausted or unused entries. Fixtures cover each E-EXAMPLE shape/type/effect rule and mocked outcomes; fmt/slice/explain must preserve the clauses. `which` examples use fake files. Proposed subprocess acceptance scenarios remain owner review material; deadline cleanup is verified by real-process tests because the acceptance harness cannot shorten fixed limits or inspect descendant PIDs.
+
+### HTTP server adapters (ADR-076)
+
+`tests/spec/serve/entry.lm` plus `entry.expect` pin E-SERVE selection for wrong
+handler arity, parameter/return types, declared failures and unknown functions.
+`test_serve_entry.py` exercises interpreter and both build targets. The companion
+`effects.lm` fixture pins startup E-EFFECT-DENIED before reading or binding,
+explicit interpreter permission, built effect grants and stderr-only handler output. Ordinary
+Request examples and `tests/spec/run/http-server-helpers.lm` pin record fields,
+strict percent decoding, plus handling, empty query fields and duplicate order.
+The pure helper examples also enter the compiled differential corpus.
+
+`tests/spec/http-server/handler.lm` and `cgi.json` are environment-plus-stdin
+fixtures with exact output bytes. `test_http_server.py` executes them against
+`lm serve --cgi`, standalone Python and Go outside the repository. Cases cover
+query/header mapping and sorting, POST/Unicode, missing URI, invalid UTF-8,
+8 MiB rejection, HEAD, no-body statuses, prohibited framing/injection, invalid
+status and JSON faults on stderr. The same test module drives real raw-socket
+listeners on port 0 and compares all three transports, including limits, framing,
+version/method rejection, deadline 408, interim 100, duplicate arrival order,
+HEAD, Unicode and a request following a handler fault. Public bind refusal is
+verified before socket creation. Binding blocked by the sandbox is reported as a
+visible skip; the real listener suite must also run on a machine permitting binds.
+
+Host-free tests in `test_http_server_wire.py` exercise the shared source and its
+mechanically embedded Python copy. `test_http_server_go.py` compiles
+`http_fixtures/server_test.go` and uses `net.Pipe`, testing exact size/count
+boundaries, parser rejection, deadlines, Expect, framing and fault recovery
+without listening sockets. Production deadlines remain 10 seconds for headers
+and 30 seconds for a whole request. Fast tests patch only internal clocks or
+temporary generated runtime constants; no user flag/environment override exists.
+The added HTTP server tests target less than 30 seconds with cached Go builds.
+Deadline regressions also check reads completing after their absolute deadline,
+even when the full header or body is already buffered. CGI uses QUERY_STRING
+as the authoritative query, independently of the query portion of REQUEST_URI.
+Deployment instructions are in `docs/DEPLOY-CGI.md`.
 
 ## Fixture layout and commands
 

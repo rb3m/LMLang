@@ -1,7 +1,12 @@
 (module http
-  (purpose "Bounded HTTP requests with verified TLS and loopback plaintext.")
-  (export HttpError Response fetch request)
+  (purpose "HTTP client, request records and strict query decoding.")
+  (use str)
+  (export BadEncoding HttpError Request Response fetch query-pairs request url-decode)
+  (type
+    Request
+    (rec (method Str) (target Str) (query Str) (headers (List (Pair Str Str))) (body Str)))
   (type Response (rec (status Int) (headers (List (Pair Str Str))) (body Str)))
+  (error BadEncoding (s Str))
   (error HttpError (url Str) (msg Str))
   (fn fetch
     (purpose "Fetch a URL using GET, no caller headers and an empty body.")
@@ -9,9 +14,57 @@
     (eff net.http)
     (fails HttpError)
     (body (request "GET" url (list) "")))
+  (fn query-fields
+    (purpose "Decode nonempty query fields in order.")
+    (sig (fields (List Str)) -> (List (Pair Str Str)))
+    (fails BadEncoding)
+    (example ((list)) => (list))
+    (example
+      ((list "" "a=one+two" "a=%2B" "flag"))
+      =>
+      (list (pair "a" "one two") (pair "a" "+") (pair "flag" "")))
+    (body
+      (match
+        fields
+        ((list) (list))
+        (
+          (cons field rest)
+          (if
+            (= field "")
+            (query-fields rest)
+            (match
+              (str.split field "=")
+              ((list) (query-fields rest))
+              (
+                (cons key values)
+                (cons
+                  (pair
+                    (url-decode (str.replace key "+" " "))
+                    (url-decode (str.replace (str.join values "=") "+" " ")))
+                  (query-fields rest)))))))))
+  (fn query-pairs
+    (purpose "Decode query fields, keeping duplicates and replacing plus with space.")
+    (sig (q Str) -> (List (Pair Str Str)))
+    (fails BadEncoding)
+    (example ("") => (list))
+    (example
+      ("&a=one+two&a=%2B&flag&b=x=y&")
+      =>
+      (list (pair "a" "one two") (pair "a" "+") (pair "flag" "") (pair "b" "x=y")))
+    (example ("x=%FF") => (fail BadEncoding "%FF"))
+    (body (query-fields (str.split q "&"))))
   (fn request
     (purpose "Send one HTTP request; non-2xx responses are ordinary results.")
     (sig (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) -> Response)
     (eff net.http)
     (fails HttpError)
-    (body (prim "http.request"))))
+    (body (prim "http.request")))
+  (fn url-decode
+    (purpose "Decode percent escapes as strict UTF-8; keep plus signs.")
+    (sig (s Str) -> Str)
+    (fails BadEncoding)
+    (example ("a%20b+c") => "a b+c")
+    (example ("%C3%A9") => "é")
+    (example ("%GG") => (fail BadEncoding "%GG"))
+    (example ("%FF") => (fail BadEncoding "%FF"))
+    (body (prim "http.url-decode"))))

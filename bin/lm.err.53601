@@ -1,0 +1,4 @@
+listening on http://127.0.0.1:56975
+{"code":"E-REQUIRES-VIOLATED","severity":"error","file":"src/web.lm","line":7,"col":5,"path":"web/halve/requires#0","msg":"requires of web.halve is false for arguments (0)","expected":"","found":"(0)","fix":[]}
+{"code":"E-SERVE","severity":"error","file":"","line":1,"col":1,"path":"","msg":"HTTP handler fault","expected":"","found":"","fix":[]}
+{"code":"E-SERVE","severity":"error","file":"","line":1,"col":1,"path":"","msg":"HTTP handler fault","expected":"","found":"","fix":[]}

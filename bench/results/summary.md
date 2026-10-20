@@ -7,7 +7,7 @@
 | S3 injected hallucinations caught by check | >= 90% | 42/43 = 98% |
 | S4 tasks green within 2 iterations | >= 80% | first try 10/13; within 2: 13/13 = 100% |
 | S5 LM tokens vs Python | <= 1.3x | 1.28x vs Python with docstrings+examples+asserts; 2.86x vs bare Python |
-| S6 approved scenarios pass, guard OK | 100% | 6/6 pass, guard OK |
+| S6 approved scenarios pass, guard OK | 100% | 13/13 pass, guard OK |
 
 S1 against the module file alone (the Python-style unit of reading): median 56.0%, max 129.9%.
 S5 sensitivity, punctuation runs counted once (closer to real BPE tokenizers): 1.27x vs full Python. The decision uses the ADR-012 number above.
@@ -67,3 +67,23 @@ Equivalence: 13 tasks, LM and Python agree with the declared expectations on eve
 | 11-dot | 164 | 131 | 53 |
 | 12-gcd | 267 | 205 | 83 |
 | 13-greet | 126 | 84 | 41 |
+
+## S5 with the Anthropic tokenizer (ADR-051 item 5; dev-only)
+
+Model `claude-opus-5-5`, API version `2023-06-01`, framing: one user message = source text; framing overhead 8 tokens subtracted (net). Median LM/Python: 1.30x vs full Python (OPEN (target <= 1.3x)); 3.00x vs bare Python.
+
+| task | LM net | Python full net | Python bare net |
+|---|---|---|---|
+| 01-cart | 495 | 382 | 155 |
+| 02-fizz | 338 | 269 | 125 |
+| 03-stats | 438 | 289 | 106 |
+| 04-primes | 369 | 279 | 121 |
+| 05-collatz | 237 | 182 | 79 |
+| 06-search | 388 | 312 | 141 |
+| 07-bank | 658 | 531 | 243 |
+| 08-grades | 505 | 419 | 197 |
+| 09-perimeter | 415 | 384 | 181 |
+| 10-roman | 393 | 256 | 175 |
+| 11-dot | 239 | 174 | 71 |
+| 12-gcd | 379 | 281 | 104 |
+| 13-greet | 181 | 107 | 56 |

@@ -6,6 +6,7 @@ import socketserver
 import ssl
 import threading
 import time
+import unittest
 
 
 LIMIT = 8 * 1024 * 1024
@@ -138,7 +139,10 @@ def serving(tls=False):
         directory = Path(__file__).with_name('http_fixtures')
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(directory / 'cert.pem', directory / 'key.pem')
-    server = Server(context)
+    try:
+        server = Server(context)
+    except PermissionError as ex:
+        raise unittest.SkipTest(f'host blocks loopback socket bind: {ex}') from ex
     thread = threading.Thread(target=server.serve_forever,
                               kwargs={'poll_interval': 0.02}, daemon=True)
     thread.start()

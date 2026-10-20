@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass, field
 
 CODES = {
     "E-PARSE": "error",
+    "E-SERVE": "error",
     "E-SCENARIO": "error",
     "E-NONCANONICAL": "warning",
     "E-PURPOSE-MISSING": "error",

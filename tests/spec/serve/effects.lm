@@ -1,0 +1,9 @@
+(module effects
+  (purpose "Serve effect permissions and protocol output isolation.")
+  (use http io)
+  (fn handle
+    (purpose "Log a line and respond using declared output access.")
+    (sig (request http.Request) -> http.Response)
+    (eff io.out)
+    (body
+      (do (io.print "handler-log") (new http.Response (status 200) (headers (list)) (body "ok"))))))

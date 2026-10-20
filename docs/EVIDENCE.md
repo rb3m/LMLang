@@ -84,3 +84,7 @@ A fresh Codex session (gpt-6.1-sol, medium effort, `codex exec -s workspace-writ
 - Verified by Claude: check, test and guard green; native binary output and exit statuses match the spec on all six behaviors tried.
 - Gaps: guessed `(allow io.out fs.read)`, rejected only by `accept --review` while `check`, `test` and `accept --guard` stayed green (confirmed, backlog 24); a scenario must allow every effect the target declares; `lm run` prints the returned Int and exits 0 (now documented); errors went to stdout because the guide did not mention `io.eprint` (now added). Setup gaps: stock macOS python3 3.9 crashed (now a clear message); Codex's read-only default sandbox made `lm new` fail with a traceback (now a message).
 - Caveat: Codex has written LM before (Roadster Lander) in other sessions; this session had no repo context, but the model is not naive to LM.
+
+## 2026-10-19 — S5 with the real tokenizer: 1.30x (just over target)
+
+`lm bench --tokenizer anthropic` (count_tokens, model `claude-opus-5-5`, framing overhead 8 tokens subtracted; free endpoint, no spend). Median LM/Python 1.302x vs Python with docstrings, examples and asserts (target <= 1.3x: OPEN by 0.002), 3.00x vs bare Python. The ADR-012 heuristic gave 1.28x on the same sources, so the heuristic slightly undercounts LM relative to Python. Largest ratios: greet 1.69x, stats 1.52x, roman 1.54x; smallest perimeter 1.08x. Raw and net counts with source hashes: bench/results/s5-anthropic.json.

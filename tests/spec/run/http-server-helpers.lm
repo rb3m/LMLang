@@ -1,0 +1,39 @@
+(module http-server-helpers
+  (purpose "Pin HTTP decoding and request records before adapters run.")
+  (use http)
+  (fn decode
+    (purpose "Decode strict UTF-8 percent escapes while keeping plus signs.")
+    (sig (s Str) -> Str)
+    (fails http.BadEncoding)
+    (example ("a%20b+c") => "a b+c")
+    (example ("%C3%A9") => "é")
+    (example ("%") => (fail http.BadEncoding "%"))
+    (example ("%GG") => (fail http.BadEncoding "%GG"))
+    (example ("%FF") => (fail http.BadEncoding "%FF"))
+    (example ("%C0%AF") => (fail http.BadEncoding "%C0%AF"))
+    (example ("é%20%F0%9F%8C%8D+") => "é 🌍+")
+    (example ("%A") => (fail http.BadEncoding "%A"))
+    (example ("%ED%A0%80") => (fail http.BadEncoding "%ED%A0%80"))
+    (example ("%F4%90%80%80") => (fail http.BadEncoding "%F4%90%80%80"))
+    (body (http.url-decode s)))
+  (fn method
+    (purpose "Read the named request record field.")
+    (sig (req http.Request) -> Str)
+    (example
+      ((new http.Request (method "gEt") (target "/") (query "") (headers (list)) (body "")))
+      =>
+      "gEt")
+    (body (get req method)))
+  (fn pairs
+    (purpose "Keep query duplicate order and split on the first equals only.")
+    (sig (q Str) -> (List (Pair Str Str)))
+    (fails http.BadEncoding)
+    (example
+      ("&a=one+two&&a=%2B&flag&=x&b=x=y&")
+      =>
+      (list (pair "a" "one two") (pair "a" "+") (pair "flag" "") (pair "" "x") (pair "b" "x=y")))
+    (example ("") => (list))
+    (example ("x=%FF") => (fail http.BadEncoding "%FF"))
+    (example ("a%2Bb=one%3Dtwo&+=%2B") => (list (pair "a+b" "one=two") (pair " " "+")))
+    (example ("%GG=x") => (fail http.BadEncoding "%GG"))
+    (body (http.query-pairs q))))
