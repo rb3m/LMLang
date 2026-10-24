@@ -5,6 +5,11 @@ import json
 from dataclasses import asdict, dataclass, field
 
 CODES = {
+    "E-DEPS": "error",
+    "E-DEP-UNFETCHED": "error",
+    "E-DEP-HASH": "error",
+    "E-DEP-UNPINNED": "error",
+    "E-DEP-EFFECT": "error",
     "E-PARSE": "error",
     "E-SERVE": "error",
     "E-SCENARIO": "error",
@@ -40,6 +45,10 @@ CODES = {
 }
 
 
+class ExternalFile(str):
+    """A cached source path retaining provenance through diagnostic creation."""
+
+
 @dataclass
 class Diagnostic:
     code: str
@@ -53,16 +62,20 @@ class Diagnostic:
     found: str = ""
     fix: list = field(default_factory=list)
     data: dict = field(default_factory=dict)  # code-specific structured fields; omitted when empty
+    ext: bool = False
 
     def to_json(self) -> str:
         d = asdict(self)
         if not d["data"]:
             del d["data"]
+        if not d["ext"]:
+            del d["ext"]
         return json.dumps(d, ensure_ascii=False, separators=(",", ":"))
 
 
 def make(code, file, line, col, msg, path="", expected="", found="", fix=None, data=None) -> Diagnostic:
-    return Diagnostic(code, CODES[code], file, line, col, path, msg, expected, found, fix or [], data or {})
+    return Diagnostic(code, CODES[code], file, line, col, path, msg, expected, found,
+                      fix or [], data or {}, ext=isinstance(file, ExternalFile))
 
 
 def has_errors(diags) -> bool:

@@ -1,0 +1,6 @@
+(module list
+  (purpose "External dependency.")
+  (fn value
+    (purpose "Return seven.")
+    (sig -> Int)
+    (body 7)))

@@ -32,7 +32,7 @@ class SpecFixtures(unittest.TestCase):
 
     def test_every_check_code_has_a_fixture(self):
         covered = set()
-        for e in list(CHECK.glob("*.expect")) + list(CHECK.glob("*/expect")) + list((ROOT / "tests/spec/run").glob("*.expect")):
+        for e in list(CHECK.glob("*.expect")) + list(CHECK.glob("*/expect")) + list((ROOT / "tests/spec/run").glob("*.expect")) + list((ROOT / "tests/spec/deps").glob("*/expect")):
             covered |= set(e.read_text().split())
         # These need entry flags; E-SERVE fixtures live in tests/spec/serve
         # and run through test_serve_entry.py for both adapter commands.

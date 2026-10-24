@@ -4,7 +4,7 @@ Open work only. Finished milestones (M0-M12) and completed backlog items are in 
 
 ## Current milestone
 
-None scheduled. Backlogs 3-6, 8, 9, 13-20 and 22-26 done (ADR-058..076); 21 in progress (a program used day to day is left); next: owner's pick. State: 13 acceptance scenarios approved by the owner; `lm build` verified on Linux and macOS; first DreamHost CGI run OK. Open thesis item: S5 measured with the Anthropic tokenizer is 1.302x vs the 1.3x target (heuristic 1.28x), still open by 0.002 (ADR-025, docs/EVIDENCE.md).
+None scheduled. Backlogs 3-6, 8, 9, 13-20 and 22-27 done (ADR-058..079); 21 in progress (a program used day to day is left); next: owner's pick. State: 13 acceptance scenarios approved by the owner; `lm build` verified on Linux and macOS; first DreamHost CGI run OK. Open thesis item: S5 measured with the Anthropic tokenizer is 1.302x vs the 1.3x target (heuristic 1.28x), still open by 0.002 (ADR-025, docs/EVIDENCE.md).
 
 Each milestone ends green on: unit tests, spec fixtures for its rules, `lm accept --guard`. Design by agent consensus (ADR-030); implementation delegated to Codex/agy first, Claude subagents only for the hardest parts.
 
@@ -37,6 +37,8 @@ Numbers are stable identifiers (commits and ADRs cite them); new items take the 
 25. (Done 2026-10-19, ADR-073: module `proc`, effect `proc.run`; scenarios proposed for owner review.) (Approved 2026-10-19, ADR-073: owner go-ahead; queued after 19.) (Queued 2026-10-19, split from 14; needs an owner decision, security.) Subprocesses: run a program with arguments (no shell), capture exit status, stdout and stderr; owner decides whether LM programs may run other programs at all, under which effect (e.g. `proc.run`), and limits (allowed commands, timeouts, environment passed through).
 
 26. (Done 2026-10-19: all `lm run` diagnostics on stderr, each reported once.) (Queued 2026-10-19.) `lm run` prints check warnings (JSON lines) on stdout before the program's own output, so piping a program's output picks them up; send them to stderr (found while verifying ADR-071).
+
+27. (Done 2026-10-24, ADR-078, ADR-079.) (Approved 2026-10-24, ADR-078: owner go-ahead.) Third-party modules: a project-level `lm.deps` pins each external module stem to a direct HTTPS URL and the SHA-256 of its bytes, covering the full transitive closure; `lm fetch` downloads and verifies into a hash-keyed cache; check/test/build stay offline and report unfetched or mismatched pins with a fetch fix op; collisions are renamed (ADR-047), no aliases. Hardened by ADR-079: per-pin effect allowances (default pure), no `proc.run`, externals use stdlib only.
 
 ## Working order inside a milestone
 

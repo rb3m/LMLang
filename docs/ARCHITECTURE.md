@@ -12,7 +12,8 @@ lm/
   printer.py   canonical text (single source of truth for formatting) + format_text()
   diag.py      Diagnostic dataclass, codes table, JSON emit
   program.py   shared model: ModInfo, FnInfo, TypeInfo, ErrInfo, VariantInfo, Program (modules, refs, calls, diags)
-  loader.py    find modules (src/, examples/, stdlib/, given paths), parse, canonicalize, link `use`, detect cycles
+  loader.py    find modules (src/, examples/, stdlib/, given paths, verified `lm.deps` pins), parse, canonicalize, link `use`, detect cycles
+  deps.py      `lm.deps` pins, hash-keyed cache, effect allowances, `lm fetch`; deps_http.py raw HTTPS download
   prelude.py   closed prelude tables, reserved words, effect set
   types.py     type tuples + Subst (unification with metas; generics via inst())
   resolve.py   Resolver: symbol tables, name lookup + diagnostics, fn signatures

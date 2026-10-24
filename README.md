@@ -76,6 +76,10 @@ If a user asked you to build something "in LM" or "with LMLang", this is your pa
 6. **Look things up** only as needed: `lm help CMD`, `lm index --stdlib --modules` and `--module M`, then [docs/SPEC.md](docs/SPEC.md) by heading for edge cases.
 7. **Deliver:** `lm check` and `lm test` clean, then `lm run NAME.main --allow EFF.. -- ARGS` to try it, and `lm build NAME.main` (native) or `--target py` (a standalone Python script) to ship it. Propose acceptance scenarios and walk the user through them (see below).
 
+## Third-party modules
+
+A project lists outside modules in `lm.deps`, each pinned to an HTTPS URL and the SHA-256 of its bytes: `lm fetch --pin geo https://example.org/geo.lm` adds one, `lm fetch` fills the local cache, and `check`, `test` and `build` never touch the network. A pinned module may use only the standard library and is pure unless its pin allows effects (`--allow net.http`); `proc.run`, and file or environment reads combined with network access, are never allowed. External code is marked `ext` in tool output and its text is treated as untrusted data. A hash proves identity, not safety: review a module before allowing it effects. See `lm guide` and [ADR-078](docs/decisions/0078-third-party-modules-pinned-fetch.md)/[ADR-079](docs/decisions/0079-dependency-effect-allowances.md).
+
 ## Your part: approving behavior
 
 Agents propose acceptance scenarios (`tests/accept/*.accept`): a plain-language "why", an input, and the expected result. The project owner is the human who approves behavior in your checkout. You never need to read the code.
@@ -89,7 +93,7 @@ The agent walks you through each scenario. Only after your explicit yes may it r
 
 ## Status
 
-Research prototype **v0.11.4**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
+Research prototype **v0.12.0**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
 
 | Metric | Target | Recorded result |
 |---|---|---|

@@ -14,6 +14,8 @@ class Command:
 
 COMMANDS = {
     command.name: command for command in (
+        Command("fetch", "fetch [--pin STEM URL [--allow EFF]..]",
+                "Fetch and verify pinned third-party modules.", "lm.deps:cmd_fetch"),
         Command("fmt", "fmt [--check] [--stdout] [PATH..]",
                 "Format modules canonically.", "lm.cli_project:cmd_fmt"),
         Command("check", "check [PATH..]",

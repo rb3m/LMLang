@@ -31,15 +31,17 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
     def run(self):
         self.clear_facts()
         self.build()
+        from .deps import check_effects
+        check_effects(self.prog)
         for n in sorted(self.prog.modules):
             m = self.prog.modules[n]
-            if m.is_target or self.check_all:
+            if m.report or self.check_all:
                 self.check_module(m)
         check_const_cycles(self.prog, self)
         eval_all_consts(self.prog, self)
         self.check_examples()
         for m in self.prog.modules.values():
-            if m.is_target or self.check_all:
+            if m.report or self.check_all:
                 self.check_uses(m)
 
     def check_module(self, m):

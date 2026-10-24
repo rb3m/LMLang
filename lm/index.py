@@ -85,14 +85,16 @@ class Index:
         out = []
         for m in mods:
             n = len(m.exported_fns) + len(m.exported_consts) + len(m.exported_caps)
-            out.append(f'{m.name}  {n} exports  {m.purpose or ""}')
+            prefix = "ext " if m.is_external else ""
+            out.append(f'{prefix}{m.name}  {n} exports  {m.purpose or ""}')
         return out
 
     def index_lines(self, mods, exported_only=False):
         out = []
         for m in mods:
+            prefix = "ext " if m.is_external else ""
             use = f"  (use {' '.join(u.value for u in m.uses)})" if m.uses else ""
-            out.append(f"module {m.name}  -- {m.purpose or ''}{use}")
+            out.append(f"{prefix}module {m.name}  -- {m.purpose or ''}{use}")
             for c in m.root.items[2:]:
                 h = head(c)
                 if h not in ("type", "error", "const", "fn"):
@@ -101,7 +103,7 @@ class Index:
                 exp = nm in m.exported_consts if h == "const" else nm in m.exported_fns if h == "fn" else nm in m.exported_caps
                 if exported_only and not exp:
                     continue
-                mark = "*" if exp else " "
+                mark = prefix + ("*" if exp else " ")
                 if h == "const":
                     ci = m.consts[nm]
                     t_str = flat(ci.clauses["type"][0].items[1]) if "type" in ci.clauses else "?"
@@ -200,7 +202,10 @@ class Index:
                     q = f"{mn}.{declaration_name(c).value}"
                     if q in items:
                         kids.append(self._node(q, items[q][1]))
-            out.append(print_module(SList((Atom("sym", "module"), Atom("sym", mn), *kids))))
+            text = print_module(SList((Atom("sym", "module"), Atom("sym", mn), *kids)))
+            if m.is_external:
+                text = "".join("ext " + line for line in text.splitlines(keepends=True))
+            out.append(text)
         return "".join(out)
 
     def slice(self, root, bodies=False, depth=1, budget=None):

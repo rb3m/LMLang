@@ -62,7 +62,8 @@ def cmd_index(args) -> int:
         for line in lines:
             print(line)
         return 0
-    mods = [prog.modules[n] for n in prog.targets]
+    mods = [prog.modules[n] for n in sorted(set(prog.targets) |
+                                          {n for n, m in prog.modules.items() if m.is_external})]
     for line in idx.index_lines(mods, "--exported" in flags):
         print(line)
     return 0

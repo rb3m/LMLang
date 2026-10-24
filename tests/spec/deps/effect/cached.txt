@@ -1,0 +1,7 @@
+(module geo
+  (purpose "External effect.")
+  (fn value
+    (purpose "Return seven.")
+    (sig -> Int)
+    (eff io.out)
+    (body 7)))

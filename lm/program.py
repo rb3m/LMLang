@@ -11,6 +11,7 @@ class ModInfo:
     is_stdlib: bool
     is_target: bool
     root: object  # canonical module SList
+    is_external: bool = False
     text: str = ""
     purpose: str | None = None
     purpose_node: object = None
@@ -30,7 +31,7 @@ class ModInfo:
 
     @property
     def report(self) -> bool:
-        return self.is_target
+        return self.is_target or self.is_external
 
 
 @dataclass
@@ -109,6 +110,7 @@ class VariantInfo:
 
 @dataclass
 class Program:
+    pins: dict = field(default_factory=dict)  # stem -> dependency Pin
     modules: dict = field(default_factory=dict)
     available: dict = field(default_factory=dict)  # module name -> Path
     diags: list = field(default_factory=list)

@@ -1,0 +1,2 @@
+(deps
+  (pin geo "https://example.org/geo.lm" "071a705262a089a6fb88154864d35281aa4ce9b8858a2cc6fd6ad9dad60425e8"))

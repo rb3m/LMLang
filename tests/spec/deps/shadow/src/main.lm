@@ -1,0 +1,7 @@
+(module main
+  (purpose "Pinned dependency fixture.")
+  (fn main
+    (purpose "Call the dependency.")
+    (sig -> Int)
+    (example () => 7)
+    (body 7)))

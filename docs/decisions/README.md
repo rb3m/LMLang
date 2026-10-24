@@ -85,3 +85,5 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-075](0075-text-patterns.md) Backlog 19: bounded Unicode-scalar Pike VM, opaque `pat.Pat`, captures and literal compile proofs (2026-10-19, agent consensus)
 - [ADR-076](0076-http-server.md) Backlog 15: HTTP server, named handler served as CGI or a sequential loopback listener (`--public` to expose), fixed limits and rejection codes (2026-10-19, agent consensus)
 - [ADR-077](0077-outside-author-game-findings.md) lm-arty outside-author findings: variant-export and E-DUP-NAME messages, `str.cat`; Float tolerance, templates and fmt order declined (2026-10-20, agent consensus)
+- [ADR-078](0078-third-party-modules-pinned-fetch.md) Third-party modules: one project-level declaration of hash-pinned HTTPS sources, explicit `lm fetch`, rename on collision (2026-10-24, agent consensus, owner approved)
+- [ADR-079](0079-dependency-effect-allowances.md) Dependency hardening: per-pin effect allowances (default pure), no `proc.run`, stdlib-only externals, provenance markers (2026-10-24, agent consensus)

@@ -1,0 +1,2 @@
+(deps
+  (pin list "https://example.org/list.lm" "55b78c304eff25fbdc18f1629e45d8806e3c6c4ed1b0b1df6774f574338458f1"))

@@ -4,7 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from .ast import canonicalize
-from .diag import has_errors, make
+from .diag import ExternalFile, has_errors, make
+from .deps import MANIFEST, cache_path, read_cached, read_pins
 from .printer import print_module
 from .program import ModInfo, Program
 from .sexpr import Atom, read
@@ -45,18 +46,42 @@ def load(paths, extra=(), defaults=True) -> Program:
             prog.available[f.stem] = f
     for t in targets:  # explicit targets are always available under their stem
         prog.available.setdefault(t.stem, t)
+    pins, diags = read_pins()
+    prog.diags.extend(diags)
+    prog.pins = {p.stem: p for p in pins}
+    external = {}
+    for pin in pins:
+        if pin.stem in prog.available:
+            prog.diags.append(make('E-DUP-NAME', MANIFEST, pin.line, pin.col,
+                                   f'pinned module `{pin.stem}` also exists in a search path or stdlib'))
+            continue
+        data, problem = read_cached(pin)
+        if problem:
+            prog.diags.append(make(problem, MANIFEST, pin.line, pin.col,
+                                   f'cached bytes for `{pin.stem}` are missing or do not match the pin',
+                                   fix=[{'op': 'fetch'}]))
+            continue
+        prog.available[pin.stem] = cache_path(pin)
+        external[pin.stem] = data
     target_set = {t.resolve() for t in targets}
+    for name, data in sorted(external.items()):
+        _load_file(prog, prog.available[name], False, data=data)
     for t in sorted(set(targets), key=str):
         _load_file(prog, t, True)
-    for name in extra:  # modules requested by name (e.g. `lm run mod.fn`)
-        if name in prog.available:
+    for name in extra:  # external bytes were already verified and parsed above
+        if name in prog.available and name not in external:
             _load_file(prog, prog.available[name], True)
     pending = list(prog.modules)
     while pending:
         m = prog.modules[pending.pop()]
         for u in m.uses:
             name = u.value
-            if name not in prog.modules and name in prog.available:
+            if m.is_external and not (
+                    name in prog.available and STDLIB.resolve() in prog.available[name].resolve().parents):
+                prog.diags.append(make('E-DEP-UNPINNED', m.file, u.line, u.col,
+                                       f'external module may use only stdlib modules; found `{name}`', path=f'{m.name}/use'))
+                continue
+            if name not in prog.modules and name in prog.available and name not in external:
                 f = prog.available[name]
                 _load_file(prog, f, f.resolve() in target_set)
                 if name in prog.modules:
@@ -66,12 +91,16 @@ def load(paths, extra=(), defaults=True) -> Program:
     return prog
 
 
-def _load_file(prog: Program, f: Path, is_target: bool):
+def _load_file(prog: Program, f: Path, is_target: bool, data=None):
     name = f.stem
     if name in prog.modules:
         return
-    file = str(f)
-    text = f.read_text(encoding="utf-8")
+    file = ExternalFile(str(f)) if data is not None else str(f)
+    try:
+        text = data.decode("utf-8") if data is not None else f.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as ex:
+        prog.diags.append(make('E-PARSE', file, 1, 1, f'cannot read module: {ex}'))
+        return
     root, diags = read(text, file)
     canon = None
     if root is not None:
@@ -86,7 +115,8 @@ def _load_file(prog: Program, f: Path, is_target: bool):
     if is_target and print_module(canon) != text:
         prog.diags.append(make("E-NONCANONICAL", file, 1, 1, "file is not in canonical form; run `lm fmt`", path=name, fix=[{"op": "fmt", "file": file}]))
     is_std = STDLIB.resolve() in f.resolve().parents
-    m = ModInfo(name=name, file=file, is_stdlib=is_std, is_target=is_target, root=canon, text=text)
+    m = ModInfo(name=name, file=file, is_stdlib=is_std and data is None, is_target=is_target, root=canon,
+                is_external=data is not None, text=text)
     for c in canon.items[2:]:
         if c.items[0].value == "use":
             m.uses = list(c.items[1:])
@@ -105,7 +135,7 @@ def _cycles(prog: Program):
             if state.get(t) == 1:
                 cyc = " -> ".join(stack[stack.index(t):] + [t]) if t in stack else f"{n} -> {t}"
                 m = prog.modules[n]
-                if m.is_target:
+                if m.report:
                     prog.diags.append(make("E-CYCLE", m.file, u.line, u.col, f"module cycle: {cyc}", path=f"{n}/use"))
             elif t not in state:
                 visit(t, stack + [t])

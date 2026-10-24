@@ -1,0 +1,7 @@
+(module geo
+  (purpose "External dependency.")
+  (use local)
+  (fn value
+    (purpose "Return seven.")
+    (sig -> Int)
+    (body 7)))
