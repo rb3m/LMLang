@@ -6,13 +6,13 @@ LM is a programming language and toolchain authored and read by AI agents: depen
 Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go -> native binary (`lm build`). Python reference impl, stdlib only; s-expressions.
 
 ## Current step
-- Backlog 3-6, 8, 9, 13-20, 22-27 done (ADR-058..079). 21 left: a program the owner uses daily (S5 and DreamHost CGI done, docs/EVIDENCE.md). Public v0.12.0, export only.
+- Backlog 3-6, 8, 9, 13-20, 22-28 done (ADR-058..080). 21 left: a program the owner uses daily (S5 and DreamHost CGI done, docs/EVIDENCE.md). Public v0.12.1, export only.
 - Open: S5 real tokenizer 1.302x vs target <= 1.3x (ADR-025), OPEN by 0.002. Never call it passed.
 
 ## Rules
 1. Orient with `lm index` (`--stdlib` for stdlib), then `lm slice mod.fn` before opening files; read a whole module only when a slice is insufficient (say why). Run `lm callers` before changing signatures.
 2. Change code with `lm edit` ops (`rename`, `apply '<fix json>'`), not by rewriting files.
-3. Loop edit -> `lm check` -> `lm test` until clean. Done means `lm check`, `lm test`, `lm accept --guard` and `python3 -m unittest discover tests/unit` are green (Go tests skip visibly without `go`).
+3. Loop edit -> `lm check` -> `lm test` until clean. Done means `lm check`, `lm test`, `lm accept --guard` and `python3 -m unittest discover tests/unit` are green.
 4. New check/runtime rule or bug fix: write the failing spec fixture first.
 5. Scenarios: propose and walk owner through each (ADR-055, docs/TESTING.md). Only on explicit yes run `lm accept --approve DIGEST.. --by "<words>"` (`--retire NAME --by` for renamed/deleted ones). Never approve on own judgment, hand-edit `accept.lock`, or run `--bless`.
 6. Python >= 3.10, stdlib only, zero third-party deps, each module < ~400 lines.
@@ -26,7 +26,7 @@ Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> ty
 - `PRD.md`: goals, thesis, metrics S1-S6. Read before touching benchmark or thesis.
 - `lm guide` (source lm/guide.md): compact LM syntax, workflow, stdlib reminder. Read before writing/reviewing `.lm` code.
 - `docs/SPEC.md`: normative rules (sections 1-16). Search by heading when `lm guide` is insufficient.
-- `docs/COMMANDS.md`: every `lm` command, flag and exit code. Read before using unfamiliar commands.
+- `docs/COMMANDS.md`: every `lm` command, flag and exit code. Read before unfamiliar commands.
 - `docs/ARCHITECTURE.md`: module layout, pipeline, mechanisms, adding prims. Read before changing `lm/`.
 - `docs/TESTING.md`: test layers, fixtures, goldens, acceptance format, human routine. Read before adding tests.
 - `docs/ROADMAP.md`: open backlog and current milestone. Read when picking or scoping work.
@@ -36,4 +36,4 @@ Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> ty
 - `docs/ENVIRONMENT.md` (public: `ENVIRONMENT.example.md`): machines, Go, remotes, agents. Read before building, pushing or switching hosts.
 - `docs/decisions/`: one ADR per file, indexed in README; read matching ADR before changing behavior it covers.
 - `docs/archive/`: finished milestones (M0-M12), old reviews (history).
-- Code: `bin/lm` (wrapper), `lm/` (Python package; `lm/runtime/go/` Go runtime), `stdlib/*.lm`, `src/` (user programs), `games/`, `benchprojects/` (run `../../bin/lm` inside), `examples/` (index: README.md), `tests/{unit,spec,accept,golden}`, `bench/`.
+- Code: `bin/lm` (wrapper), `lm/` (Python package; `lm/runtime/go/` Go runtime), `stdlib/*.lm`, `skills/lm/` (agent skill, `lm install`), `src/` (user programs), `games/`, `benchprojects/` (run `../../bin/lm` inside), `examples/` (index: README.md), `tests/{unit,spec,accept,golden}`, `bench/`.

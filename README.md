@@ -40,11 +40,12 @@ Requires Linux or macOS and Python >= 3.10, with no third-party Python packages.
 
 ```sh
 git clone https://github.com/rb3m/LMLang.git
-mkdir -p ~/.local/bin
-ln -s "$PWD/LMLang/bin/lm" ~/.local/bin/lm
+LMLang/bin/lm install
 export PATH="$HOME/.local/bin:$PATH"
 lm --version
 ```
+
+`lm install` links `lm` into `~/.local/bin` (`--bin DIR` to change it) and the `lm` agent skill (`skills/lm/SKILL.md`) into the user skills folder of each AI agent it finds: Claude Code, Codex and Antigravity. It never overwrites existing files, and `--uninstall` removes only its own links.
 
 `LM_PYTHON` selects the Python executable. Go discovery tries `LM_GO` first, then `PATH`, then the usual installation locations; see [the environment example](docs/ENVIRONMENT.example.md).
 
@@ -93,7 +94,7 @@ The agent walks you through each scenario. Only after your explicit yes may it r
 
 ## Status
 
-Research prototype **v0.12.0**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
+Research prototype **v0.12.1**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
 
 | Metric | Target | Recorded result |
 |---|---|---|

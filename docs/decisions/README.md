@@ -87,3 +87,4 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-077](0077-outside-author-game-findings.md) lm-arty outside-author findings: variant-export and E-DUP-NAME messages, `str.cat`; Float tolerance, templates and fmt order declined (2026-10-20, agent consensus)
 - [ADR-078](0078-third-party-modules-pinned-fetch.md) Third-party modules: one project-level declaration of hash-pinned HTTPS sources, explicit `lm fetch`, rename on collision (2026-10-24, agent consensus, owner approved)
 - [ADR-079](0079-dependency-effect-allowances.md) Dependency hardening: per-pin effect allowances (default pure), no `proc.run`, stdlib-only externals, provenance markers (2026-10-24, agent consensus)
+- [ADR-080](0080-agent-skill-and-lm-install.md) Agent skill and `lm install`: symlink the CLI onto PATH and the skill into agent user directories (2026-10-27, agent consensus)
