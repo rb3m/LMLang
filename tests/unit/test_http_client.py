@@ -2,7 +2,6 @@
 import json
 import os
 from pathlib import Path
-import re
 import socket
 import subprocess
 import sys
@@ -11,7 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from http_support import LIMIT, serving
-from lm.build import find_go, go_build
+from lm.build import find_go
 from lm.values import LmFail, show
 
 
@@ -87,9 +86,13 @@ def source(base, secure):
                            ('/truncated', 'connect'), ('/drop', 'connect'),
                            ('/oversize', 'limit'), ('/chunk-limit', 'limit'),
                            ('/headers-count', 'limit'),
-                           ('/headers-size', 'limit'), ('/slow', 'timeout'),
-                           ('/slow-body', 'timeout'), ('/drip', 'timeout')]:
+                           ('/headers-size', 'limit')]:
         check(failed('GET', base + path, category))
+    for path in ('/slow', '/slow-body', '/drip'):
+        check('(bad-within ' + show(base + path) + ' 1 "timeout")')
+    check('(bad-within ' + show(base + '/unused') + ' 601 "invalid-request")')
+    check('(= (get (http.request-within "GET" ' + show(base + '/ok')
+          + ' (list) "" 1) body) "héllo")')
     check(failed('GET', secure + '/ok', 'tls'))
     invalid_urls = ['ftp://127.0.0.1/', 'file:///etc/passwd',
                     'http://example.com/', 'http://192.0.2.1/',
@@ -124,6 +127,12 @@ def source(base, secure):
             '(body-text Str) (category Str) -> Bool) (eff net.http) '
             '(body (try (let ((ignored '
             '(http.request method url headers body-text))) false) '
+            '(catch http.HttpError (failed-url msg) '
+            '(and (= failed-url url) (= msg category)))))) '
+            '(fn bad-within (purpose "Catch a deadline request failure.") '
+            '(sig (url Str) (secs Int) (category Str) -> Bool) (eff net.http) '
+            '(body (try (let ((ignored '
+            '(http.request-within "GET" url (list) "" secs))) false) '
             '(catch http.HttpError (failed-url msg) '
             '(and (= failed-url url) (= msg category)))))) '
             '(fn main (purpose "Print every check result.") (sig -> Int) '
@@ -166,6 +175,29 @@ class HttpClient(unittest.TestCase):
                 http_prims.http_request(None, 'GET', url, (), '')
         self.assertEqual(caught.exception.args_, (url, 'dns'))
 
+    def test_invalid_deadlines_before_url_validation_or_network(self):
+        from lm import http_prims
+        url = 'https://offline.invalid/'
+        with patch.object(http_prims, '_validate', side_effect=AssertionError), \
+                patch('socket.getaddrinfo', side_effect=AssertionError), \
+                patch('socket.create_connection', side_effect=AssertionError), \
+                patch('socket.socket', side_effect=AssertionError):
+            for secs in (0, -1, 601, True, 1.0):
+                with self.subTest(secs=secs):
+                    with self.assertRaises(LmFail) as caught:
+                        http_prims.http_request_within(None, 'GET', url, (), '', secs)
+                    self.assertEqual(caught.exception.args_, (url, 'invalid-request'))
+
+    def test_deadline_range_endpoints(self):
+        from lm import http_prims
+        url = 'https://offline.invalid/'
+        with patch('socket.getaddrinfo', side_effect=socket.gaierror('private')):
+            for secs in (1, 600):
+                with self.subTest(secs=secs):
+                    with self.assertRaises(LmFail) as caught:
+                        http_prims.http_request_within(None, 'GET', url, (), '', secs)
+                    self.assertEqual(caught.exception.args_, (url, 'dns'))
+
     def differential(self, target):
         with tempfile.TemporaryDirectory() as td, \
                 serving() as (server, base), serving(tls=True) as (_, secure):
@@ -178,9 +210,7 @@ class HttpClient(unittest.TestCase):
             p = cli('edit', 'apply', operation, cwd=root)
             self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
             if target == 'interp':
-                # Test-only patch; neither LM nor a binary has a knob.
-                driver = ('import socket,sys; import lm.http_prims as h; '
-                          'h.HTTP_TOTAL_TIMEOUT = 1.5; '
+                driver = ('import socket,sys; '
                           'original = socket.getaddrinfo\n'
                           'def guarded(host, *args, **kwargs):\n'
                           ' if host == "localhost":\n'
@@ -196,26 +226,11 @@ class HttpClient(unittest.TestCase):
                 output = root / ('probe.py' if target == 'py' else 'probe')
                 args = ['build', '--target', target, 'http-probe.main',
                         str(src), '-o', str(output)]
-                if target == 'go':
-                    args.extend(['--keep-go', str(root / 'go')])
                 p = cli(*args, cwd=root)
                 self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
                 if target == 'py':
-                    original = output.read_text()
-                    modified = original.replace('HTTP_TOTAL_TIMEOUT = 30.0',
-                                                'HTTP_TOTAL_TIMEOUT = 1.5')
-                    self.assertNotEqual(original, modified)
-                    output.write_text(modified)
                     command = [sys.executable, str(output)]
                 else:
-                    path = root / 'go/lm_prims_http.go'
-                    original = path.read_text()
-                    modified = re.sub(
-                        r'httpTotalTimeout\s+= 30 \* time.Second',
-                        'httpTotalTimeout = 1500 * time.Millisecond', original)
-                    self.assertNotEqual(original, modified)
-                    path.write_text(modified)
-                    go_build(find_go(), root / 'go', output)
                     command = [str(output)]
             p = subprocess.run(command, cwd=root, env=environment(),
                                capture_output=True, timeout=30)

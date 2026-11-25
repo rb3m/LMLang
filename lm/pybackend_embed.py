@@ -338,13 +338,13 @@ def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False,
             "",
         ])
 
-    if 'http.request' in prog.prims:
+    if 'http.request-within' in prog.prims:
         http_src = (LM_DIR / 'http_prims.py').read_text(encoding='utf-8')
         parts.extend([
             '# --- Embedded HTTP runtime (from lm/http_prims.py) ---',
             wrap_module(http_src, 'http_mod'),
-            'def prim_http_request(method, url, headers, body):',
-            '    return http_mod.http_request(None, method, url, headers, body)',
+            'def prim_http_request_within(method, url, headers, body, secs):',
+            '    return http_mod.http_request_within(None, method, url, headers, body, secs)',
             '',
         ])
 

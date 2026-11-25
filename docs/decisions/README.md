@@ -88,3 +88,5 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-078](0078-third-party-modules-pinned-fetch.md) Third-party modules: one project-level declaration of hash-pinned HTTPS sources, explicit `lm fetch`, rename on collision (2026-10-24, agent consensus, owner approved)
 - [ADR-079](0079-dependency-effect-allowances.md) Dependency hardening: per-pin effect allowances (default pure), no `proc.run`, stdlib-only externals, provenance markers (2026-10-24, agent consensus)
 - [ADR-080](0080-agent-skill-and-lm-install.md) Agent skill and `lm install`: symlink the CLI onto PATH and the skill into agent user directories (2026-10-27, agent consensus)
+- [ADR-081](0081-database-access-deferred.md) Backlog 29: database access deferred until a program needs it; then a pure stdlib `db` types module plus driver modules, real effects, bound parameters (2026-10-28, agent consensus)
+- [ADR-082](0082-http-per-call-deadline.md) Backlog 31: per-call HTTP deadline `http.request-within`, Int seconds 1..600, defaults unchanged (2026-11-25, agent consensus)

@@ -22,6 +22,7 @@ const (
 	httpHeaderFields   = 100
 	httpConnectTimeout = 5 * time.Second
 	httpTotalTimeout   = 30 * time.Second
+	httpMaxTimeout     = 600 // whole seconds
 )
 
 var httpResponseType = &RecType{"http.Response", []string{"status", "headers", "body"}}
@@ -106,8 +107,14 @@ func httpCategory(err error, ctx context.Context, tlsFailed bool) string {
 	return "connect"
 }
 
-func prim_http_request(method, rawURL, headers, body Value) Value {
+func prim_http_request_within(method, rawURL, headers, body, secs Value) Value {
 	raw := rawURL.(string)
+	seconds, ok := secs.(int64)
+	if !ok || seconds < 1 || seconds > httpMaxTimeout {
+		httpFail(raw, "invalid-request")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(seconds)*time.Second)
+	defer cancel()
 	u, valid := httpURL(raw)
 	for _, c := range method.(string) {
 		if c >= 127 {
@@ -142,8 +149,6 @@ func prim_http_request(method, rawURL, headers, body Value) Value {
 	if _, present := h["User-Agent"]; !present {
 		h["User-Agent"] = nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), httpTotalTimeout)
-	defer cancel()
 	var wire *httpWire
 	tlsFailed := false
 	dial := func(_ context.Context, network, address string) (net.Conn, error) {

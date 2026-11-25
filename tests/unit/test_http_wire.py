@@ -81,8 +81,8 @@ class HttpWire(unittest.TestCase):
         cls.directory.cleanup()
 
     def functions(self):
-        return [('interpreter', http_prims.http_request),
-                ('python', self.emitted['http_mod'].http_request)]
+        return [('interpreter', http_prims.http_request_within),
+                ('python', self.emitted['http_mod'].http_request_within)]
 
     def test_response_framing_headers_and_utf8(self):
         cases = [
@@ -112,7 +112,7 @@ class HttpWire(unittest.TestCase):
                     sock = MemorySocket(raw)
                     with connected(function, sock):
                         result = function(None, method, 'http://localhost/',
-                                          (), '')
+                                          (), '', 30)
                     self.assertEqual(dict(result.items)['body'], expected)
                     self.assertNotIn(b'Accept-Encoding:', sock.sent)
                     self.assertTrue(sock.closed)
@@ -120,7 +120,7 @@ class HttpWire(unittest.TestCase):
             sock = MemorySocket(response(b'X-Z: first\r\nX-A: \xff\r\n'
                                          b'x-z: second\r\n'))
             with connected(function, sock):
-                result = function(None, 'GET', 'http://localhost/', (), '')
+                result = function(None, 'GET', 'http://localhost/', (), '', 30)
             headers = dict(result.items)['headers']
             self.assertEqual([(p.a, p.b) for p in headers],
                              [('x-a', 'ÿ'), ('x-z', 'first'),
@@ -148,7 +148,7 @@ class HttpWire(unittest.TestCase):
                     with connected(function, sock), \
                             self.assertRaises(Exception) as caught:
                         function(None, 'GET', 'http://localhost/private',
-                                 (), '')
+                                 (), '', 30)
                     self.assertEqual(caught.exception.id, 'http.HttpError')
                     self.assertEqual(caught.exception.args_,
                                      ('http://localhost/private', category))
@@ -186,7 +186,7 @@ class HttpWire(unittest.TestCase):
         interpreter = Interp(prog, allowed={'net.http'}, world=FakeWorld())
         function = prog.modules['http'].fns['request']
         mock = unittest.mock.Mock()
-        with patch.dict('lm.fake_world.PRIMS', {'http.request': mock}):
+        with patch.dict('lm.fake_world.PRIMS', {'http.request-within': mock}):
             with self.assertRaises(Denied):
                 interpreter.call_fn(function,
                                     ('GET', 'http://localhost/', (), ''))

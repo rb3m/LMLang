@@ -16,6 +16,7 @@ from urllib.parse import urlsplit
 from .values import LmFail, Pair, Rec
 
 HTTP_TOTAL_TIMEOUT = 30.0
+HTTP_MAX_TIMEOUT = 600
 HTTP_CONNECT_TIMEOUT = 5.0
 HTTP_BODY_LIMIT = 8 * 1024 * 1024
 HTTP_HEADER_LIMIT = 64 * 1024
@@ -243,17 +244,25 @@ class _Response(http.client.HTTPResponse):
 
 
 def http_request(it, method, url, headers, body):
+    return http_request_within(it, method, url, headers, body,
+                               int(HTTP_TOTAL_TIMEOUT))
+
+
+def http_request_within(it, method, url, headers, body, secs):
+    if type(secs) is not int or not 1 <= secs <= HTTP_MAX_TIMEOUT:
+        raise LmFail('http.HttpError', (url, 'invalid-request'))
+    deadline = time.monotonic() + secs
     sock = None
     response = None
     try:
-        deadline = time.monotonic() + HTTP_TOTAL_TIMEOUT
         method, parsed, host, port, target, headers = _validate(
             method, url, headers, body)
         port = port or (443 if parsed.scheme == 'https' else 80)
         sock = _connect(host, port, deadline)
         if parsed.scheme == 'https':
+            context = _system_tls()
             sock.settimeout(_remaining(deadline))
-            sock = _system_tls().wrap_socket(sock, server_hostname=host)
+            sock = context.wrap_socket(sock, server_hostname=host)
         raw_body = body.encode('utf-8')
         request = [f'{method} {target} HTTP/1.1\r\n'.encode('ascii'),
                    b'Host: ' + parsed.netloc.encode('ascii') + b'\r\n',
@@ -306,4 +315,4 @@ def http_request(it, method, url, headers, body):
     raise LmFail('http.HttpError', (url, category)) from None
 
 
-HTTP_PRIMS = {'http.request': http_request}
+HTTP_PRIMS = {'http.request-within': http_request_within}

@@ -85,6 +85,7 @@ module http  -- HTTP client, request records and strict query decoding.  (use st
 *fn http.fetch  (url Str) -> Response  [eff net.http]  [fails HttpError]  -- Fetch a URL using GET, no caller headers and an empty body.
 *fn http.query-pairs  (q Str) -> (List (Pair Str Str))  [fails BadEncoding]  -- Decode query fields, keeping duplicates and replacing plus with space.
 *fn http.request  (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) -> Response  [eff net.http]  [fails HttpError]  -- Send one HTTP request; non-2xx responses are ordinary results.
+*fn http.request-within  (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) (secs Int) -> Response  [eff net.http]  [fails HttpError]  -- Send one HTTP request with a total deadline in seconds.
 *fn http.url-decode  (s Str) -> Str  [fails BadEncoding]  -- Decode percent escapes as strict UTF-8; keep plus signs.
 module io  -- Console input, output, and program arguments.
 *error io.IoError  (msg Str)

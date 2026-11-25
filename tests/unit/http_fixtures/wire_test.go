@@ -65,6 +65,10 @@ func httpTestDial(ctx context.Context, network, address string) (net.Conn, error
 	return client, nil
 }
 func httpOutcome(method, address string, headers []Value, body string) (value Value, category string) {
+	return httpOutcomeWithin(method, address, headers, body, int64(httpTotalTimeout/time.Second))
+}
+
+func httpOutcomeWithin(method, address string, headers []Value, body string, secs Value) (value Value, category string) {
 	defer func() {
 		if failure := recover(); failure != nil {
 			f, ok := failure.(*Fail)
@@ -74,7 +78,7 @@ func httpOutcome(method, address string, headers []Value, body string) (value Va
 			category = f.Args[1].(string)
 		}
 	}()
-	value = prim_http_request(method, address, headers, body)
+	value = prim_http_request_within(method, address, headers, body, secs)
 	return
 }
 func TestHTTPClientPipe(t *testing.T) {
@@ -118,7 +122,11 @@ func TestHTTPClientPipe(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			testResponse, testDelay = test.response, test.delay
 			testBodyDelay, testDrip = test.bodyDelay, test.drip
-			value, category := httpOutcome(test.method, "http://localhost/", []Value{}, "")
+			secs := int64(httpTotalTimeout / time.Second)
+			if test.delay != 0 || test.bodyDelay != 0 || test.drip {
+				secs = 1
+			}
+			value, category := httpOutcomeWithin(test.method, "http://localhost/", []Value{}, "", secs)
 			if category != test.want {
 				t.Fatalf("want %q, got %q", test.want, category)
 			}
@@ -163,7 +171,29 @@ func TestLocalhostFallback(t *testing.T) {
 	if httpConnectTimeout != 5*time.Second {
 		t.Fatal("connect deadline changed")
 	}
+	if httpTotalTimeout != 30*time.Second {
+		t.Fatal("default total deadline changed")
+	}
 }
+
+func TestHTTPDeadlineRange(t *testing.T) {
+	testDialAddresses = nil
+	for _, secs := range []Value{int64(0), int64(-1), int64(601), true, 1.0} {
+		if _, category := httpOutcomeWithin("GET", "http://localhost/", []Value{}, "", secs); category != "invalid-request" {
+			t.Errorf("%v: %s", secs, category)
+		}
+	}
+	if len(testDialAddresses) != 0 {
+		t.Fatal(testDialAddresses)
+	}
+	testResponse = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+	for _, secs := range []int64{1, 600} {
+		if _, category := httpOutcomeWithin("GET", "http://localhost/", []Value{}, "", secs); category != "" {
+			t.Errorf("%d: %s", secs, category)
+		}
+	}
+}
+
 func TestHTTPInvalidArguments(t *testing.T) {
 	for _, address := range []string{"ftp://localhost/", "http://example.com/", "http://user:pass@localhost/", "http://localhost/#", "http://localhost:0/", "http://localhost:65536/", "https://[hello]/", "http://[::2]/", "http://127.0.0.1:/", "http://localhost/é", "http://localhost/?bad=%zz", "http://localhost/back\\slash"} {
 		if _, category := httpOutcome("GET", address, []Value{}, ""); category != "invalid-request" {

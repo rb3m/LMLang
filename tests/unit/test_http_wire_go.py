@@ -1,7 +1,6 @@
 """Exercise the full Go HTTP primitive through in-memory connections."""
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
@@ -25,15 +24,11 @@ class HttpWireGo(unittest.TestCase):
             write_sources('package main\nfunc main() {}\n', root)
             path = root / 'lm_prims_http.go'
             original = path.read_text()
-            # Only the temporary test copy accepts an in-memory dialer or short
-            # deadline. Built binaries expose neither through LM nor their env.
+            # Only the temporary test copy accepts an in-memory dialer.
             modified = original.replace(
                 '(&net.Dialer{Timeout: httpConnectTimeout})'
                 '.DialContext(connectCtx, network, address)',
                 'httpTestDial(connectCtx, network, address)')
-            modified = re.sub(r'httpTotalTimeout\s+= 30 \* time.Second',
-                              'httpTotalTimeout = 1500 * time.Millisecond',
-                              modified)
             self.assertNotEqual(modified, original)
             path.write_text(modified)
             fixture = (FIXTURES / 'wire_test.go').read_text()

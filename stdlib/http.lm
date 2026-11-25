@@ -1,7 +1,16 @@
 (module http
   (purpose "HTTP client, request records and strict query decoding.")
   (use str)
-  (export BadEncoding HttpError Request Response fetch query-pairs request url-decode)
+  (export
+    BadEncoding
+    HttpError
+    Request
+    Response
+    fetch
+    query-pairs
+    request
+    request-within
+    url-decode)
   (type
     Request
     (rec (method Str) (target Str) (query Str) (headers (List (Pair Str Str))) (body Str)))
@@ -58,7 +67,13 @@
     (sig (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) -> Response)
     (eff net.http)
     (fails HttpError)
-    (body (prim "http.request")))
+    (body (request-within method url headers body 30)))
+  (fn request-within
+    (purpose "Send one HTTP request with a total deadline in seconds.")
+    (sig (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) (secs Int) -> Response)
+    (eff net.http)
+    (fails HttpError)
+    (body (prim "http.request-within")))
   (fn url-decode
     (purpose "Decode percent escapes as strict UTF-8; keep plus signs.")
     (sig (s Str) -> Str)
