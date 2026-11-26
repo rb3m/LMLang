@@ -1,5 +1,6 @@
 (module list
   (purpose "List operations.")
+  (notes "Indices are zero-based. To discharge nth's OutOfRange for a nonnegative literal k, prove (> (len xs) k). zip and map2 require equal lengths. sort-by uses stable top-down merge sort on every target; supply a strict weak ordering.")
   (export
     all
     any
@@ -93,7 +94,7 @@
     (example ((list 1 2) (list 10 20) +) => (list 11 22))
     (body (prim "list.map2")))
   (fn nth
-    (purpose "Element at zero-based index i.")
+    (purpose "Read index i; a proven-safe nonnegative literal index discharges OutOfRange.")
     (sig (xs (List a)) (i Int) -> a)
     (fails OutOfRange)
     (example ((list 5 6) 1) => 6)

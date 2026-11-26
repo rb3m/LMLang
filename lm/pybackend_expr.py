@@ -24,6 +24,8 @@ class PyExprMixin:
             return f"fbits(0x{u:016x})"
         if e.kind == "str":
             return pylit(e.value)
+        if e.kind == "bytes":
+            return repr(e.value)
         if e.kind == "bool":
             return "True" if e.value else "False"
         return "UNIT"

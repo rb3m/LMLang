@@ -1,5 +1,6 @@
 (module vec
   (purpose "Persistent immutable indexed collections backed by a 32-way trie with a tail.")
+  (notes "Persistent 32-way trie with tail. Indexed access/update and push/pop are O(log32 n); bulk operations and equality are O(n). For nth/put with a nonnegative literal k, prove (> (vec.size v) k) to discharge OutOfRange. len and for are List-only.")
   (export at empty fold from-list last map nth pop push put repeat set size tabulate to-list)
   (fn at
     (purpose "The element at zero-based index i, or None out of range.")

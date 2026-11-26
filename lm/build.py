@@ -1,7 +1,7 @@
-"""`lm build`: checked program -> IR -> Go source -> static native binary (ADR-026, ADR-031, ADR-035).
+"""`lm build`: checked program -> IR -> Go source -> native binary (ADR-026, ADR-031, ADR-035).
 
 Also runs examples compiled (`run_examples_go`), used by the differential test against the
-interpreter. The `go` toolchain is needed only here; the binaries need nothing.
+interpreter. The `go` toolchain is needed only to build.
 """
 from __future__ import annotations
 
@@ -78,12 +78,23 @@ def write_sources(main_go: str, d: Path):
     (d / "go.mod").write_text(GO_MOD, encoding="utf-8")
 
 
-def go_build(go: str, d: Path, out: Path, goos=None, goarch=None):
-    env = {**os.environ, "CGO_ENABLED": "0", "GOTOOLCHAIN": "local", "GOFLAGS": "-mod=mod"}
-    if goos:
-        env["GOOS"] = goos
+def _go_env(goos=None, goarch=None, *, hid=False):
+    target = goos or os.environ.get("GOOS") or sys.platform
+    cgo = hid and target == "darwin"
+    if cgo and sys.platform != "darwin":
+        raise BuildError("HID programs for macOS must be built on macOS", 3)
+    env = {**os.environ, "CGO_ENABLED": "1" if cgo else "0",
+           "GOTOOLCHAIN": "local", "GOFLAGS": "-mod=mod"}
+    if goos or (hid and target in OSES):
+        env["GOOS"] = target
     if goarch:
         env["GOARCH"] = goarch
+    return env
+
+
+def go_build(go: str, d: Path, out: Path, goos=None, goarch=None, *, env=None):
+    if env is None:
+        env = _go_env(goos, goarch)
     p = subprocess.run([go, "build", "-trimpath", "-buildvcs=false", "-ldflags=-s -w", "-o", str(out.resolve()), "."],
                        cwd=d, env=env, capture_output=True, text=True)
     if p.returncode != 0:  # generated code that does not compile is a toolchain bug
@@ -100,25 +111,26 @@ def _check_prims(irp):
 def build(prog, f, out: Path, goos=None, goarch=None, contracts=True,
           keep_go=None, go=None, serve=False):
     """Compile entry fn `f` (FnInfo) of a checked program to the binary `out`."""
-    go = go or find_go()
-    if go is None:
-        raise BuildError(GO_MISSING, 3)
     from .serve_entry import serve_problem
     problem = serve_problem(f) if serve else entry_problem(f)
     if problem:
         raise BuildError(problem, 3)
     irp = lower(prog, [f.qual])
     _check_prims(irp)
+    env = _go_env(goos, goarch, hid=gobackend.uses_hid(irp))
+    go = go or find_go()
+    if go is None:
+        raise BuildError(GO_MISSING, 3)
     node = f.node
     site = Site(f.mod.file, node.line, node.col, f"{f.mod.name}/{f.name}", f.qual)
     src = gobackend.emit_main(irp, f.qual, site, contracts, serve=serve)
     if keep_go:
         write_sources(src, Path(keep_go))
-        go_build(go, Path(keep_go), out, goos, goarch)
+        go_build(go, Path(keep_go), out, env=env)
         return
     with tempfile.TemporaryDirectory(prefix="lm-build-") as tmp:
         write_sources(src, Path(tmp))
-        go_build(go, Path(tmp), out, goos, goarch)
+        go_build(go, Path(tmp), out, env=env)
 
 
 def build_py(prog, f, out: Path, contracts: bool = True, serve=False):
@@ -168,7 +180,7 @@ def run_examples_go(prog, modules, go=None, keep_go=None) -> dict:
         d = Path(keep_go) if keep_go else Path(tmp)
         write_sources(src, d)
         exe = Path(tmp) / "cases"
-        go_build(go, d, exe)
+        go_build(go, d, exe, env=_go_env(hid=gobackend.uses_hid(irp)))
         p = subprocess.run([str(exe)], capture_output=True, text=True)
     if p.returncode != 0:
         raise RuntimeError(f"example harness crashed (exit {p.returncode}):\n{p.stderr[-4000:]}")
@@ -234,11 +246,6 @@ def cmd_build(args, static, report) -> int:
         if report(prog.diags, lambda e, w: "",
                   stream=sys.stderr if serve else None):
             return 1
-        go = None
-        if target == "go":
-            go = find_go()
-            if go is None:
-                raise BuildError(GO_MISSING, 3)
         if mname not in prog.modules or fname not in prog.modules[mname].fns:
             raise BuildError(f"no function `{pos[0]}`", 3)
         fn_info = prog.modules[mname].fns[fname]
@@ -249,7 +256,7 @@ def cmd_build(args, static, report) -> int:
         else:
             out = Path(flags.get("-o", mname if fname == "main" else f"{mname}-{fname}"))
             build(prog, fn_info, out, flags.get("--os"), flags.get("--arch"),
-                  "--no-contracts" not in flags, flags.get("--keep-go"), go,
+                  "--no-contracts" not in flags, flags.get("--keep-go"),
                   serve=serve)
             target_str = f"{flags.get('--os', 'host')}/{flags.get('--arch', 'host')}"
             sys.stderr.write(f"build: wrote {out} ({out.stat().st_size // 1024} KB, {target_str})\n")

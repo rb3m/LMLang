@@ -5,10 +5,10 @@ from pathlib import Path
 
 from .ast import canonicalize
 from .diag import ExternalFile, has_errors, make
-from .deps import MANIFEST, cache_path, read_cached, read_pins
+from .deps import EXT, MANIFEST, cache_path, extension_files, read_cached, read_manifest
 from .printer import print_module
 from .program import ModInfo, Program
-from .sexpr import Atom, read
+from .sexpr import read
 
 PKG_ROOT = Path(__file__).resolve().parent.parent
 STDLIB = PKG_ROOT / "stdlib"
@@ -21,8 +21,10 @@ def _scan(d: Path, recursive: bool):
     return sorted(f for f in it if not any(p.startswith(".") for p in f.relative_to(d).parts))
 
 
-def load(paths, extra=(), defaults=True) -> Program:
+def load(paths, extra=(), defaults=True, discover_ext=False) -> Program:
     prog = Program()
+    extensions = extension_files()
+    prog.extensions = set(extensions)
     targets: list = []
     search = []  # (dir, recursive)
     for p in paths:
@@ -43,17 +45,26 @@ def load(paths, extra=(), defaults=True) -> Program:
                     prog.diags.append(make("E-DUP-NAME", str(f), 1, 1, f"module `{f.stem}` is also defined in {seen_files[f.stem]}"))
                 continue
             seen_files[f.stem] = r
+            toolchain = extensions.get(f.stem)
+            if toolchain is not None and r != toolchain.resolve():
+                prog.diags.append(make('E-DUP-NAME', str(f), 1, 1,
+                                       f'module `{f.stem}` collides with a toolchain extension'))
+                continue
             prog.available[f.stem] = f
-    for t in targets:  # explicit targets are always available under their stem
-        prog.available.setdefault(t.stem, t)
-    pins, diags = read_pins()
+    for t in targets:  # keep explicit missing paths so loading can report them
+        if t.stem not in extensions or t.resolve() == extensions[t.stem].resolve():
+            prog.available.setdefault(t.stem, t)
+    pins, declared_exts, diags = read_manifest()
+    prog.declared_extensions = declared_exts
+    for stem in sorted(prog.extensions if discover_ext else declared_exts):
+        prog.available[stem] = extensions[stem]
     prog.diags.extend(diags)
     prog.pins = {p.stem: p for p in pins}
     external = {}
     for pin in pins:
-        if pin.stem in prog.available:
+        if pin.stem in prog.available or pin.stem in extensions:
             prog.diags.append(make('E-DUP-NAME', MANIFEST, pin.line, pin.col,
-                                   f'pinned module `{pin.stem}` also exists in a search path or stdlib'))
+                                   f'pinned module `{pin.stem}` also exists in a search path or the toolchain'))
             continue
         data, problem = read_cached(pin)
         if problem:
@@ -67,8 +78,12 @@ def load(paths, extra=(), defaults=True) -> Program:
     for name, data in sorted(external.items()):
         _load_file(prog, prog.available[name], False, data=data)
     for t in sorted(set(targets), key=str):
+        if t.stem in extensions and t.resolve() != extensions[t.stem].resolve():
+            continue
         _load_file(prog, t, True)
     for name in extra:  # external bytes were already verified and parsed above
+        if name in extensions and name not in declared_exts and not discover_ext:
+            continue
         if name in prog.available and name not in external:
             _load_file(prog, prog.available[name], True)
     pending = list(prog.modules)
@@ -80,6 +95,12 @@ def load(paths, extra=(), defaults=True) -> Program:
                     name in prog.available and STDLIB.resolve() in prog.available[name].resolve().parents):
                 prog.diags.append(make('E-DEP-UNPINNED', m.file, u.line, u.col,
                                        f'external module may use only stdlib modules; found `{name}`', path=f'{m.name}/use'))
+                continue
+            if name in extensions and name not in declared_exts and not discover_ext:
+                prog.diags.append(make(
+                    'E-EXT-UNDECLARED', m.file, u.line, u.col,
+                    f'extension `{name}` needs (ext {name}) in lm.deps', path=f'{m.name}/use',
+                    fix=[{'op': 'add-ext', 'stem': name}]))
                 continue
             if name not in prog.modules and name in prog.available and name not in external:
                 f = prog.available[name]
@@ -116,7 +137,8 @@ def _load_file(prog: Program, f: Path, is_target: bool, data=None):
         prog.diags.append(make("E-NONCANONICAL", file, 1, 1, "file is not in canonical form; run `lm fmt`", path=name, fix=[{"op": "fmt", "file": file}]))
     is_std = STDLIB.resolve() in f.resolve().parents
     m = ModInfo(name=name, file=file, is_stdlib=is_std and data is None, is_target=is_target, root=canon,
-                is_external=data is not None, text=text)
+                is_external=data is not None, text=text,
+                is_extension=data is None and EXT.resolve() in f.resolve().parents)
     for c in canon.items[2:]:
         if c.items[0].value == "use":
             m.uses = list(c.items[1:])

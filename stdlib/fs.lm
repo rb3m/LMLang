@@ -1,5 +1,6 @@
 (module fs
   (purpose "UTF-8 file operations.")
+  (notes "Paths are literal; NUL fails IoError and messages are host dependent. Text is strict UTF-8 with newlines preserved. Reads, writes and stat-like queries follow symlinks; remove acts on the link itself. Writes and appends lack atomicity. rename never overwrites; directory check and rename are separate. Non-directory rename links then unlinks, with no cross-device copy fallback. In given, (file PATH \"text\") and (dir PATH) need each parent declared with (dir PATH), except implicit \".\" and \"/\".")
   (export IoError append entries exists is-dir make-dir read remove rename write)
   (error IoError (path Str) (msg Str))
   (fn append
@@ -15,13 +16,14 @@
     (fails IoError)
     (body (prim "fs.entries")))
   (fn exists
-    (purpose "Test whether a filesystem path exists.")
+    (purpose "Test whether a filesystem path exists; false for a missing target.")
     (sig (path Str) -> Bool)
     (eff fs.read)
     (fails IoError)
     (body (prim "fs.exists")))
   (fn is-dir
-    (purpose "Test whether a path resolves to a directory.")
+    (purpose
+      "Test whether a path resolves to a directory; false for missing or non-directory paths.")
     (sig (path Str) -> Bool)
     (eff fs.read)
     (fails IoError)

@@ -1,5 +1,6 @@
 (module date
   (purpose "Pure Gregorian dates and UTC datetimes, years 1..9999.")
+  (notes "Pure proleptic Gregorian arithmetic, years 1..9999. DateTime uses UTC, hour 0..23, minute/second 0..59 and ms 0..999. Durations are Int days or milliseconds; ms-per-day is 86400000. Out-of-range conversions return None even for Int64 extremes. Read the clock with (date.from-epoch-ms (time.now-ms)).")
   (use list str)
   (export
     Date
@@ -94,7 +95,7 @@
             ((acc (Opt Int)) (c Int))
             (if (and (>= c 48) (<= c 57)) (let? ((n acc)) (Some (+ (* n 10) (- c 48)))) None))))))
   (fn from-days
-    (purpose "Date for an epoch day, or None outside 0001-01-01..9999-12-31.")
+    (purpose "Date for an epoch day, or None outside -719162..2932896 (years 1..9999).")
     (sig (n Int) -> (Opt Date))
     (example (0) => (Some (new Date (year 1970) (month 1) (day 1))))
     (body
@@ -117,7 +118,8 @@
                       ((m (+ mp (if (< mp 10) 3 -9))) (day (+ (- doy (/ (+ (* 153 mp) 2) 5)) 1)))
                       (Some (new Date (year (+ y (if (<= m 2) 1 0))) (month m) (day day)))))))))))))
   (fn from-epoch-ms
-    (purpose "UTC datetime for epoch milliseconds, or None outside the supported dates.")
+    (purpose
+      "UTC datetime for epoch milliseconds, or None outside -62135596800000..253402300799999.")
     (sig (ms Int) -> (Opt DateTime))
     (example
       (-1)

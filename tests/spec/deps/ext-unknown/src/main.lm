@@ -1,0 +1,2 @@
+(module main
+  (purpose "Validate the extension stem in the manifest."))

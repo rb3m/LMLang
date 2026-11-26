@@ -72,7 +72,7 @@ If a user asked you to build something "in LM" or "with LMLang", this is your pa
 1. **Toolchain:** `bin/lm` in this repository. Use its absolute path if `lm` is not on PATH. It needs only Python >= 3.10; Go is needed only for native binaries.
 2. **Create the project** outside this repository, in the user's working directory: `/path/to/LMLang/bin/lm new NAME`. NAME uses lowercase letters, digits and dashes and becomes the module name.
 3. **Read the project's `AGENTS.md`.** `lm new` writes it with the work loop, the absolute paths to this toolchain, and when you're done.
-4. **Run `lm guide`** once before writing code. It's a short sheet covering the full syntax, the prelude, the stdlib and the effects.
+4. **Run `lm guide`** once before writing code. It's a short sheet covering the syntax, the prelude, the effects and the workflow. Library details live with each module: `lm index --stdlib --modules`, then `lm index --module M` for its notes and signatures.
 5. **Copy patterns** from the closest program in [examples/README.md](examples/README.md): CLI tools, file and CSV processing, generic types, HTTP/CGI handlers, and larger multi-module projects.
 6. **Look things up** only as needed: `lm help CMD`, `lm index --stdlib --modules` and `--module M`, then [docs/SPEC.md](docs/SPEC.md) by heading for edge cases.
 7. **Deliver:** `lm check` and `lm test` clean, then `lm run NAME.main --allow EFF.. -- ARGS` to try it, and `lm build NAME.main` (native) or `--target py` (a standalone Python script) to ship it. Propose acceptance scenarios and walk the user through them (see below).
@@ -92,9 +92,13 @@ lm explain my-tool.main # a function described in plain words
 
 The agent walks you through each scenario. Only after your explicit yes may it run `lm accept --approve DIGEST.. --by "<your words>"`. Agents never approve on their own judgment or hand-edit `accept.lock`. Humans who prefer the interactive workflow can edit `(status proposed)` to `(status approved)` and run `lm accept --bless` in their own terminal; agents never run `--bless`. `lm accept --guard` detects changes to approved scenarios. See [the approval protocol](docs/TESTING.md).
 
+## Devices (extensions)
+
+OS-specific capabilities live in first-party extension modules under `ext/`, enabled per project with `(ext STEM)` in `lm.deps`. `hid` reads and writes HID reports, feature reports and grabs devices for exclusive use, with the same interface on every OS and one adapter per OS underneath (macOS today, Linux next). Effects `hid.io` and `hid.grab` gate it; binary data uses the core `Bytes` type. Examples run against scripted devices, and `LM_HID_REPLAY` replays recorded traces, so device programs are tested without hardware. See [ADR-083](docs/decisions/0083-device-io-layered-hid-vinput.md).
+
 ## Status
 
-Research prototype **v0.12.1**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
+Research prototype **v0.15.0**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
 
 | Metric | Target | Recorded result |
 |---|---|---|

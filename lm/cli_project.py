@@ -33,7 +33,7 @@ def cmd_fmt(args) -> int:
         sys.stderr.write(f"lm fmt: unknown flag {unknown[0]}\n" + USAGE)
         return 3
     if not paths:
-        paths = [d for d in ("src", "stdlib", "examples") if Path(d).is_dir()]
+        paths = [d for d in ("src", "stdlib", "ext", "examples") if Path(d).is_dir()]
     files, missing = _collect(paths)
     if files is None:
         sys.stderr.write(f"lm fmt: no such path: {missing}\n")

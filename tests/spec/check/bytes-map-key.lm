@@ -1,0 +1,4 @@
+(module bytes-map-key
+  (purpose "Bytes cannot be a Map key or Set element.")
+  (type BadMap (Map Bytes Str))
+  (type BadSet (Set Bytes)))

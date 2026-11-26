@@ -16,6 +16,14 @@ from .gobackend_expr import GoExprMixin
 from .gobackend_names import golit, local, mangle, prim_name
 
 RUNTIME = Path(__file__).resolve().parent / "runtime" / "go"
+RUNTIME_RECORDS = {
+    "http.Request": "httpRequestType",
+    "http.Response": "httpResponseType",
+    "proc.Result": "procResultType",
+    "pat.Match": "patMatchType",
+    "hid.Info": "hidInfoType",
+    "hid.Report": "hidReportType",
+}
 IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
@@ -171,11 +179,7 @@ class GoGen(GoExprMixin):
             decls.append(f"\t{mangle(c, 'N_')} Value = &Variant{{{mangle(c, 'C_')}, nil}}")
         for r in sorted(self.prog.records):
             fields = ", ".join(golit(x) for x in self.prog.records[r])
-            value = ("httpResponseType" if r == "http.Response" else
-                     "httpRequestType" if r == "http.Request" else
-                     "procResultType" if r == "proc.Result" else
-                     "patMatchType" if r == "pat.Match" else
-                     f"&RecType{{{golit(r)}, []string{{{fields}}}}}")
+            value = RUNTIME_RECORDS.get(r, f"&RecType{{{golit(r)}, []string{{{fields}}}}}")
             decls.append(f"\t{mangle(r, 'R_')} = {value}")
         for cid in self.prog.const_order:
             decls.append(f"\t{mangle(cid, 'K_')} Value")
@@ -206,7 +210,8 @@ def emit_main(prog: ir.Program, entry: str, entry_site: ir.Site,
     s = g.site(entry_site)
     call = (f"runServe(func(req Value) Value {{ return {mangle(entry, 'F_')}(req) }}, {s})"
             if serve else f"runMain(func() Value {{ return {mangle(entry, 'F_')}() }}, {s})")
-    main = ["func main() {", f"\t{call}", "}"]
+    hid = ["\thidEnabled = true"] if uses_hid(prog) else []
+    main = ["func main() {", *hid, f"\t{call}", "}"]
     return g.program(main)
 
 
@@ -222,4 +227,9 @@ def emit_cases(prog: ir.Program, cases, contracts: bool = True) -> str:
         g.ind -= 1
         g.emit("}},")
     rows, g.ind = g.lines, 0
-    return g.program(["func main() {", "\trunCases([]Case{", *rows, "\t})", "}"])
+    hid = ["\thidEnabled = true"] if uses_hid(prog) else []
+    return g.program(["func main() {", *hid, "\trunCases([]Case{", *rows, "\t})", "}"])
+
+
+def uses_hid(prog):
+    return any(name.startswith("hid.") for name in prog.prims)

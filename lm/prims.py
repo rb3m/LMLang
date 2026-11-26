@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 from .values import UNIT, LmFail, Var
+from .bytes_prims import BYTES_PRIMS
 from .coll_prims import COLL_PRIMS
 from .float_prims import FLOAT_PRIMS
 from .io_prims import IO_PRIMS
 from .http_prims import HTTP_PRIMS
 from .http_helpers import HTTP_HELPERS
 from .proc_prims import PROC_PRIMS
+from .hid_prims import HID_PRIMS
 from .str_prims import STR_PRIMS
 from .rand_prims import RAND_PRIMS
 from .json_prims import JSON_PRIMS
@@ -117,8 +119,8 @@ def io_print(it, s):
 
 
 PRIMS = {
-    **PROC_PRIMS, **HTTP_PRIMS, **HTTP_HELPERS, **JSON_PRIMS, **IO_PRIMS, **STR_PRIMS, **FLOAT_PRIMS,
-    **COLL_PRIMS, **RAND_PRIMS, **VEC_PRIMS, **PAT_PRIMS,
+    **HID_PRIMS, **PROC_PRIMS, **HTTP_PRIMS, **HTTP_HELPERS, **JSON_PRIMS, **IO_PRIMS, **STR_PRIMS, **FLOAT_PRIMS,
+    **COLL_PRIMS, **RAND_PRIMS, **VEC_PRIMS, **PAT_PRIMS, **BYTES_PRIMS,
     "list.concat": list_concat, "list.filter": list_filter, "list.fold": list_fold, "list.map": list_map,
     "list.any": list_any, "list.all": list_all, "list.map2": list_map2, "list.index-of": list_index_of,
     "list.nth": list_nth, "list.at": list_at, "list.take": list_take, "list.drop": list_drop,

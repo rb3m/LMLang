@@ -1,0 +1,4 @@
+(module bytes-type
+  (purpose "Bytes is reserved and nullary.")
+  (type Applied (Bytes Int))
+  (type Bytes (rec (value Int))))

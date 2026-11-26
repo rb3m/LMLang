@@ -1,0 +1,27 @@
+{
+  "probe": "malformed",
+  "trace": {
+    "devices": [
+      {
+        "id": "a",
+        "vendor": 1,
+        "product": 2,
+        "usage-page": 1,
+        "usage": 4,
+        "interface": -1,
+        "name": "Controller",
+        "serial": ""
+      }
+    ],
+    "events": [
+      {
+        "at-ms": 0,
+        "dev": "a",
+        "report-id": 0,
+        "data": "zz"
+      }
+    ]
+  },
+  "stdout": "unavailable\nunknown\nio\na io\nio\n",
+  "log": []
+}

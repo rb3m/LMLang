@@ -1,0 +1,10 @@
+(module bytes-list-only
+  (purpose "Length and iteration remain List-only.")
+  (fn loop
+    (purpose "Reject for on Bytes.")
+    (sig -> Unit)
+    (body (for (b (bytesof "")) unit)))
+  (fn size
+    (purpose "Reject len on Bytes.")
+    (sig -> Int)
+    (body (len (bytesof "")))))

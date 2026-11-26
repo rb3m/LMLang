@@ -1,0 +1,456 @@
+{
+  "probe": "pulse",
+  "trace": {
+    "devices": [
+      {
+        "id": "a",
+        "vendor": 1,
+        "product": 2,
+        "usage-page": 1,
+        "usage": 4,
+        "interface": -1,
+        "name": "Controller",
+        "serial": ""
+      }
+    ],
+    "events": [
+      {
+        "at-ms": 35,
+        "dev": "a",
+        "feature-id": 7,
+        "data": "feed12"
+      },
+      {
+        "at-ms": 2,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 6,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 10,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 14,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 18,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 22,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 26,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 30,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 34,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 38,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 42,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 46,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 50,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 54,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 58,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 62,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 66,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 70,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 74,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 78,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 82,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 86,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 90,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 94,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 98,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 102,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 106,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 110,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 114,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 118,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 122,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 126,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 130,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 134,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 138,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 142,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 146,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 150,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 154,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 158,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 162,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 166,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 170,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 174,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 178,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 182,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 186,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 190,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 194,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 198,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 202,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 206,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 210,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 214,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 218,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 222,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 226,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 230,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 234,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 238,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 242,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 246,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      },
+      {
+        "at-ms": 250,
+        "dev": "a",
+        "report-id": 0,
+        "data": "01"
+      }
+    ]
+  },
+  "stdout": "feed\n",
+  "log": [
+    {
+      "at-ms": 20,
+      "op": "grab",
+      "dev": "a",
+      "on": true
+    },
+    {
+      "at-ms": 20,
+      "op": "write",
+      "dev": "a",
+      "report-id": 0,
+      "data": "01"
+    },
+    {
+      "at-ms": 100,
+      "op": "write",
+      "dev": "a",
+      "report-id": 2,
+      "data": "00"
+    },
+    {
+      "at-ms": 100,
+      "op": "feature-get",
+      "dev": "a",
+      "feature-id": 7,
+      "len": 2
+    },
+    {
+      "at-ms": 100,
+      "op": "feature-set",
+      "dev": "a",
+      "feature-id": 7,
+      "data": "aa"
+    },
+    {
+      "at-ms": 100,
+      "op": "grab",
+      "dev": "a",
+      "on": false
+    },
+    {
+      "at-ms": 100,
+      "op": "close",
+      "dev": "a"
+    }
+  ],
+  "wait_tolerance_ms": 40,
+  "pulse_ms": [
+    80,
+    110
+  ]
+}

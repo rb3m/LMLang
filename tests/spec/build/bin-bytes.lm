@@ -1,0 +1,21 @@
+(module bin-bytes
+  (purpose "Compiled Bytes values produce the same output across runtimes.")
+  (use bytes)
+  (error Output (original Bytes) (updated (Opt Bytes)) (signed (Opt Int)) (text (Opt Str)))
+  (const prefix (purpose "First byte of the input.") (type Bytes) (value (bytesof "0A")))
+  (fn main
+    (purpose "Exercise structural equality and print Bytes in an uncaught failure.")
+    (sig -> Int)
+    (fails Output)
+    (body
+      (let
+        ((b (bytes.concat prefix (bytesof "FF800000"))))
+        (if
+          (and (= b (bytesof "0aff800000")) (!= prefix b))
+          (fail
+            Output
+            b
+            (bytes.put-u16be b 2 4660)
+            (bytes.s16le b 0)
+            (bytes.to-str (bytes.from-str "Mé🙂")))
+          2)))))

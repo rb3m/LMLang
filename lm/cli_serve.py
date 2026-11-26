@@ -47,9 +47,10 @@ def cmd_serve(args):
         return result
 
     try:
-        if listener:
-            return serve_listener(call, diagnostic=diagnostic, **options)
-        return serve_cgi(call, diagnostic=diagnostic)
+        with interp:
+            if listener:
+                return serve_listener(call, diagnostic=diagnostic, **options)
+            return serve_cgi(call, diagnostic=diagnostic)
     except (ValueError, OSError) as ex:
         sys.stderr.write(f"lm serve: {ex}\n")
         return 2

@@ -103,7 +103,10 @@ class Denied(Exception):
 
 def show(v) -> str:
     from .pat_compile import Pat
+    from .hid_adapter import HidDev
 
+    if isinstance(v, HidDev):
+        return "<hid.Dev>"
     if isinstance(v, Pat):
         return "<pat>"
     if v is True:
@@ -116,6 +119,8 @@ def show(v) -> str:
         return float_text(v)
     if isinstance(v, str):
         return flat(Atom("str", v))
+    if isinstance(v, bytes):
+        return f'(bytesof "{v.hex()}")'
     if isinstance(v, tuple):
         return "(list" + "".join(" " + show(x) for x in v) + ")"
     if isinstance(v, Vec):

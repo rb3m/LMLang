@@ -1,0 +1,9 @@
+(module mock-hid-bad-hex
+  (purpose "Reject invalid hexadecimal in an example HID trace.")
+  (use time)
+  (fn f
+    (purpose "Read the example clock.")
+    (sig -> Int)
+    (eff hid.io time.now)
+    (example () (given (hid (device "a" 1 2 1 4) (report 0 "a" 0 "zz"))) => 0)
+    (body (time.mono-ms))))

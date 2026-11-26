@@ -73,6 +73,11 @@ func prim_rand_int(lo, hi Value) Value {
 	return int64(low + x%n)
 }
 
-func prim_rand_float() Value   { return float64(randomNext()>>11) * 0x1p-53 }
-func prim_time_now_ms() Value  { return time.Now().UnixMilli() }
-func prim_time_mono_ms() Value { return time.Since(monoOrigin).Milliseconds() }
+func prim_rand_float() Value  { return float64(randomNext()>>11) * 0x1p-53 }
+func prim_time_now_ms() Value { return time.Now().UnixMilli() }
+func prim_time_mono_ms() Value {
+	if replay, ok := activeHid.(*hidReplay); ok {
+		return replay.now()
+	}
+	return time.Since(monoOrigin).Milliseconds()
+}

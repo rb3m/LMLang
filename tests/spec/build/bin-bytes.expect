@@ -1,0 +1,1 @@
+[{"exit": 1, "stdout": "", "stderr": "(fail bin-bytes.Output (bytesof \"0aff800000\") (Some (bytesof \"0aff123400\")) (Some -246) (Some \"Mé🙂\"))\n"}]

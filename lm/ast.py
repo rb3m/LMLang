@@ -9,11 +9,12 @@ import re
 from .diag import make
 from .sexpr import Atom, SList
 
-MODULE_ORDER = {"purpose": 0, "use": 1, "export": 2, "type": 3, "error": 4, "const": 5, "fn": 6}
+MODULE_SINGLE = ("purpose", "notes", "use", "export")
+MODULE_ORDER = (*MODULE_SINGLE, "type", "error", "const", "fn")
 CONST_ORDER = {"purpose": 0, "type": 1, "value": 2}
 FN_ORDER = {"purpose": 0, "sig": 1, "eff": 2, "fails": 3, "requires": 4, "ensures": 5, "example": 6, "body": 7}
 FN_SINGLE = {"purpose", "sig", "eff", "fails", "body"}
-MODULE_SINGLE = {"purpose", "use", "export"}
+NOTES_MAX_BYTES = 500
 NAME_RE = re.compile(r"[a-z][a-z0-9-]*")
 TYPE_NAME_RE = re.compile(r"[A-Z][A-Za-z0-9]*")
 
@@ -30,6 +31,21 @@ def _head(n):
 
 def _is_name(n, rx) -> bool:
     return isinstance(n, Atom) and n.kind in ("sym", "type") and rx.fullmatch(str(n.value)) is not None
+
+
+def _module_text(clause, kind, err):
+    code = "E-NOTES" if kind == "notes" else "E-PARSE"
+    if len(clause.items) != 2 or not isinstance(clause.items[1], Atom) or clause.items[1].kind != "str":
+        err(code, clause, f"{kind} takes exactly one string")
+        return None
+    if kind == "purpose":
+        return clause
+    notes = clause.items[1].value
+    if (not notes.strip() or notes.splitlines() != [notes]
+            or len(notes.encode("utf-8")) > NOTES_MAX_BYTES):
+        err(code, clause,
+            f"notes must be one nonblank line of at most {NOTES_MAX_BYTES} UTF-8 bytes")
+    return clause
 
 
 def canonicalize(root, file: str = ""):
@@ -73,13 +89,11 @@ def canonicalize(root, file: str = ""):
             continue
         if h in MODULE_SINGLE:
             if h in mod_clauses:
-                err("E-PARSE", c, f"duplicate `{h}` clause")
+                err("E-NOTES" if h == "notes" else "E-PARSE", c,
+                    f"duplicate `{h}` clause")
                 continue
-            if h == "purpose":
-                if len(c.items) != 2 or not (isinstance(c.items[1], Atom) and c.items[1].kind == "str"):
-                    err("E-PARSE", c, "purpose takes exactly one string")
-                    continue
-                mod_clauses[h] = c
+            if h in ("purpose", "notes"):
+                mod_clauses[h] = _module_text(c, h, err)
             else:
                 mod_clauses[h] = name_list(c, module_name if h == "use" else plain, "a lowercase module name" if h == "use" else "an unqualified name", keep_empty=(h == "export"))
             continue
@@ -109,7 +123,7 @@ def canonicalize(root, file: str = ""):
         return None, diags
 
     out = [root.items[0], root.items[1]]
-    for h in ("purpose", "use", "export"):
+    for h in MODULE_SINGLE:
         if mod_clauses.get(h) is not None:
             out.append(mod_clauses[h])
     for h in ("type", "error", "const", "fn"):

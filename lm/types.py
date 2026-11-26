@@ -3,7 +3,8 @@ from __future__ import annotations
 
 INT, BOOL, STR, UNIT, NEVER = ("Int",), ("Bool",), ("Str",), ("Unit",), ("Never",)
 FLOAT = ("Float",)
-BASE = {"Int": INT, "Float": FLOAT, "Bool": BOOL, "Str": STR, "Unit": UNIT}
+BYTES = ("Bytes",)
+BASE = {"Int": INT, "Float": FLOAT, "Bool": BOOL, "Str": STR, "Unit": UNIT, "Bytes": BYTES}
 # Constraints on prelude operator type variables, checked once a fn's types are solved (ADR-039 item 3).
 NUMERIC, ORDERED = ("Int", "Float"), ("Int", "Float", "Str")
 KEY = ("Int", "Float", "Str", "Bool")  # Map keys and Set elements (ADR-049 item 1)
@@ -159,7 +160,7 @@ class Subst:
     def show(self, t) -> str:
         t = self.resolve(t)
         tag = t[0]
-        if tag in ("Int", "Float", "Bool", "Str", "Unit", "Never"):
+        if tag in BASE or tag == "Never":
             return tag
         if tag in CONTAINERS:
             return f"({tag} " + " ".join(self.show(c) for c in t[1:]) + ")"

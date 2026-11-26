@@ -51,9 +51,17 @@ class SplitMix64:
         return (self.next() >> 11) * 2.0**-53
 
 
+def mono_ms(it):
+    from .hid_replay import ReplayHid
+
+    if isinstance(it.hid, ReplayHid):
+        return it.hid.now()
+    return time.monotonic_ns() // 1_000_000
+
+
 RAND_PRIMS = {
     'rand.int': lambda it, lo, hi: it.rng.int(lo, hi),
     'rand.float': lambda it: it.rng.float(),
     'time.now-ms': lambda it: time.time_ns() // 1_000_000,
-    'time.mono-ms': lambda it: time.monotonic_ns() // 1_000_000,
+    'time.mono-ms': mono_ms,
 }

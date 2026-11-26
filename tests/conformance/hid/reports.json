@@ -1,0 +1,66 @@
+{
+  "probe": "reports",
+  "trace": {
+    "devices": [
+      {
+        "id": "a",
+        "vendor": 1,
+        "product": 2,
+        "usage-page": 1,
+        "usage": 4,
+        "interface": -1,
+        "name": "Controller",
+        "serial": ""
+      },
+      {
+        "id": "b",
+        "vendor": 1,
+        "product": 2,
+        "usage-page": 1,
+        "usage": 4,
+        "interface": -1,
+        "name": "Controller",
+        "serial": ""
+      }
+    ],
+    "events": [
+      {
+        "at-ms": 30,
+        "dev": "a",
+        "report-id": 0,
+        "data": "00ff"
+      },
+      {
+        "at-ms": 30,
+        "dev": "b",
+        "report-id": 3,
+        "data": "a0"
+      },
+      {
+        "at-ms": 110,
+        "dev": "a",
+        "report-id": 7,
+        "data": "01"
+      },
+      {
+        "at-ms": 110,
+        "dev": "a",
+        "unplug": true
+      }
+    ]
+  },
+  "stdout": "a 1 2 -1\nb 1 2 -1\n0\n1\n0 00ff\n3 a0\n1\n7 01\na disconnected\n1\n",
+  "log": [
+    {
+      "at-ms": 110,
+      "op": "close",
+      "dev": "a"
+    },
+    {
+      "at-ms": 110,
+      "op": "close",
+      "dev": "b"
+    }
+  ],
+  "wait_tolerance_ms": 40
+}

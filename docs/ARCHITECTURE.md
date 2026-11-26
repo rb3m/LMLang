@@ -12,17 +12,20 @@ lm/
   printer.py   canonical text (single source of truth for formatting) + format_text()
   diag.py      Diagnostic dataclass, codes table, JSON emit
   program.py   shared model: ModInfo, FnInfo, TypeInfo, ErrInfo, VariantInfo, Program (modules, refs, calls, diags)
-  loader.py    find modules (src/, examples/, stdlib/, given paths, verified `lm.deps` pins), parse, canonicalize, link `use`, detect cycles
-  deps.py      `lm.deps` pins, hash-keyed cache, effect allowances, `lm fetch`; deps_http.py raw HTTPS download
+  loader.py    find modules (src/, examples/, stdlib/, opted-in ext/, given paths, verified `lm.deps` pins), parse, canonicalize, link `use`, detect cycles
+  deps.py      `lm.deps` extensions and pins, hash-keyed cache, effect allowances, `lm fetch`; deps_http.py raw HTTPS download
   prelude.py   closed prelude tables, reserved words, effect set
   types.py     type tuples + Subst (unification with metas; generics via inst())
   resolve.py   Resolver: symbol tables, name lookup + diagnostics, fn signatures
   generics.py  declaration parameter scopes, schematic field/alias resolution, type applications, instantiated key validation
   generic_cycles.py declaration SCCs and regular recursive type checks before alias expansion
   check.py     Checker(CollFormsMixin, FormsMixin, Resolver): per-fn checking, contracts, examples, calls, effects/fails accumulation
+  hid_prims.py HID prim contract; hid_adapter.py shared validation; hid_os.py host selection
+  hid_replay.py replay timeline and queues shared with fake examples; hid_examples.py constant clause validation
+  runtime/go/hid_*.go native replay and OS adapter boundary
   check_pat.py literal pattern proof validation and opaque external-value restrictions
   examples.py  example syntax, module-local value checking and constant fake-world metadata validation
-  forms.py     special forms: if let let? match lam list vecof new get with and or fail try note prim
+  forms.py     special forms: if let let? match lam list vecof bytesof new get with and or fail try note prim
   forms_coll.py special forms mapof/setof (constant keys, duplicates) (ADR-049)
   index.py     Index over prog.refs: norm/find symbols, index lines, callers, deps, slice (collect/closure/budget), hash; `tokens()` heuristic
   bench.py     `lm bench`: case equivalence LM vs Python, S1-S6, mutation suite; data in bench/tasks, output in bench/results
@@ -35,6 +38,7 @@ lm/
   pat_vm.py    ordered Pike VM, scalar search and capture state
   pat_prims.py pattern primitive wrappers and match iteration
   vec_prims.py Vec primitive implementations (shared by interpreter and embedded Python target)
+  bytes_prims.py Bytes primitives and hex validation (shared by interpreter and embedded Python target)
   tree.py      Map/Set values: persistent AVL tree + `Coll` (ADR-049/050; Go twin runtime/go/coll.go)
   prims.py     Python implementations of stdlib `(prim "..")` bodies (PRIMS table); siblings by family: float_prims.py (Float),
                str_prims.py (strings), io_prims.py (I/O, filesystem and read-only environment), http_prims.py (bounded HTTP client), proc_prims.py (bounded POSIX subprocesses), rand_prims.py (clock/random, SplitMix64), json_prims.py (JSON), coll_prims.py (map/set)
@@ -65,7 +69,7 @@ lm/
   gobackend_names.py shared Go name mangling and string literals
   pybackend.py PyGen core: linear code emitter, function generation, contract wrappers, emit_main/emit_cases (ADR-062)
   pybackend_expr.py PyExprMixin: expression emitters, pattern matching, loop lowering
-  pybackend_embed.py mechanical embedding and reachability filtering of runtime sources (tree, float math, coll/rand/json/io/http/proc prims)
+  pybackend_embed.py mechanical embedding and reachability filtering of runtime sources (tree, float math, coll/rand/json/io/http/proc/bytes prims)
   pybackend_source.py shared source cleaning and namespace wrapping for mechanical embedding
   pybackend_names.py shared Python name mangling and literal formatting
   build.py     `lm build`: target dispatch (`go` or `py`), entry check (ADR-031), write sources, invoke compiler/set executable; run_examples_go(), run_examples_py()
@@ -73,9 +77,9 @@ lm/
                rt.go (fail/fault, checked Int ops, calls, stdout, entry/harness), prims.go (ONE func per prim; prims_text.go: M10 str prims; prims_system.go: env and filesystem additions; prims_http.go: HTTP client; prims_proc.go and proc_*.go: subprocesses; http_wire.go: bounded header/trailer capture; http_roots.go: system TLS roots without environment overrides; link_darwin.go/link_other.go: hard links without following symlinks),
                float.go (checked Float ops without FMA, canonical text = Python repr, Float prims),
                server_http.go (CGI, validation, framing, URL decoder), server_listener.go (net.Listen and own HTTP/1 parser), server_entry.go (CGI/listener startup),
-               coll.go (Map/Set AVL tree, mapOf/setOf, map/set prims), rand.go (clock/random), json.go (JSON), pat*.go (pattern compiler and Pike VM)
+               coll.go (Map/Set AVL tree, mapOf/setOf, map/set prims), bytes.go (Bytes storage and primitives), rand.go (clock/random), json.go (JSON), pat*.go (pattern compiler and Pike VM)
   runtime/py/  Python runtime embedded into standalone Python build outputs: rt.py (values, checked Int/Float ops, calls, depth accounting, prims), entry.py (CLI entry/runner, diagnostics, seed), serve.py (named handler conversion and CGI/listener entry)
-stdlib/        list.lm vec.lm pair.lm str.lm opt.lm map.lm set.lm math.lm float.lm io.lm env.lm fs.lm http.lm proc.lm time.lm date.lm rand.lm json.lm pat.lm (LM source over lm/prims.py primitives; date is pure LM)
+stdlib/        list.lm vec.lm bytes.lm pair.lm str.lm opt.lm map.lm set.lm math.lm float.lm io.lm env.lm fs.lm http.lm proc.lm time.lm date.lm rand.lm json.lm pat.lm (LM source over lm/prims.py primitives; date is pure LM)
 src/           user programs
 examples/      sample projects used by tests and bench
 games/         standalone LM projects (run ../../bin/lm inside; e.g. games/roadster-lander)
@@ -120,6 +124,7 @@ Entry points: `sexpr` (Atom kinds int|str|sym|type; SList) -> `ast.canonicalize(
 - **Determinism**: all listings sorted; no timestamps in outputs except `bench/results`.
 
 - **Native and script builds** (ADR-026/032/033/062): the interpreter is the oracle. `lower.py` makes every runtime decision of `interp.py` explicit (call kinds, captures, match tests, fail/try, contracts with sites); a backend is a printer plus a runtime. `gobackend` targets Go (`Value = any`, fail as panic caught by try's deferred recover, faults as panics caught by entry); `pybackend` targets Python (emits a standalone self-contained script with embedded runtime `lm/runtime/py/rt.py`). Both count LM call depth so runaway recursion is a fault (E-RECURSION-LIMIT) instead of an uncontrolled host stack crash.
+- **Device I/O** (ADR-083) uses first-party `ext/` modules enabled through `lm.deps`. `hid` defines the LM interface and effects, while each runtime selects replay or an OS adapter at startup. Interpreter and embedded Python share the prim adapter and replay sources. Go has the same contract, and all three run the conformance vectors under `tests/conformance/hid/`. Fake examples reuse the replay engine with a virtual monotonic clock and an in-memory log. P2a's OS adapter reports unsupported.
 - **Adding a prim**: Python in `lm/prims.py` (PRIMS table), Go in `lm/runtime/go/prims.go` or a family sibling (`func prim_<name>(args Value..) Value`, `.`/`-` -> `_`), and Python backend runtime in `lm/runtime/py/rt.py` (`prim_<name>(*args)`) or an embedded source plus wrappers in `pybackend_embed.py` (filesystem and env share `io_prims.py`, HTTP shares `http_prims.py`, subprocesses share `proc_prims.py`); `tests/unit/test_gobackend.py` fails if the Go twin is missing. Every effectful primitive needs fake-world routing or an explicit check-time rejection of unsupported examples; missing routes fault without accessing the host.
 
 - **HTTP server** (ADR-076): handlers are named `http.Request -> http.Response` functions selected by `serve`/`build --serve`, checked by `serve_entry.py` before lowering. The interpreter and standalone Python share mechanically embedded `http_server.py` and `serve_options.py`; Go uses `server_*.go`, `net.Listen` and its own bounded parser (no net/http server). Adapters construct Request values, invoke one handler, validate the entire Response, then frame bytes. Handler output goes to stderr and faults produce JSON there; stdout remains CGI protocol only. CGI reads one environment/stdin request; listener connections are sequential and close after one request. Host-free memory/pipe tests and three-target CGI/raw-socket fixtures pin parity, limits and fault recovery.

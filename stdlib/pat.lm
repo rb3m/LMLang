@@ -1,11 +1,12 @@
 (module pat
   (purpose "Bounded Unicode text patterns with deterministic ordered matching.")
+  (notes "Subject first; leftmost-first priority preserves alternation and greedy/lazy order. Match offsets are zero-based Unicode scalars, end exclusive. text is group 0; groups are captures 1..N (None when absent, last iteration when repeated). Pat prints <pat> and has no equality, ordering or external constant form, even inside containers. Repeat bound 1000, program limit 10000, nesting limit 100. No lookaround or backreferences. Repeated searches can take quadratic time.")
   (export BadPattern Match Pat compile find find-all matches replace-all replace-with split)
   (type Match (rec (start Int) (end Int) (text Str) (groups (List (Opt Str)))))
   (type Pat (opaque))
   (error BadPattern (pos Int) (reason Str))
   (fn compile
-    (purpose "Compile a pattern; positions count Unicode scalars.")
+    (purpose "Compile with scalar error offsets; valid Str literals discharge BadPattern.")
     (sig (s Str) -> Pat)
     (fails BadPattern)
     (example ("[") => (fail BadPattern 0 "unclosed class"))

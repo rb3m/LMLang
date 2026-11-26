@@ -1,5 +1,6 @@
 (module rand
   (purpose "Seedable SplitMix64 random numbers.")
+  (notes "One SplitMix64 stream per execution, seeded as unsigned 64-bit from the supplied signed seed. Effectful examples start with a fresh stream (seed 0 by default). int supports the full signed 64-bit span.")
   (export float int)
   (fn float
     (purpose "Uniform random Float in [0, 1) using 53 random bits.")
@@ -7,7 +8,8 @@
     (eff rand)
     (body (prim "rand.float")))
   (fn int
-    (purpose "Uniform random Int in the inclusive range lo..hi.")
+    (purpose
+      "Uniform Int in inclusive lo..hi; requires lo <= hi and consumes a draw even when lo = hi.")
     (sig (lo Int) (hi Int) -> Int)
     (eff rand)
     (requires (<= lo hi))

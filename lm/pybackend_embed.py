@@ -240,7 +240,11 @@ def prim_fs_rename(source: str, target: str): return io_mod.fs_rename(_it, sourc
 """
 
 TIME_HELPERS = """def prim_time_now_ms(): return time.time_ns() // 1_000_000
-def prim_time_mono_ms(): return time.monotonic_ns() // 1_000_000
+def prim_time_mono_ms():
+    adapter = globals().get("_hid_adapter")
+    if adapter is not None and isinstance(adapter, hid_replay.ReplayHid):
+        return adapter.now()
+    return time.monotonic_ns() // 1_000_000
 """
 
 
@@ -275,6 +279,15 @@ def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False,
             fn = prim.replace(".", "_").replace("-", "_")
             parts.append(f"def prim_{fn}(*args): return vec_mod.VEC_PRIMS[{prim!r}](_it, *args)")
         parts.append("")
+
+    bytes_prims = sorted(p for p in prog.prims if p.startswith("bytes."))
+    if bytes_prims:
+        parts.append(wrap_module(
+            (LM_DIR / "bytes_prims.py").read_text(encoding="utf-8"), "bytes_mod"))
+        for prim in bytes_prims:
+            name = prim.replace(".", "_").replace("-", "_")
+            parts.append(f"def prim_{name}(*args): "
+                         f"return bytes_mod.BYTES_PRIMS[{prim!r}](_it, *args)")
 
     if any(p.startswith("pat.") for p in prog.prims):
         parts.append("# --- Embedded text-pattern compiler and Pike VM ---")
@@ -348,6 +361,10 @@ def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False,
             '',
         ])
 
+    if any(name.startswith('hid.') for name in prog.prims):
+        from .hid_embed import hid_runtime
+
+        parts.extend(hid_runtime(LM_DIR))
     if 'proc.run' in prog.prims:
         proc_src = (LM_DIR / 'proc_prims.py').read_text(encoding='utf-8')
         parts.extend([

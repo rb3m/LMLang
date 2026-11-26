@@ -1,6 +1,7 @@
 (module map
   (purpose
     "Immutable maps keyed by Int, Float, Str or Bool; every traversal is in ascending key order.")
+  (notes "Maps compare structurally and print in key order. at is the optional lookup; get is reserved for record fields. from-list keeps the last value for each duplicate key.")
   (use opt)
   (export at fold from-list has keys put remove size to-list update values)
   (fn at

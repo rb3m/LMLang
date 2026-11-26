@@ -1,0 +1,27 @@
+{
+  "probe": "invalid",
+  "trace": {
+    "devices": [
+      {
+        "id": "a",
+        "vendor": 1,
+        "product": 2,
+        "usage-page": 1,
+        "usage": 4,
+        "interface": -1,
+        "name": "Controller",
+        "serial": ""
+      }
+    ],
+    "events": []
+  },
+  "stdout": "a invalid-request\na invalid-request\na invalid-request\na invalid-request\ninvalid-request\ninvalid-request\n",
+  "log": [
+    {
+      "at-ms": 15,
+      "op": "close",
+      "dev": "a"
+    }
+  ],
+  "wait_tolerance_ms": 40
+}

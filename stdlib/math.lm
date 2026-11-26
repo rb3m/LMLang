@@ -1,8 +1,9 @@
 (module math
   (purpose "Integer math helpers.")
+  (notes "Int is signed 64-bit. Call (math.int-min) and (math.int-max) for the bounds. Overflow is an uncatchable runtime fault.")
   (export abs int-max int-min max min)
   (fn abs
-    (purpose "Absolute value.")
+    (purpose "Absolute value; the smallest signed Int faults E-OVERFLOW.")
     (sig (x Int) -> Int)
     (example (-3) => 3)
     (body (if (< x 0) (- 0 x) x)))

@@ -1,4 +1,5 @@
 """Entry, diagnostics and seed handling for `lm build --target py` programs (ADR-062); embedded after rt.py."""
+from contextlib import contextmanager
 
 DIAG_KEYS = ("code", "severity", "file", "line", "col", "path", "msg", "expected", "found", "fix", "data")
 random_seed = None
@@ -31,11 +32,23 @@ def seed_from_env():
     if random_seed is None:
         sys.stderr.write("LM_SEED must be a signed 64-bit decimal integer\n"); sys.exit(3)
 
+@contextmanager
+def runtime_devices():
+    hid = "_start_hid" in globals()
+    if hid:
+        _start_hid()
+    try:
+        yield
+    finally:
+        if hid:
+            _close_hid()
+
 def run_main(entry, site: int):
     seed_from_env()
     box: dict = {}
     def target():
-        try: box["r"] = entry()
+        try:
+            box["r"] = entry()
         except LmFail as fl: box["fail"] = fl
         except Fault as ft: box["fault"] = ft
         except RecursionError:
@@ -47,7 +60,12 @@ def run_main(entry, site: int):
     try:
         threading.stack_size(THREAD_STACK); sys.setrecursionlimit(550000)
     except (ValueError, RuntimeError): pass
-    t = threading.Thread(target=target); t.start(); t.join()
+    def run():
+        t = threading.Thread(target=target, daemon=True)
+        t.start()
+        t.join()
+
+    run_with_signal_shutdown(run, runtime_devices())
     try: sys.stdout.flush()
     except Exception: pass
     if "ex" in box: raise box["ex"]
@@ -73,7 +91,11 @@ def run_cases(cases):
         threading.stack_size(THREAD_STACK); sys.setrecursionlimit(550000)
     except (ValueError, RuntimeError): pass
     def run_one(fn):
-        try: return "ok", show(fn())
+        try:
+            if "_start_hid" in globals(): _start_hid()
+            try: return "ok", show(fn())
+            finally:
+                if "_close_hid" in globals(): _close_hid()
         except LmFail as fl: return "fail", str(fl)
         except Fault as ft: return "fault", ft.diag["code"]
         except RecursionError: return "fault", "E-RECURSION-LIMIT"

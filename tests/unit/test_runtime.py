@@ -151,6 +151,16 @@ class Cli(unittest.TestCase):
         rc2, out2, _ = lm("run", "pair.swap", out.strip())
         self.assertEqual((rc2, out2), (0, '(pair 1 "a")\n'))
 
+    def test_run_bytes_paste_back(self):
+        for literal, expected in (
+            ('(bytesof "0aFF")', '(bytesof "0aff")\n'),
+            ('(bytesof "")', '(bytesof "")\n'),
+        ):
+            rc, out, err = lm("run", "bytes.slice", literal, "0", "2")
+            self.assertEqual((rc, out), (0, expected), err)
+            rc, replayed, err = lm("run", "bytes.slice", out.strip(), "0", "2")
+            self.assertEqual((rc, replayed), (0, out), err)
+
     def test_test_command(self):
         rc, _, err = lm("test", "stdlib", "examples")
         self.assertEqual(rc, 0)

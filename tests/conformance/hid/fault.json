@@ -1,0 +1,35 @@
+{
+  "probe": "fault",
+  "trace": {
+    "devices": [
+      {
+        "id": "a",
+        "vendor": 1,
+        "product": 2,
+        "usage-page": 1,
+        "usage": 4,
+        "interface": -1,
+        "name": "Controller",
+        "serial": ""
+      }
+    ],
+    "events": []
+  },
+  "stdout": "",
+  "log": [
+    {
+      "at-ms": 20,
+      "op": "grab",
+      "dev": "a",
+      "on": true
+    },
+    {
+      "at-ms": 20,
+      "op": "close",
+      "dev": "a"
+    }
+  ],
+  "wait_tolerance_ms": 40,
+  "returncode": 70,
+  "fault": "E-OVERFLOW"
+}

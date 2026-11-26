@@ -92,3 +92,21 @@ A fresh Codex session (gpt-6.1-sol, medium effort, `codex exec -s workspace-writ
 ## 2026-10-19 — First DreamHost run: CGI echo handler
 
 examples/cgi-echo.lm built with `lm build --target py --serve cgi-echo.handle`, uploaded by the owner as a .cgi to a DreamHost shared site (Apache, served over HTTP/2 with TLS terminated by Apache). Six requests from Claude: GET with a UTF-8 query and duplicate headers, POST with a UTF-8 body, HEAD, a malformed query, an invalid UTF-8 body, and extra path info. Result: response bodies byte-identical to the same file run locally with the equivalent CGI variables; the query was decoded, the cookie redacted, `query_pairs` null for `%FF`, 400 for the invalid body, HEAD headers only, and the raw PATH_INFO kept in the target (`/echo.cgi/extra/path%20x`). Host differences, all within ADR-076: Apache merged duplicate headers into one (`a, b`), our CGI adapter sorted the headers by name (CGI keeps no order), and Apache dropped Content-Length under HTTP/2 framing. Finding: the host adds `cache-control: max-age=172800` and an `expires` header two days out next to the handler's `no-store`, harmless for tests; a project that must not be cached gets its own .htaccess (docs/DEPLOY-CGI.md).
+
+## 2026-11-25 — ADR-084: core guide plus module notes, cold starts before and after (backlog 32)
+
+Twelve fresh agents in empty directories outside the repo, PATH holding only an `lm` shim (logs documentation calls with output bytes, and check/test/accept exit codes), Homebrew Python/Go and /usr/bin. Two families: Codex (gpt-6.2-sol, medium, `workspace-write` sandbox) and Claude Code (sonnet, medium, its own sandbox). Three tasks fixed before any run, scored by hidden checks the agents never saw: T1 the ADR-065 word-frequency CLI (errors now on stderr), T2 `runlog` (PATH lookup, `proc.run`, `fs` append, hermetic `given proc` example), T3 `clicks` (decode mouse reports through `ext/hid` with a supplied `LM_HID_REPLAY` trace). Before: commit 712676f (9,216-byte guide). After: 50c9eda (6,134-byte guide, module notes, ext modules in `index --stdlib --modules`).
+
+| Run | Docs bytes before → after | Failing check/test cycles | Hidden checks | Session (Codex tokens / Claude USD) |
+|---|---|---|---|---|
+| T1 Codex | 33,533 → 24,108 (−28%) | 7 → 3 | 18/18 both | 49,993 → 47,723 |
+| T1 Claude | 18,758 → 20,661 (+10%) | 4 → 1 | 18/18 both | 0.386 → 0.266 |
+| T2 Codex | 28,863 → 30,481 (+6%) | 17 → 9 | 8/8 both | 82,668 → 56,272 |
+| T2 Claude | 18,518 → 20,575 (+11%) | 150 → 8 (the 150 came from the agent's own check loop) | 8/8 both | 0.710 → 0.455 |
+| T3 Codex | 31,040 → 25,875 (−17%) | 11 → 8 | 5/5 both | 61,303 → 66,437 |
+| T3 Claude | 32,504 → 32,415 (0%) | 9 → 14 | 5/5 both | 1.000 → 0.810 |
+
+- Median documentation bytes: 29,951 → 24,992, **−16.6%: misses ADR-084's 20% target.** The guide saves 3,082 bytes on every run, but `index --module` output grew (the notes live there) and agents read more modules: in the after runs it is 43-59% of all documentation read.
+- No completion or caveat regression: every run in both conditions passed its hidden checks and ended with check, test and guard green. Session cost fell: Claude 2.10 → 1.53 USD (−27%), Codex 193,964 → 170,432 tokens (−12%).
+- Gaps reported by the after agents, fixed the same day: no reachable `given (hid ..)` grammar, the fs fake-world rule that files need declared parent dirs, the `(deps (ext STEM))` file form, and the `disconnected` message from `hid.read`. Language gaps queued: no string ordering (backlog 33), no stdout write without a newline (backlog 34). Also reported: scenarios cannot use `given` fixtures (by design, ADR-055).
+- Caveats: one run per cell, so variance is large; the installed `lm` agent skill already had ADR-084's one-line workflow change during the before runs (biases the before runs toward the new behaviour); Codex's login shell put /usr/bin's Python 3.9 first, so Codex runs set `LM_PYTHON` themselves in both conditions; Claude sessions carried the owner's global instructions in both conditions; runs overlapped, so wall time is noisy. Two harness bugs were found and fixed before scoring (Codex's login shell bypassed the shim; the spec's binary path clashed with `lm new`'s directory); runs affected by them were discarded and rerun.

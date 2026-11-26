@@ -5,6 +5,7 @@ import json
 from dataclasses import asdict, dataclass, field
 
 CODES = {
+    "E-EXT-UNDECLARED": "error",
     "E-DEPS": "error",
     "E-DEP-UNFETCHED": "error",
     "E-DEP-HASH": "error",
@@ -16,12 +17,14 @@ CODES = {
     "E-NONCANONICAL": "warning",
     "E-PURPOSE-MISSING": "error",
     "E-PURPOSE-LONG": "error",
+    "E-NOTES": "error",
     "E-NAME-UNRESOLVED": "error",
     "E-USE-MISSING": "error",
     "E-NOT-EXPORTED": "error",
     "E-CYCLE": "error",
     "E-DUP-NAME": "error",
     "E-ARITY": "error",
+    "E-BYTES-LITERAL": "error",
     "E-TYPE": "error",
     "E-EFFECT-UNDECLARED": "error",
     "E-FAILS-UNDECLARED": "error",

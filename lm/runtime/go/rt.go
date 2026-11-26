@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/signal"
 	"regexp"
 	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
+	"syscall"
 )
 
 // Site locates a node for fault diagnostics; generated code fills `sites` and passes indexes.
@@ -375,10 +378,21 @@ var preludeValues = map[string]Value{
 // out is stdout: line-buffered on a terminal, block-buffered otherwise; flushed at exit, before a
 // fault or failure report, and (for I/O prims) before reading stdin. progArgs feeds `io.args`.
 var (
-	out      = bufio.NewWriterSize(os.Stdout, 65536)
+	out      = bufferedOutput{writer: bufio.NewWriterSize(os.Stdout, 65536)}
 	outTTY   = isTTY(os.Stdout)
 	progArgs = cleanArgs(os.Args[1:])
 )
+
+type bufferedOutput struct {
+	mu     sync.Mutex
+	writer *bufio.Writer
+}
+
+func (b *bufferedOutput) Flush() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.writer.Flush()
+}
 
 func isTTY(f *os.File) bool {
 	st, err := f.Stat()
@@ -386,10 +400,12 @@ func isTTY(f *os.File) bool {
 }
 
 func writeLine(s string) {
-	out.WriteString(s)
-	out.WriteByte('\n')
+	out.mu.Lock()
+	defer out.mu.Unlock()
+	out.writer.WriteString(s)
+	out.writer.WriteByte('\n')
 	if outTTY {
-		out.Flush()
+		out.writer.Flush()
 	}
 }
 
@@ -406,6 +422,8 @@ func outcome(f func() Value) (kind string, v Value, fl *Fail, ft *Fault) {
 				kind, fl = "fail", x
 			case *Fault:
 				kind, ft = "fault", x
+			case hidInterrupted:
+				kind = "interrupted"
 			default:
 				panic(r)
 			}
@@ -433,7 +451,11 @@ func setup() {
 func runMain(entry func() Value, site int) {
 	seedFromEnv()
 	setup()
+	startHid()
+	shutdown := sync.OnceFunc(closeHid)
+	stopWatching := watchRuntimeSignals(shutdown)
 	kind, v, fl, ft := outcome(func() Value {
+		defer shutdown()
 		r := entry()
 		if n, ok := r.(int64); ok && (n < 0 || n > 255) {
 			fault("E-EXIT-RANGE", site, "exit status "+strconv.FormatInt(n, 10)+" is outside 0-255", show(r))
@@ -441,6 +463,7 @@ func runMain(entry func() Value, site int) {
 		return r
 	})
 	out.Flush()
+	stopWatching()
 	switch kind {
 	case "fail":
 		fmt.Fprintln(os.Stderr, fl.String())
@@ -455,6 +478,31 @@ func runMain(entry func() Value, site int) {
 	os.Exit(0)
 }
 
+func watchRuntimeSignals(shutdown func()) func() {
+	signals := make(chan os.Signal, 1)
+	done := make(chan struct{})
+	signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		defer close(done)
+		sig, ok := <-signals
+		if !ok {
+			return
+		}
+		// Keep the LM thread from writing after the flush while exit hooks run.
+		out.mu.Lock()
+		out.writer.Flush()
+		// Stderr is written directly to os.Stderr.
+		interruptHid()
+		shutdown()
+		os.Exit(128 + int(sig.(syscall.Signal)))
+	}()
+	return func() {
+		signal.Stop(signals)
+		close(signals)
+		<-done
+	}
+}
+
 // Case is one example run by the differential harness (lm/build.py).
 type Case struct {
 	Label string
@@ -466,7 +514,11 @@ func runCases(cases []Case) {
 	setup()
 	for _, c := range cases {
 		randomState = 0
-		kind, v, fl, ft := outcome(c.Run)
+		kind, v, fl, ft := outcome(func() Value {
+			startHid()
+			defer stopHid()
+			return c.Run()
+		})
 		detail := ""
 		switch kind {
 		case "ok":

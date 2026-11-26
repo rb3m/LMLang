@@ -1,0 +1,195 @@
+(module probe
+  (purpose "Exercise the same HID replay contract in each LM runtime.")
+  (use bytes hid io math str time)
+  (export main)
+  (fn availability
+    (purpose "Describe the adapter capability and failure categories.")
+    (sig -> Unit)
+    (eff hid.io io.out)
+    (body
+      (do
+        (io.print (if (hid.supports "enumerate") "available" "unavailable"))
+        (io.print (if (hid.supports "invented") "unexpected" "unknown"))
+        (try
+          (io.print (str.from-int (len (hid.enumerate))))
+          (catch hid.HidError (id msg) (io.print msg)))
+        (try
+          (let ((d (hid.open "a"))) (hid.close d))
+          (catch hid.HidError (id msg) (io.print (str.join (list id msg) " "))))
+        (try
+          (io.print (str.from-int (len (hid.wait (list) 0))))
+          (catch hid.HidError (id msg) (io.print msg))))))
+  (fn count
+    (purpose "Drain an already queued burst and count its reports.")
+    (sig (d hid.Dev) (total Int) -> Int)
+    (eff hid.io)
+    (fails hid.HidError)
+    (body (match (hid.read d) (None total) ((Some _) (count d (+ 1 total))))))
+  (fn fault
+    (purpose "Fault after opening and grabbing a device to exercise implicit close.")
+    (sig -> Unit)
+    (eff hid.grab hid.io io.out)
+    (fails hid.HidError)
+    (body
+      (let
+        ((d (hid.open "a")) (ready (hid.wait (list) 20)))
+        (do (hid.grab d true) (io.print (str.from-int (+ (math.int-max) 1)))))))
+  (fn interrupt
+    (purpose "Keep a grabbed device open while waiting for a terminal interrupt.")
+    (sig -> Unit)
+    (eff hid.grab hid.io io.out)
+    (fails hid.HidError)
+    (body
+      (let
+        ((start (hid.wait (list) 20)) (d (hid.open "a")))
+        (do
+          (io.print "before")
+          (io.print "waiting")
+          (hid.grab d true)
+          (let ((ready (hid.wait (list d) 20000))) unit)))))
+  (fn invalid
+    (purpose "Report invalid timeouts, report IDs and report lengths.")
+    (sig -> Unit)
+    (eff hid.io io.out)
+    (fails hid.HidError)
+    (body
+      (let
+        ((d (hid.open "a")))
+        (do
+          (try
+            (hid.write d (new hid.Report (id 256) (data (bytesof "00"))))
+            (catch hid.HidError (id msg) (io.print (str.join (list id msg) " "))))
+          (try
+            (hid.feature-set d (new hid.Report (id 0) (data (bytesof ""))))
+            (catch hid.HidError (id msg) (io.print (str.join (list id msg) " "))))
+          (try
+            (io.print (bytes.hex (hid.feature-get d -1 1)))
+            (catch hid.HidError (id msg) (io.print (str.join (list id msg) " "))))
+          (try
+            (io.print (bytes.hex (hid.feature-get d 0 4097)))
+            (catch hid.HidError (id msg) (io.print (str.join (list id msg) " "))))
+          (try
+            (io.print (str.from-int (len (hid.wait (list d) -1))))
+            (catch hid.HidError (id msg) (io.print msg)))
+          (try
+            (io.print (str.from-int (len (hid.wait (list d) 3600001))))
+            (catch hid.HidError (id msg) (io.print msg)))
+          (let ((ready (hid.wait (list d) 15))) unit)))))
+  (fn main
+    (purpose "Run the probe for the requested trace.")
+    (sig -> Unit)
+    (eff hid.grab hid.io io.in io.out time.now)
+    (fails hid.HidError)
+    (body
+      (match
+        (io.args)
+        ((list "reports") (reports))
+        ((list "pulse") (pulse))
+        ((list "overflow") (overflow))
+        ((list "invalid") (invalid))
+        ((list "fault") (fault))
+        ((list "interrupt") (interrupt))
+        (_ (availability)))))
+  (fn overflow
+    (purpose "Read the oldest surviving report and count the bounded queue.")
+    (sig -> Unit)
+    (eff hid.io io.out)
+    (fails hid.HidError)
+    (body
+      (let
+        ((d (hid.open "a")))
+        (do
+          (print-report (hid.read d))
+          (io.print (str.from-int (count d 1)))
+          (let ((ready (hid.wait (list d) 20))) unit)))))
+  (fn print-info
+    (purpose "Compare each catalog record with a constructed Info before printing.")
+    (sig (info hid.Info) -> Unit)
+    (eff io.out)
+    (body
+      (if
+        (=
+          info
+          (new
+            hid.Info
+            (id (get info id))
+            (vendor (get info vendor))
+            (product (get info product))
+            (usage-page (get info usage-page))
+            (usage (get info usage))
+            (interface (get info interface))
+            (name (get info name))
+            (serial (get info serial))))
+        (io.print
+          (str.join
+            (list
+              (get info id)
+              (str.from-int (get info vendor))
+              (str.from-int (get info product))
+              (str.from-int (get info interface)))
+            " "))
+        (io.print "info record type mismatch"))))
+  (fn print-report
+    (purpose "Print the report ID and payload, or mark an empty queue.")
+    (sig (value (Opt hid.Report)) -> Unit)
+    (eff io.out)
+    (body
+      (match
+        value
+        (None (io.print "empty"))
+        (
+          (Some r)
+          (if
+            (= r (new hid.Report (id (get r id)) (data (get r data))))
+            (io.print (str.join (list (str.from-int (get r id)) (bytes.hex (get r data))) " "))
+            (io.print "report record type mismatch"))))))
+  (fn pulse
+    (purpose "Release a pulse after 80 milliseconds even while input keeps arriving.")
+    (sig -> Unit)
+    (eff hid.grab hid.io io.out time.now)
+    (fails hid.HidError)
+    (body
+      (let
+        ((start (hid.wait (list) 20)) (d (hid.open "a")))
+        (do
+          (hid.grab d true)
+          (hid.write d (new hid.Report (id 0) (data (bytesof "01"))))
+          (until d (+ (time.mono-ms) 80))
+          (hid.write d (new hid.Report (id 2) (data (bytesof "00"))))
+          (io.print (bytes.hex (hid.feature-get d 7 2)))
+          (hid.feature-set d (new hid.Report (id 7) (data (bytesof "aa"))))
+          (hid.grab d false)))))
+  (fn reports
+    (purpose "Observe two equal vendor/product pairs, ordered readiness and unplug.")
+    (sig -> Unit)
+    (eff hid.io io.out)
+    (fails hid.HidError)
+    (body
+      (do
+        (for (info (hid.enumerate)) (print-info info))
+        (let
+          ((a (hid.open "a")) (b (hid.open "b")))
+          (do
+            (for (i (hid.wait (list b a) 500)) (io.print (str.from-int i)))
+            (print-report (hid.read a))
+            (print-report (hid.read b))
+            (for (i (hid.wait (list b a) 500)) (io.print (str.from-int i)))
+            (print-report (hid.read a))
+            (try
+              (print-report (hid.read a))
+              (catch hid.HidError (id msg) (io.print (str.join (list id msg) " "))))
+            (io.print (str.from-int (len (hid.enumerate))))
+            (hid.close a)
+            (hid.close a))))))
+  (fn until
+    (purpose "Drain reports while waiting for the remaining pulse duration.")
+    (sig (d hid.Dev) (deadline Int) -> Unit)
+    (eff hid.io time.now)
+    (fails hid.HidError)
+    (body
+      (let
+        ((remaining (- deadline (time.mono-ms))))
+        (if
+          (<= remaining 0)
+          unit
+          (let ((ready (hid.wait (list d) remaining)) (report (hid.read d))) (until d deadline)))))))

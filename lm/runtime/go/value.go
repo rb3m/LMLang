@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Value is any LM value. Int=int64, Float=float64 (finite, never -0.0), Bool=bool, Str=string, Unit=UnitT, List=[]Value,
+// Value is any LM value. Int=int64, Float=float64 (finite, never -0.0), Bool=bool, Str=string, Bytes=Bytes, Unit=UnitT, List=[]Value,
 // variants=*Variant, records=*Record, Map and Set=*Coll (coll.go), Vec=*Vec (vec.go), functions=*Closure.
 type Value = any
 
@@ -93,7 +93,7 @@ func withFields(r Value, pairs ...Value) Value {
 // equal is LM structural, type-strict equality (`=`); function values compare by identity.
 func equal(a, b Value) bool {
 	switch x := a.(type) {
-	case int64, float64, bool, string, UnitT: // Floats are finite and never -0.0 (ADR-039)
+	case int64, float64, bool, string, Bytes, UnitT: // Floats are finite and never -0.0 (ADR-039)
 		return a == b
 	case []Value:
 		y := b.([]Value)
@@ -214,6 +214,10 @@ func showTo(b *strings.Builder, v Value) {
 		b.WriteString("(vecof")
 		vecEach(x, func(e Value) { b.WriteByte(' '); showTo(b, e) })
 		b.WriteByte(')')
+	case Bytes:
+		b.WriteString(`(bytesof "` + bytesHex(x) + `")`)
+	case *hidDev:
+		b.WriteString("<hid.Dev>")
 	case *Pat:
 		b.WriteString("<pat>")
 	default:

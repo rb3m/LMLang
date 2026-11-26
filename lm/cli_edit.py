@@ -34,8 +34,10 @@ def cmd_edit(args) -> int:
         else:
             pos.append(a)
         i += 1
+    if pos and pos[0] == "add-ext":
+        return _edit_extension(pos[1:], dry)
     if not pos or (pos[0] not in OPS and pos[0] != "apply"):
-        sys.stderr.write("lm edit: operations:\n" + "".join(f"  {k} {v[2]}\n" for k, v in sorted(OPS.items())) + "  apply JSON   (a diagnostic's `fix` object or list)\n")
+        sys.stderr.write("lm edit: operations:\n" + "".join(f"  {k} {v[2]}\n" for k, v in sorted(OPS.items())) + "  add-ext STEM\n  apply JSON   (a diagnostic's `fix` object or list)\n")
         return 3
     op, oargs = pos[0], pos[1:]
     if op == "apply":
@@ -50,6 +52,11 @@ def cmd_edit(args) -> int:
             sys.stderr.write(f"lm edit apply: bad JSON: {ex}\n")
             return 3
         fx = fx if isinstance(fx, list) else [fx]
+        if any(f.get("op") == "add-ext" for f in fx):
+            if len(fx) != 1:
+                sys.stderr.write("lm edit apply: `add-ext` fixes cannot be mixed with others\n")
+                return 3
+            return _edit_extension([fx[0].get("stem", "")], dry)
         names = set()
         for f in fx:
             for k in ("module", "fn"):
@@ -132,3 +139,28 @@ def cmd_edit(args) -> int:
         sys.stderr.write(f"edit {op}: rewrote scenarios in {files}; touched scenarios are now proposed and need the owner's re-approval (ADR-055)\n")
     return 1 if e else 0
 
+
+
+def _edit_extension(args, dry):
+    from difflib import unified_diff
+
+    from .deps import MANIFEST, add_extension, atomic_write
+
+    if len(args) != 1 or not isinstance(args[0], str):
+        sys.stderr.write("lm edit add-ext: expects one extension stem\n")
+        return 3
+    path = Path(MANIFEST)
+    try:
+        text = add_extension(args[0])
+        old = path.read_text(encoding="utf-8") if path.exists() else ""
+        if dry:
+            sys.stdout.writelines(unified_diff(old.splitlines(keepends=True),
+                                               text.splitlines(keepends=True),
+                                               MANIFEST, MANIFEST))
+            return 0
+        if old != text:
+            atomic_write(path, text.encode("utf-8"))
+    except (OSError, ValueError) as ex:
+        sys.stderr.write(f"lm edit add-ext: {ex}\n")
+        return 1
+    return 0

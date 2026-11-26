@@ -6,6 +6,7 @@ build. Input must be a program without check errors; anything unexpected is a to
 from __future__ import annotations
 
 from . import ir
+from .bytes_prims import parse_hex
 from .lower_consts import sort_consts
 from .prelude import SPECIAL, VALUES, form_method
 from .program import ConstInfo, FnInfo, ModInfo, Program
@@ -252,6 +253,9 @@ class Lowerer:
 
     def s_list(self, e, m, env, p, fq):
         return ir.ListLit([self.ex(a, m, env, f"{p}/{k + 1}", fq) for k, a in enumerate(e.items[1:])])
+
+    def s_bytesof(self, e, m, env, p, fq):
+        return ir.Lit("bytes", parse_hex(e.items[1].value))
 
     def s_vecof(self, e, m, env, p, fq):
         return ir.VecLit([self.ex(a, m, env, f"{p}/{k + 1}", fq) for k, a in enumerate(e.items[1:])])

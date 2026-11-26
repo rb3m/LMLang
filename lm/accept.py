@@ -300,7 +300,8 @@ def execute(prog, ck, s):
                 raise
             return "diag", d
 
-    k, val = in_big_stack(go)
+    with it:
+        k, val = in_big_stack(go)
     if k == "diag":
         return False, val.msg
     shown = show(val) if k == "ok" else f"(fail {val.id}" + "".join(" " + show(a) for a in val.args_) + ")"

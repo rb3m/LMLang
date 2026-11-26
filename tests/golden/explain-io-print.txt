@@ -4,4 +4,4 @@ Returns:  Unit
 Can fail: never
 Effects:  io.out
 Examples: none
-Used by:  colsum.print-all, file-lines.main
+Used by:  colsum.print-all, file-lines.main, hid-monitor.main, hid-monitor.reports

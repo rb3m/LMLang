@@ -1,5 +1,6 @@
 (module json
   (purpose "Strict JSON values, parsing, rendering and object lookup.")
+  (notes "Strict RFC 8259. Duplicate decoded keys and unpaired surrogates fail. Whole numbers with no exponent or decimal point become JInt if within Int64; other numbers become JFloat (non-finite values fail). BadJson positions are zero-based scalar offsets, including EOF. Object key order is canonical; field returns Some JNull for an explicit null.")
   (use map)
   (export BadJson Json field parse print)
   (type

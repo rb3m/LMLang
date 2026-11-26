@@ -31,8 +31,9 @@ def discharged_compile(ck, info, args, node, path):
 
 
 def check_external_type(ck, m, t, node, path):
-    """Patterns have no external constant representation, even when nested."""
-    if ck.has_pat(t, set()):
+    """Primitive handles cannot appear in external constants, even nested."""
+    opaque = ck.primitive_opaque(t)
+    if opaque:
         ck.diag(m, "E-TYPE", node, path,
-                "external constants cannot contain Pat values",
-                expected="a type without Pat", found=ck.s.show(t))
+                f"external constants cannot contain {opaque} values",
+                expected=f"a type without {opaque}", found=ck.s.show(t))

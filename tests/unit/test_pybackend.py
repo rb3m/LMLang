@@ -77,8 +77,8 @@ class PyDifferential(unittest.TestCase):
                 label, kind, detail = line.split("\t", 2)
                 got_py[label] = (kind, detail)
 
-        # Includes offline HTTP/proc validation, server helpers, patterns and examples/cgi-echo.
-        self.assertEqual(len(cases), 915)
+        # Includes offline HTTP/proc validation, server helpers, patterns, Bytes and examples/cgi-echo.
+        self.assertEqual(len(cases), 951)
         diffs = [f"{k}: interp {want.get(k)} != py {got_py.get(k)}"
                  for k, _, _ in cases if want.get(k) != got_py.get(k)]
         self.assertEqual(diffs, [])
@@ -157,7 +157,7 @@ class PyBuiltBinaries(unittest.TestCase):
                     ran_cases += 1
 
         self.assertEqual(refused_fixtures, 0)
-        self.assertEqual(ran_cases, 42)
+        self.assertEqual(ran_cases, 43)
         sys.stderr.write(f"\n[Python Target] fixtures: {ran_cases} test runs passed, "
                          f"{refused_fixtures} fixtures refused\n")
 

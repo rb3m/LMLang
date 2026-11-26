@@ -90,3 +90,5 @@ Moved files cited by older ADRs: `AGYS_OPINION.md` is now `docs/archive/2026-10-
 - [ADR-080](0080-agent-skill-and-lm-install.md) Agent skill and `lm install`: symlink the CLI onto PATH and the skill into agent user directories (2026-10-27, agent consensus)
 - [ADR-081](0081-database-access-deferred.md) Backlog 29: database access deferred until a program needs it; then a pure stdlib `db` types module plus driver modules, real effects, bound parameters (2026-10-28, agent consensus)
 - [ADR-082](0082-http-per-call-deadline.md) Backlog 31: per-call HTTP deadline `http.request-within`, Int seconds 1..600, defaults unchanged (2026-11-25, agent consensus)
+- [ADR-083](0083-device-io-layered-hid-vinput.md) Backlog 30: device I/O as an OS-agnostic `hid`/`vinput` interface over per-OS adapters, core `bytes`, split effects, macOS via ctypes/cgo (2026-11-25, agent consensus)
+- [ADR-084](0084-guide-core-and-module-notes.md) Backlog 32: fixed 6 KiB core guide plus per-module `(notes ..)`, ext modules listed in `index --stdlib --modules`, no stdlib moves (2026-11-25, agent consensus)

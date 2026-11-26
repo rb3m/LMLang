@@ -81,20 +81,29 @@ class Index:
         return None, f"module `{mn}` has no symbol `{nm}`; did you mean: {' '.join(suggest(text, cands) or sorted(cands)[:6])}"
 
     # ---- index -----------------------------------------------------------------------------------
-    def module_lines(self, mods):
+    @staticmethod
+    def _opt_in(m):
+        return f"  opt-in: (ext {m.name}) in lm.deps"
+
+    def module_lines(self, mods, mark_extensions=False):
         out = []
         for m in mods:
             n = len(m.exported_fns) + len(m.exported_consts) + len(m.exported_caps)
             prefix = "ext " if m.is_external else ""
-            out.append(f'{prefix}{m.name}  {n} exports  {m.purpose or ""}')
+            opt_in = self._opt_in(m) if mark_extensions and m.is_extension else ""
+            out.append(f'{prefix}{m.name}  {n} exports  {m.purpose or ""}{opt_in}')
         return out
 
-    def index_lines(self, mods, exported_only=False):
+    def index_lines(self, mods, exported_only=False, module_detail=False):
         out = []
         for m in mods:
             prefix = "ext " if m.is_external else ""
             use = f"  (use {' '.join(u.value for u in m.uses)})" if m.uses else ""
-            out.append(f"{prefix}module {m.name}  -- {m.purpose or ''}{use}")
+            undeclared = m.is_extension and m.name not in self.prog.declared_extensions
+            opt_in = self._opt_in(m) if module_detail and undeclared else ""
+            out.append(f"{prefix}module {m.name}  -- {m.purpose or ''}{use}{opt_in}")
+            if module_detail and m.notes is not None:
+                out.append(f"{prefix}  notes: {m.notes}")
             for c in m.root.items[2:]:
                 h = head(c)
                 if h not in ("type", "error", "const", "fn"):

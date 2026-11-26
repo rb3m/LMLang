@@ -1,0 +1,3 @@
+(module notes-multiline
+  (purpose "Invalid notes fixture.")
+  (notes "first\nsecond"))

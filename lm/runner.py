@@ -15,7 +15,7 @@ FAULT_CODES = frozenset(["E-OVERFLOW", "E-FLOAT", "E-RECURSION-LIMIT", "E-REQUIR
 FAULT_EXIT = 70  # EX_SOFTWARE
 
 
-def in_big_stack(fn):
+def in_big_stack(fn, *, daemon=False):
     """Give non-tail LM recursion room to raise RecursionError rather than crash.
 
     Self tail calls run inside Interp.call_fn's loop and consume no extra stack.
@@ -34,10 +34,12 @@ def in_big_stack(fn):
         sys.setrecursionlimit(150000)
     except (ValueError, RuntimeError):
         sys.setrecursionlimit(8000)
-    t = threading.Thread(target=target)
+    t = threading.Thread(target=target, daemon=daemon)
     t.start()
-    t.join()
-    sys.setrecursionlimit(old)
+    try:
+        t.join()
+    finally:
+        sys.setrecursionlimit(old)
     if "e" in box:
         raise box["e"]
     return box["r"]
@@ -81,8 +83,9 @@ def test_program(prog):
                 exs = f.clauses.get("example", [])
                 if not exs:
                     signature = fn([t for _, t in f.params], f.ret)
-                    if not f.eff and not contains_opaque(
-                            signature, "pat.Pat", prog.type_index):
+                    if not f.eff and not any(
+                            contains_opaque(signature, name, prog.type_index)
+                            for name in ("pat.Pat", "hid.Dev")):
                         stats["no_examples"].append(f.qual)
                     continue
                 for k, c in enumerate(exs):
@@ -139,6 +142,7 @@ def _example(prog, f, k, c):
             matched = failed is None and got == want and type(got) is type(want)
         mismatches = [] if matched else [(expected, found)]
         if world is not None:
+            world.hid.shutdown()
             world.check_procs()
             mismatches.extend(_world_checks(prog, f, parts, world))
         if not mismatches:
@@ -157,6 +161,9 @@ def _example(prog, f, k, c):
         if d.file == "":
             d.file, d.line, d.col, d.path = m.file, c.line, c.col, path
         return d
+    finally:
+        if world is not None:
+            world.hid.shutdown()
 
 
 def _world_checks(prog, f, parts, world):
@@ -172,6 +179,11 @@ def _world_checks(prog, f, parts, world):
             if got != values[0]:
                 mismatches.append((f"{name} {show(values[0])}",
                                    f"{name} {show(got)}"))
+            continue
+        if name == "hid-log":
+            if world.hid_log != values[0]:
+                mismatches.append((f"hid-log {values[0]!r}",
+                                   f"hid-log {world.hid_log!r}"))
             continue
         path = values[0]
         is_file, is_dir = path in world.files, path in world.dirs

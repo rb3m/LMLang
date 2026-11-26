@@ -1,5 +1,6 @@
 (module float
   (purpose "Float helpers: conversions, rounding, constants, exp, logs, sqrt, abs, min, max, sum.")
+  (notes "Math is deterministic across targets, within 1 ulp (sqrt correctly rounded). Angles are in radians; sin(pi()) is 1.2246467991473532e-16. Non-finite results fault E-FLOAT; underflow to subnormal or zero is allowed. fixed emits exactly digits decimal places, with no exponent or minus on rounded zero. Examples compare exactly: use E-EXAMPLE-FAILED's found value or compare fixed strings.")
   (use list)
   (export
     abs
@@ -117,8 +118,7 @@
     (example (-1000.0) => -1.0)
     (body (prim "float.expm1")))
   (fn fixed
-    (purpose
-      "Fixed decimals of exact binary x, half-even; unlike round, which rounds halves away from zero.")
+    (purpose "Fixed decimals (digits 0..17) of the exact binary value, ties to even.")
     (sig (x Float) (digits Int) -> Str)
     (requires (and (>= digits 0) (<= digits 17)))
     (example (0.125 2) => "0.12")
@@ -191,8 +191,7 @@
     (example () => 3.141592653589793)
     (body (prim "float.pi")))
   (fn pow
-    (purpose
-      "Power; invalid real domains and overflow are E-FLOAT; underflow allowed; error at most 1 ulp.")
+    (purpose "x^y; x^0 = 1. Zero to negative y or negative x to noninteger y faults E-FLOAT.")
     (sig (x Float) (y Float) -> Float)
     (example (0.0 0.0) => 1.0)
     (example (-2.0 3.0) => -8.0)

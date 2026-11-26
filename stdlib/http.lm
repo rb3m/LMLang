@@ -1,5 +1,6 @@
 (module http
   (purpose "HTTP client, request records and strict query decoding.")
+  (notes "Client: verified HTTPS, plaintext HTTP only on loopback. ASCII URLs with valid escapes; no userinfo or fragments. Methods GET HEAD POST PUT PATCH DELETE OPTIONS. Reserved headers: Host, Content-Length, Transfer-Encoding, Connection. No redirects, proxies or network examples. Limits: 5 s connect, 8 MiB request headers+body and response body, 64 KiB/100 response headers. Response body is strict UTF-8; headers are sorted lowercase names, retaining duplicates. Server setup: lm help serve.")
   (use str)
   (export
     BadEncoding
@@ -18,7 +19,7 @@
   (error BadEncoding (s Str))
   (error HttpError (url Str) (msg Str))
   (fn fetch
-    (purpose "Fetch a URL using GET, no caller headers and an empty body.")
+    (purpose "GET with empty body, no caller headers and a 30-second total deadline.")
     (sig (url Str) -> Response)
     (eff net.http)
     (fails HttpError)
@@ -63,13 +64,13 @@
     (example ("x=%FF") => (fail BadEncoding "%FF"))
     (body (query-fields (str.split q "&"))))
   (fn request
-    (purpose "Send one HTTP request; non-2xx responses are ordinary results.")
+    (purpose "Send one request with a 30-second total deadline. Non-2xx statuses are results.")
     (sig (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) -> Response)
     (eff net.http)
     (fails HttpError)
     (body (request-within method url headers body 30)))
   (fn request-within
-    (purpose "Send one HTTP request with a total deadline in seconds.")
+    (purpose "Send one request; a deadline outside 1..600 seconds fails before network I/O.")
     (sig (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) (secs Int) -> Response)
     (eff net.http)
     (fails HttpError)

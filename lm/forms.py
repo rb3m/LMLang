@@ -1,6 +1,7 @@
 """Special forms: if let let? do match lam list new get with and or fail try note prim."""
 from __future__ import annotations
 
+from .bytes_prims import parse_hex
 from .facts import Binding
 from .resolve import head
 from .sexpr import Atom, SList
@@ -8,7 +9,7 @@ from .forms_for import ForFormsMixin
 from .forms_match import MatchFormsMixin
 from .printer import flat
 from .types import (
-    BOOL, FLOAT, INT, NEVER, STR, UNIT, fields_of, fn, lst, nom, opt,
+    BOOL, BYTES, FLOAT, INT, NEVER, STR, UNIT, fields_of, fn, lst, nom, opt,
     pair, var, vec,
 )
 
@@ -131,14 +132,24 @@ class FormsMixin(MatchFormsMixin, ForFormsMixin):
             self.expect(m, el, t, e.items[i], f"{path}/{i}", "Vec element")
         return vec(el)
 
+    def f_bytesof(self, m, e, env, path):
+        args = e.items[1:]
+        if len(args) != 1 or not isinstance(args[0], Atom) or args[0].kind != "str":
+            self.diag(m, "E-BYTES-LITERAL", e, path, "`bytesof` expects exactly one Str literal")
+            return BYTES
+        if parse_hex(args[0].value) is None:
+            self.diag(m, "E-BYTES-LITERAL", args[0], path + "/1",
+                      "`bytesof` expects pairs of hex digits with no whitespace")
+        return BYTES
+
     def f_note(self, m, e, env, path):
         if not (len(e.items) == 2 and isinstance(e.items[1], Atom) and e.items[1].kind == "str"):
             return self._shape(m, e, path, '(note "text")')
         return UNIT
 
     def f_prim(self, m, e, env, path):
-        if not m.is_stdlib:
-            self.diag(m, "E-NAME-UNRESOLVED", e, path, "(prim ...) is reserved for stdlib modules")
+        if not (m.is_stdlib or m.is_extension):
+            self.diag(m, "E-NAME-UNRESOLVED", e, path, "(prim ...) is reserved for toolchain modules")
         elif not (len(e.items) == 2 and isinstance(e.items[1], Atom) and e.items[1].kind == "str"):
             return self._shape(m, e, path, '(prim "name")')
         return self.s.fresh()

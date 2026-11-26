@@ -13,8 +13,10 @@ class ModInfo:
     root: object  # canonical module SList
     is_external: bool = False
     text: str = ""
+    is_extension: bool = False
     purpose: str | None = None
     purpose_node: object = None
+    notes: str | None = None
     uses: list = field(default_factory=list)  # Atoms
     export_nodes: list | None = None
     types: dict = field(default_factory=dict)
@@ -31,7 +33,7 @@ class ModInfo:
 
     @property
     def report(self) -> bool:
-        return self.is_target or self.is_external
+        return self.is_target or self.is_external or self.is_extension
 
 
 @dataclass
@@ -110,6 +112,8 @@ class VariantInfo:
 
 @dataclass
 class Program:
+    extensions: set = field(default_factory=set)
+    declared_extensions: set = field(default_factory=set)
     pins: dict = field(default_factory=dict)  # stem -> dependency Pin
     modules: dict = field(default_factory=dict)
     available: dict = field(default_factory=dict)  # module name -> Path

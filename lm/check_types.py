@@ -72,10 +72,11 @@ class TypeChecksMixin:
     def check_eq(self, m):
         self.check_constraints(m)
         for t, node, path in self.eq_checks:
-            if self.has_pat(t, set()):
+            opaque = self.primitive_opaque(t)
+            if opaque:
                 self.diag(m, "E-TYPE", node, path,
-                          "`=`/`!=` cannot compare values containing Pat",
-                          expected="a type without Pat", found=self.s.show(t))
+                          f"`=`/`!=` cannot compare values containing {opaque}",
+                          expected=f"a type without {opaque}", found=self.s.show(t))
             elif self.has_fn(t, set()):
                 self.diag(m, "E-TYPE", node, path, f"`=`/`!=` cannot compare values containing functions ({self.s.show(self.s.resolve(t))})",
                           expected="a type without Fn", found=self.s.show(self.s.resolve(t)))
@@ -84,8 +85,10 @@ class TypeChecksMixin:
     def has_fn(self, t, seen):
         return self.has_opaque(t, seen, "Fn")
 
-    def has_pat(self, t, seen):
-        return self.has_opaque(t, seen, "pat.Pat")
+    def primitive_opaque(self, t):
+        types = {"pat.Pat": "Pat", "hid.Dev": "hid.Dev"}
+        return next((label for name, label in types.items()
+                     if self.has_opaque(t, set(), name)), None)
 
     def has_opaque(self, t, seen, name):
         return contains_opaque(self.s.resolve(t), name, self.prog.type_index,

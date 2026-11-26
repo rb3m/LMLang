@@ -79,6 +79,8 @@ class Resolver(GenericMixin):
             h = head(c)
             if h == "purpose":
                 m.purpose, m.purpose_node = c.items[1].value, c
+            elif h == "notes":
+                m.notes = c.items[1].value
             elif h == "export":
                 m.export_nodes = list(c.items[1:])
             elif h == "type":

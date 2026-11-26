@@ -6,7 +6,8 @@ LM is a programming language and toolchain authored and read by AI agents: depen
 Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go -> native binary (`lm build`). Python reference impl, stdlib only; s-expressions.
 
 ## Current step
-- Backlog 3-6, 8, 9, 13-20, 22-28, 31 done (ADR-058..082). 21 left: a program the owner uses daily (S5 and DreamHost CGI done, docs/EVIDENCE.md). Public v0.12.1, export only.
+- Backlog 3-6, 8, 9, 13-20, 22-28, 31 done (ADR-058..082). 21 left: a program the owner uses daily (docs/EVIDENCE.md). Public v0.13.0, export only.
+- Backlog 30 (ADR-083): P1 bytes, P2 ext/hid + macOS adapter done. Next P3: Linux adapter, `vinput` (uinput), port both bridges (needs Linux workstation). 32 done (ADR-084); 33-34 queued.
 - Open: S5 real tokenizer 1.302x vs target <= 1.3x (ADR-025), OPEN by 0.002. Never call it passed.
 
 ## Rules
@@ -17,10 +18,9 @@ Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> ty
 5. Scenarios: propose and walk owner through each (ADR-055, docs/TESTING.md). Only on explicit yes run `lm accept --approve DIGEST.. --by "<words>"` (`--retire NAME --by` for renamed/deleted ones). Never approve on own judgment, hand-edit `accept.lock`, or run `--bless`.
 6. Python >= 3.10, stdlib only, zero third-party deps, each module < ~400 lines.
 7. If code and SPEC disagree, fix both together. Real alternatives require a new ADR in `docs/decisions/`.
-8. Design decisions by agent consensus (Claude, agy, Codex; ADR-030). On collision, rename; never add exceptions (ADR-047).
-9. Delegate implementation to Codex/agy first; Claude subagents only for the hardest parts.
-10. Commit after each coherent change; push only when asked; never rewrite history.
-11. Keep this file <= ~60 lines / ~4 KB, exactly four sections. Update "Current step" when it changes; move detail to layer 2 (ADR-053).
+8. On name collisions, rename; never add exceptions (ADR-047).
+9. Commit after each coherent change; push only when asked; never rewrite history.
+10. Keep this file <= ~60 lines / ~4 KB, exactly four sections. Update "Current step" when it changes; move detail to layer 2 (ADR-053).
 
 ## Index
 - `PRD.md`: goals, thesis, metrics S1-S6. Read before touching benchmark or thesis.

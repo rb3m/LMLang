@@ -1,5 +1,6 @@
 (module io
   (purpose "Console input, output, and program arguments.")
+  (notes "Console output flushes each line. args replaces each invalid UTF-8 sequence with U+FFFD. Input reads require strict UTF-8. read-line drops LF and its optional preceding CR, preserves empty lines and returns a final unterminated line; read-all preserves text exactly.")
   (export IoError args eprint print read-all read-line)
   (error IoError (msg Str))
   (fn args

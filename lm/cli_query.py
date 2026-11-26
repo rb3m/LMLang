@@ -26,45 +26,54 @@ def _int_flag(flags, key, default):
 
 
 def cmd_index(args) -> int:
+    from .deps import extension_files
     from .loader import STDLIB
 
     try:
-        flags, pos = _flags(args, {"--stdlib": False, "--exported": False,
+        flags, pos = _flags(args, {"--stdlib": False, "--ext": False, "--exported": False,
                                   "--modules": False, "--module": True})
     except ValueError as ex:
         sys.stderr.write(f"lm index: {ex}\n" + USAGE)
         return 3
-    scoped = '--modules' in flags or '--module' in flags
-    if scoped and ('--stdlib' not in flags or pos):
-        sys.stderr.write('lm index: --modules and --module require --stdlib '
-                         'and reject PATH arguments\n')
+    catalog = '--modules' in flags
+    name = flags.get('--module')
+    if (catalog or name is not None) and pos:
+        sys.stderr.write('lm index: --modules and --module reject PATH arguments\n')
         return 3
-    if '--modules' in flags and '--module' in flags:
+    if catalog and name is not None:
         sys.stderr.write('lm index: --modules and --module '
                          'are mutually exclusive\n')
         return 3
-    paths = pos or [d for d in ("src", "examples") if Path(d).is_dir()]
-    extra = sorted(f.stem for f in STDLIB.glob("*.lm")) if "--stdlib" in flags else []
-    if '--module' in flags:
-        name = flags['--module']
-        if name not in extra:
-            sys.stderr.write(f'lm index: unknown stdlib module {name}; '
-                             f'stdlib modules: {" ".join(extra)}\n')
+    if catalog and not {'--stdlib', '--ext'} & flags.keys():
+        sys.stderr.write('lm index: --modules requires --stdlib or --ext\n')
+        return 3
+    exported_only = '--exported' in flags
+    if name is not None:
+        prog, idx = _open([], [name], discover_ext=True)
+        mod = prog.modules.get(name)
+        if mod is None:
+            available = " ".join(sorted(prog.available.keys() | prog.pins.keys()))
+            sys.stderr.write(f'lm index: cannot load module {name}; available modules: {available}\n')
             return 3
-        extra = [name]
-    if scoped:
-        paths = []
-    prog, idx = _open(paths, extra)
-    if scoped:
-        mods = [prog.modules[n] for n in extra]
-        lines = (idx.module_lines(mods) if '--modules' in flags
-                 else idx.index_lines(mods, '--exported' in flags))
-        for line in lines:
+        for line in idx.index_lines([mod], exported_only, module_detail=True):
+            print(line)
+        return 0
+
+    paths = pos or [d for d in ("src", "examples") if Path(d).is_dir()]
+    stdlib = '--stdlib' in flags
+    discover_ext = '--ext' in flags or (catalog and stdlib)
+    extra = sorted(f.stem for f in STDLIB.glob("*.lm")) if stdlib else []
+    if discover_ext:
+        extra.extend(extension_files())
+    prog, idx = _open([] if catalog else paths, extra, discover_ext=discover_ext)
+    if catalog:
+        mods = [prog.modules[n] for n in extra if n in prog.modules]
+        for line in idx.module_lines(mods, mark_extensions=stdlib):
             print(line)
         return 0
     mods = [prog.modules[n] for n in sorted(set(prog.targets) |
                                           {n for n, m in prog.modules.items() if m.is_external})]
-    for line in idx.index_lines(mods, "--exported" in flags):
+    for line in idx.index_lines(mods, exported_only):
         print(line)
     return 0
 
@@ -83,7 +92,7 @@ def cmd_slice(args) -> int:
     except ValueError:
         sys.stderr.write("lm slice: --depth/--budget need integers\n")
         return 3
-    prog, idx = _open([], [pos[0].split(".", 1)[0]])
+    prog, idx = _open([], [pos[0].split(".", 1)[0]], discover_ext=True)
     sym, err = idx.find(pos[0])
     if sym is None:
         sys.stderr.write(f"lm slice: {err}\n")
@@ -129,7 +138,7 @@ def cmd_deps(args) -> int:
     if r is None:
         return 3
     flags, pos = r
-    prog, idx = _open([], [pos[0].split(".", 1)[0]])
+    prog, idx = _open([], [pos[0].split(".", 1)[0]], discover_ext=True)
     sym, err = idx.find(pos[0])
     if sym is None:
         sys.stderr.write(f"lm deps: {err}\n")
@@ -145,7 +154,7 @@ def cmd_hash(args) -> int:
     if r is None:
         return 3
     _, pos = r
-    prog, idx = _open([], [pos[0].split(".", 1)[0]])
+    prog, idx = _open([], [pos[0].split(".", 1)[0]], discover_ext=True)
     sym, err = idx.find(pos[0])
     if sym is None:
         sys.stderr.write(f"lm hash: {err}\n")

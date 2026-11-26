@@ -57,8 +57,8 @@ class GenericMixin:
                 continue
             b = body[0]
             if head(b) == "opaque":
-                if (t.qual != "pat.Pat" or not m.is_stdlib
-                        or len(b.items) != 1 or t.params):
+                primitive = {"pat.Pat": m.is_stdlib, "hid.Dev": m.is_extension}
+                if not primitive.get(t.qual) or len(b.items) != 1 or t.params:
                     self.diag(m, "E-TYPE", b, path + "/2",
                               "opaque declarations are reserved for primitive types")
                 t.kind = "opaque"
@@ -164,7 +164,7 @@ class GenericMixin:
                 args = [self.resolve_type(m, a, tvars, f"{path}/{i}")
                         for i, a in enumerate(n.items[1:], 1)]
                 return self.applied_type(m, hit[1], args, n, path)
-        return bad("malformed type; use Int Float Bool Str Unit (List T) (Vec T) "
+        return bad("malformed type; use Int Float Bool Str Unit Bytes (List T) (Vec T) "
                    "(Opt T) (Pair A B) (Map K V) (Set K) (Fn (T..) R) "
                    "or a declared type")
 

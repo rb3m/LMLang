@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import sys
 
+from .bytes_prims import parse_hex
 from .prelude import SPECIAL, form_method
 from .prims import PRIMS
 from .rand_prims import SplitMix64
@@ -84,11 +85,22 @@ class Interp:
         self.err = err if err is not None else sys.stderr
         self.args = tuple(sanitize_arg(a) for a in args)
         self.world = world
+        self.hid = None
         self.rng = world.rng if world is not None else SplitMix64(seed)
         self.frames: list = []
         self.tail_sites = {}  # fn id -> source node identities; cached for this checked program
         self.evaluating_consts = set()
         self.reset()
+
+    def __enter__(self):
+        if self.world is None and "hid" in self.prog.modules:
+            from .hid_prims import start_hid
+            self.hid = start_hid()
+        return self
+
+    def __exit__(self, *exc):
+        if self.hid is not None:
+            self.hid.shutdown()
 
     def reset(self):
         self.frames[:] = [["top", None, None, None]]
@@ -352,6 +364,9 @@ class Interp:
                     binds = dict(zip((a.value for a in c.items[2].items), f.args_))
                     return self.ev(c.items[3], {**env, **binds}, m)
             raise
+
+    def s_bytesof(self, e, env, m):
+        return parse_hex(e.items[1].value)
 
     def s_vecof(self, e, env, m):
         return Vec.from_iterable(self.ev(x, env, m) for x in e.items[1:])

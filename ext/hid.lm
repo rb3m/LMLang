@@ -1,0 +1,93 @@
+(module hid
+  (purpose "Access HID devices through the active runtime adapter.")
+  (notes "Opaque Dev. IDs stable while attached. Report IDs 0..255 (0 unnumbered), payloads 1..4096 bytes. Queue keeps latest 1024. macOS may need Input Monitoring. LM_HID_REPLAY loads JSON. LM_HID_REPLAY_LOG logs. In (given (hid ..)) use (device ID VENDOR PRODUCT USAGE-PAGE USAGE [INTERFACE NAME SERIAL]) (report MS ID RID \"hex\") (unplug MS ID) (feature MS ID FID \"hex\"). In (hid-log ..) use (write MS ID RID \"hex\") (feature-set MS ID FID \"hex\") (feature-get MS ID FID LEN) (grab MS ID BOOL) (close MS ID).")
+  (export
+    Dev
+    HidError
+    Info
+    Report
+    close
+    enumerate
+    feature-get
+    feature-set
+    grab
+    open
+    read
+    supports
+    wait
+    write)
+  (type Dev (opaque))
+  (type
+    Info
+    (rec
+      (id Str)
+      (vendor Int)
+      (product Int)
+      (usage-page Int)
+      (usage Int)
+      (interface Int)
+      (name Str)
+      (serial Str)))
+  (type Report (rec (id Int) (data Bytes)))
+  (error HidError (id Str) (msg Str))
+  (fn close
+    (purpose "Release the device and its grab. Repeated closes do nothing.")
+    (sig (d Dev) -> Unit)
+    (eff hid.io)
+    (fails HidError)
+    (body (prim "hid.close")))
+  (fn enumerate
+    (purpose "List attached devices in adapter order.")
+    (sig -> (List Info))
+    (eff hid.io)
+    (fails HidError)
+    (body (prim "hid.enumerate")))
+  (fn feature-get
+    (purpose "Read a feature payload up to length (1..4096); report ID must be 0..255.")
+    (sig (d Dev) (id Int) (length Int) -> Bytes)
+    (eff hid.io)
+    (fails HidError)
+    (body (prim "hid.feature-get")))
+  (fn feature-set
+    (purpose "Send a feature report.")
+    (sig (d Dev) (r Report) -> Unit)
+    (eff hid.io)
+    (fails HidError)
+    (body (prim "hid.feature-set")))
+  (fn grab
+    (purpose "Enable or release exclusive input delivery.")
+    (sig (d Dev) (on Bool) -> Unit)
+    (eff hid.grab)
+    (fails HidError)
+    (body (prim "hid.grab")))
+  (fn open
+    (purpose "Open the attached device with this opaque identifier.")
+    (sig (id Str) -> Dev)
+    (eff hid.io)
+    (fails HidError)
+    (body (prim "hid.open")))
+  (fn read
+    (purpose
+      "Read without blocking. After unplug, empty queue fails HidError with device ID and \"disconnected\".")
+    (sig (d Dev) -> (Opt Report))
+    (eff hid.io)
+    (fails HidError)
+    (body (prim "hid.read")))
+  (fn supports
+    (purpose "Test enumerate, read, write, feature or grab; unknown capabilities return false.")
+    (sig (cap Str) -> Bool)
+    (eff hid.io)
+    (body (prim "hid.supports")))
+  (fn wait
+    (purpose
+      "Return ready indices in input order for a report or unplug; timeout is 0..3600000 ms.")
+    (sig (ds (List Dev)) (timeout-ms Int) -> (List Int))
+    (eff hid.io)
+    (fails HidError)
+    (body (prim "hid.wait")))
+  (fn write
+    (purpose "Send an output report.")
+    (sig (d Dev) (r Report) -> Unit)
+    (eff hid.io)
+    (fails HidError)
+    (body (prim "hid.write"))))

@@ -112,12 +112,15 @@ def _esc_str(s: str) -> str:
     return '"' + "".join(out) + '"'
 
 def show(v) -> str:
+    if "HidDev" in globals() and isinstance(v, HidDev): return "<hid.Dev>"
     if "Pat" in globals() and isinstance(v, Pat): return "<pat>"
     if v is True: return "true"
     if v is False: return "false"
     if isinstance(v, int): return str(v)
     if isinstance(v, float): return float_text(v)
     if isinstance(v, str): return _esc_str(v)
+    if isinstance(v, bytes):
+        return f'(bytesof "{v.hex()}")'
     if isinstance(v, tuple): return "(list" + "".join(" " + show(x) for x in v) + ")"
     if v is UNIT: return "unit"
     if isinstance(v, Var):

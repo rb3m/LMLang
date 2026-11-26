@@ -81,7 +81,7 @@ class HelpTests(unittest.TestCase):
         self.assertIn("Workflow", result.stdout)
         self.assertNotIn("docs/", result.stdout)
         self.assertEqual(result.stdout, (ROOT / "lm/guide.md").read_text())
-        self.assertLessEqual(len(result.stdout.encode()), 9 * 1024)
+        self.assertLessEqual(len(result.stdout.encode()), 6 * 1024)
 
     def test_extra_arguments(self):
         for args in (("guide", "extra"), ("help", "edit", "extra"),

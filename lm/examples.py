@@ -100,20 +100,24 @@ def check_example(ck, m, f, clause, path):
 
 
 GIVEN = {"args": None, "stdin": 1, "env": 2, "file": 2, "dir": 1,
-         "now-ms": 1, "seed": 1, "proc": None}
+         "now-ms": 1, "seed": 1, "proc": None, "hid": None}
 CHECKS = {"out": 1, "err": 1, "file": 2, "no-file": 1,
-          "dir": 1, "no-dir": 1}
+          "dir": 1, "no-dir": 1, "hid-log": None}
 FS = {"fs.read", "fs.write", "fs.delete"}
 EFFECTS = {"args": {"io.in"}, "stdin": {"io.in"}, "env": {"env.read"},
            "out": {"io.out"}, "err": {"io.out"},
            "now-ms": {"time.now"}, "seed": {"rand"},
-           "proc": {"proc.run"}}
+           "proc": {"proc.run"}, "hid": {"hid.io", "hid.grab"},
+           "hid-log": {"hid.io", "hid.grab"}}
 
 
 def clause_values(prog, m, clause):
     """Evaluate checked closed expressions with a bounded pure evaluator."""
     from .consts import ConstEvaluator
 
+    if head(clause) in ("hid", "hid-log"):
+        from .hid_examples import hid_values
+        return hid_values(prog, m, clause)
     if head(clause) == "proc":
         from .proc_examples import proc_values
         return proc_values(prog, m, clause)
@@ -151,7 +155,7 @@ class MetadataChecks:
                     self.error(clause, path,
                                f"{name} needs a declared effect from "
                                + ", ".join(sorted(effects)))
-                if name in ("args", "stdin", "now-ms", "seed", "out", "err"):
+                if name in ("args", "stdin", "now-ms", "seed", "out", "err", "hid", "hid-log"):
                     if name in singles:
                         self.error(clause, path, f"duplicate {name} clause")
                     singles.add(name)
@@ -163,6 +167,9 @@ class MetadataChecks:
         self.values(rows)
 
     def types(self, clause, path, name):
+        if name in ("hid", "hid-log"):
+            from .hid_examples import check_hid
+            return check_hid(self, clause, path)
         if name == "proc":
             from .proc_examples import check_proc
             return check_proc(self, clause, path)
@@ -192,7 +199,12 @@ class MetadataChecks:
             name = head(clause)
             try:
                 vals = clause_values(self.ck.prog, self.m, clause)
-            except (ConstBudgetExhausted, ConstEvalError, LmFail, Denied,
+            except ConstEvalError as ex:
+                message = str(ex) if name in ("hid", "hid-log") else ""
+                self.error(clause, path, message or "example clause must be constant "
+                           "and evaluate without failure or fault")
+                continue
+            except (ConstBudgetExhausted, LmFail, Denied,
                     Overflow, ProofViolation, Violation, RecursionError):
                 self.error(clause, path, "example clause must be constant "
                            "and evaluate without failure or fault")

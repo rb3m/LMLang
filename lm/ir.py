@@ -22,7 +22,7 @@ class Site:
 
 @dataclass
 class Lit:
-    kind: str  # int | float | str | bool | unit
+    kind: str  # int | float | str | bytes | bool | unit
     value: object
 
 

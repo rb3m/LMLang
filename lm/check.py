@@ -46,7 +46,7 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
 
     def check_module(self, m):
         for u in m.uses:
-            if u.value not in self.prog.available:
+            if u.value not in self.prog.available and u.value not in self.prog.extensions:
                 self.diag(m, "E-NAME-UNRESOLVED", u, f"{m.name}/use", f"no module named `{u.value}`", expected=" ".join(suggest(u.value, self.prog.available)), found=u.value)
         for nm in sorted(m.consts):
             check_const(self, m, m.consts[nm])
@@ -62,7 +62,7 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
     def check_examples(self):
         for n in sorted(self.prog.modules):
             m = self.prog.modules[n]
-            if not (m.is_target or self.check_all):
+            if not (m.is_target or m.is_extension or self.check_all):
                 continue
             for f in m.fns.values():
                 if not f.sig_ok:
@@ -76,15 +76,15 @@ class Checker(TypeChecksMixin, CollFormsMixin, FormsMixin, Resolver):
                 self.check_eq(m)
         for n in sorted(self.prog.modules):
             m = self.prog.modules[n]
-            if not (m.is_target or self.check_all):
+            if not (m.is_target or m.is_extension or self.check_all):
                 continue
             for fn_name in sorted(m.fns):
                 f = m.fns[fn_name]
                 if f.eff or "example" in f.clauses or not f.sig_ok:
                     continue
-                # Pat has no constant representation, including in examples.
+                # Primitive opaque types have no example representation.
                 # Exercise opaque signatures through concrete caller wrappers.
-                if self.has_pat(fn([t for _, t in f.params], f.ret), set()):
+                if self.primitive_opaque(fn([t for _, t in f.params], f.ret)):
                     continue
                 needs = (fn_name in m.exported_fns) if m.export_nodes is not None else (fn_name in m.referenced_fns)
                 if needs:

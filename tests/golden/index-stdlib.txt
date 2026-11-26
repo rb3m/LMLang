@@ -1,6 +1,39 @@
 module billing  -- Invoice totals.  (use list)
 *error billing.BadRegion  (region Str)
 *fn billing.total  (items (List Cents)) (region Str) -> Cents  [fails BadRegion]  -- Sum item prices and add Mexican VAT.
+module bytes  -- Immutable byte sequences and binary encoding.
+*fn bytes.at  (b Bytes) (i Int) -> (Opt Int)  -- Byte at the zero-based index, or None when out of range.
+*fn bytes.concat  (a Bytes) (b Bytes) -> Bytes  -- Append the second byte sequence to the first.
+*fn bytes.empty  -> Bytes  -- An empty byte sequence.
+*fn bytes.fill  (n Int) (v Int) -> (Opt Bytes)  -- Repeat an unsigned byte n times. Invalid values give None; nonpositive counts give empty Bytes.
+*fn bytes.from-hex  (s Str) -> (Opt Bytes)  -- Decode hex pairs, or return None for malformed input.
+*fn bytes.from-list  (xs (List Int)) -> (Opt Bytes)  -- Convert a list of unsigned bytes, or return None if an element is outside 0..255.
+*fn bytes.from-str  (s Str) -> Bytes  -- Encode text as UTF-8.
+*fn bytes.hex  (b Bytes) -> Str  -- Encode bytes as lowercase hex pairs.
+*fn bytes.put-s16be  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a signed 16-bit integer (big-endian) to a copy. None if the field or value does not fit.
+*fn bytes.put-s16le  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a signed 16-bit integer (little-endian) to a copy. None if the field or value does not fit.
+*fn bytes.put-s32be  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a signed 32-bit integer (big-endian) to a copy. None if the field or value does not fit.
+*fn bytes.put-s32le  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a signed 32-bit integer (little-endian) to a copy. None if the field or value does not fit.
+*fn bytes.put-s8  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a signed 8-bit integer to a copy. None if the field or value does not fit.
+*fn bytes.put-u16be  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a unsigned 16-bit integer (big-endian) to a copy. None if the field or value does not fit.
+*fn bytes.put-u16le  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a unsigned 16-bit integer (little-endian) to a copy. None if the field or value does not fit.
+*fn bytes.put-u32be  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a unsigned 32-bit integer (big-endian) to a copy. None if the field or value does not fit.
+*fn bytes.put-u32le  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a unsigned 32-bit integer (little-endian) to a copy. None if the field or value does not fit.
+*fn bytes.put-u8  (b Bytes) (offset Int) (v Int) -> (Opt Bytes)  -- Write a unsigned 8-bit integer to a copy. None if the field or value does not fit.
+*fn bytes.s16be  (b Bytes) (offset Int) -> (Opt Int)  -- Read a signed 16-bit integer (big-endian), or return None if the field does not fit.
+*fn bytes.s16le  (b Bytes) (offset Int) -> (Opt Int)  -- Read a signed 16-bit integer (little-endian), or return None if the field does not fit.
+*fn bytes.s32be  (b Bytes) (offset Int) -> (Opt Int)  -- Read a signed 32-bit integer (big-endian), or return None if the field does not fit.
+*fn bytes.s32le  (b Bytes) (offset Int) -> (Opt Int)  -- Read a signed 32-bit integer (little-endian), or return None if the field does not fit.
+*fn bytes.s8  (b Bytes) (offset Int) -> (Opt Int)  -- Read a signed 8-bit integer, or return None if the field does not fit.
+*fn bytes.size  (b Bytes) -> Int  -- Number of bytes.
+*fn bytes.slice  (b Bytes) (start Int) (count Int) -> Bytes  -- Take count bytes at start, clamping both to the available range.
+*fn bytes.to-list  (b Bytes) -> (List Int)  -- Return the unsigned bytes as a list in order.
+*fn bytes.to-str  (b Bytes) -> (Opt Str)  -- Decode UTF-8 strictly, or return None for invalid UTF-8.
+*fn bytes.u16be  (b Bytes) (offset Int) -> (Opt Int)  -- Read a unsigned 16-bit integer (big-endian), or return None if the field does not fit.
+*fn bytes.u16le  (b Bytes) (offset Int) -> (Opt Int)  -- Read a unsigned 16-bit integer (little-endian), or return None if the field does not fit.
+*fn bytes.u32be  (b Bytes) (offset Int) -> (Opt Int)  -- Read a unsigned 32-bit integer (big-endian), or return None if the field does not fit.
+*fn bytes.u32le  (b Bytes) (offset Int) -> (Opt Int)  -- Read a unsigned 32-bit integer (little-endian), or return None if the field does not fit.
+*fn bytes.u8  (b Bytes) (offset Int) -> (Opt Int)  -- Read a unsigned 8-bit integer, or return None if the field does not fit.
 module cgi-echo  -- Echo the HTTP request as JSON; a first CGI deployment probe.  (use http json list pair str)
 *fn cgi-echo.handle  (req http.Request) -> http.Response  -- Return the request as JSON.
 module colsum  -- Sum a CSV column per key, keys ascending: colsum FILE KEY-COL VALUE-COL (zero-based).  (use fs io list map str)
@@ -14,8 +47,8 @@ module date  -- Pure Gregorian dates and UTC datetimes, years 1..9999.  (use lis
 *fn date.compare  (a Date) (b Date) -> Int  -- Compare dates, returning exactly -1, 0 or 1.
 *fn date.compare-datetime  (a DateTime) (b DateTime) -> Int  -- Compare UTC datetimes, returning exactly -1, 0 or 1.
 *fn date.diff-days  (a Date) (b Date) -> Int  -- Signed day difference a minus b.
-*fn date.from-days  (n Int) -> (Opt Date)  -- Date for an epoch day, or None outside 0001-01-01..9999-12-31.
-*fn date.from-epoch-ms  (ms Int) -> (Opt DateTime)  -- UTC datetime for epoch milliseconds, or None outside the supported dates.
+*fn date.from-days  (n Int) -> (Opt Date)  -- Date for an epoch day, or None outside -719162..2932896 (years 1..9999).
+*fn date.from-epoch-ms  (ms Int) -> (Opt DateTime)  -- UTC datetime for epoch milliseconds, or None outside -62135596800000..253402300799999.
 *fn date.is-leap-year  (year Int) -> Bool  -- Whether a year in 1..9999 is a Gregorian leap year.
 *fn date.make  (y Int) (m Int) (d Int) -> (Opt Date)  -- Construct a date, or None for invalid fields.
 *fn date.make-datetime  (d Date) (hour Int) (minute Int) (second Int) (ms Int) -> (Opt DateTime)  -- Construct a UTC datetime, or None for invalid date or clock fields.
@@ -46,7 +79,7 @@ module float  -- Float helpers: conversions, rounding, constants, exp, logs, sqr
 *fn float.e  -> Float  -- Euler's number, nearest binary64, pinned to bits 0x4005bf0a8b145769.
 *fn float.exp  (x Float) -> Float  -- Exponential; overflow is E-FLOAT, underflow is allowed; error at most 1 ulp.
 *fn float.expm1  (x Float) -> Float  -- exp(x)-1, preserving tiny x lost by exp(x)-1; overflow faults E-FLOAT; error at most 1 ulp.
-*fn float.fixed  (x Float) (digits Int) -> Str  -- Fixed decimals of exact binary x, half-even; unlike round, which rounds halves away from zero.
+*fn float.fixed  (x Float) (digits Int) -> Str  -- Fixed decimals (digits 0..17) of the exact binary value, ties to even.
 *fn float.floor  (x Float) -> Int  -- Largest Int not above x; outside the Int range is the fault E-OVERFLOW.
 *fn float.from-int  (n Int) -> Float  -- Nearest Float to an Int (ties to even).
 *fn float.hypot  (x Float) (y Float) -> Float  -- Euclidean length without intermediate overflow; result overflow is E-FLOAT; error at most 1 ulp.
@@ -57,7 +90,7 @@ module float  -- Float helpers: conversions, rounding, constants, exp, logs, sqr
 *fn float.max  (a Float) (b Float) -> Float  -- Larger of two Floats.
 *fn float.min  (a Float) (b Float) -> Float  -- Smaller of two Floats.
 *fn float.pi  -> Float  -- Pi, nearest binary64, pinned to bits 0x400921fb54442d18.
-*fn float.pow  (x Float) (y Float) -> Float  -- Power; invalid real domains and overflow are E-FLOAT; underflow allowed; error at most 1 ulp.
+*fn float.pow  (x Float) (y Float) -> Float  -- x^y; x^0 = 1. Zero to negative y or negative x to noninteger y faults E-FLOAT.
 *fn float.round  (x Float) -> Int  -- Nearest Int, halves away from zero; outside the Int range is the fault E-OVERFLOW.
 *fn float.sin  (x Float) -> Float  -- Sine of any finite binary64 angle in radians; finite result, error at most 1 ulp.
 *fn float.sinh  (x Float) -> Float  -- Hyperbolic sine; overflow faults E-FLOAT; error at most 1 ulp.
@@ -70,22 +103,24 @@ module fs  -- UTF-8 file operations.
 *error fs.IoError  (path Str) (msg Str)
 *fn fs.append  (path Str) (text Str) -> Unit  [eff fs.write]  [fails IoError]  -- Append UTF-8 text, creating a missing file; no atomicity guarantee.
 *fn fs.entries  (path Str) -> (List Str)  [eff fs.read]  [fails IoError]  -- List UTF-8 entry names in ascending code-point order.
-*fn fs.exists  (path Str) -> Bool  [eff fs.read]  [fails IoError]  -- Test whether a filesystem path exists.
-*fn fs.is-dir  (path Str) -> Bool  [eff fs.read]  [fails IoError]  -- Test whether a path resolves to a directory.
+*fn fs.exists  (path Str) -> Bool  [eff fs.read]  [fails IoError]  -- Test whether a filesystem path exists; false for a missing target.
+*fn fs.is-dir  (path Str) -> Bool  [eff fs.read]  [fails IoError]  -- Test whether a path resolves to a directory; false for missing or non-directory paths.
 *fn fs.make-dir  (path Str) -> Unit  [eff fs.write]  [fails IoError]  -- Create one directory level; fail if any entry already exists.
 *fn fs.read  (path Str) -> Str  [eff fs.read]  [fails IoError]  -- Read a UTF-8 file.
 *fn fs.remove  (path Str) -> Unit  [eff fs.delete]  [fails IoError]  -- Remove a file, symlink or empty directory; never recurse.
 *fn fs.rename  (from Str) (to Str) -> Unit  [eff fs.delete fs.write]  [fails IoError]  -- Move a filesystem entry without overwriting; failures report from.
 *fn fs.write  (path Str) (text Str) -> Unit  [eff fs.write]  [fails IoError]  -- Replace a file with UTF-8 text.
+module hid-monitor  -- List attached HID devices and print input reports as hexadecimal.  (use bytes hid io str time)
+*fn hid-monitor.main  -> Unit  [eff hid.io io.in io.out]  [fails hid.HidError]  -- List attached devices and monitor the device selected by its ID.
 module http  -- HTTP client, request records and strict query decoding.  (use str)
 *type http.Request  (rec (method Str) (target Str) (query Str) (headers (List (Pair Str Str))) (body Str))
 *type http.Response  (rec (status Int) (headers (List (Pair Str Str))) (body Str))
 *error http.BadEncoding  (s Str)
 *error http.HttpError  (url Str) (msg Str)
-*fn http.fetch  (url Str) -> Response  [eff net.http]  [fails HttpError]  -- Fetch a URL using GET, no caller headers and an empty body.
+*fn http.fetch  (url Str) -> Response  [eff net.http]  [fails HttpError]  -- GET with empty body, no caller headers and a 30-second total deadline.
 *fn http.query-pairs  (q Str) -> (List (Pair Str Str))  [fails BadEncoding]  -- Decode query fields, keeping duplicates and replacing plus with space.
-*fn http.request  (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) -> Response  [eff net.http]  [fails HttpError]  -- Send one HTTP request; non-2xx responses are ordinary results.
-*fn http.request-within  (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) (secs Int) -> Response  [eff net.http]  [fails HttpError]  -- Send one HTTP request with a total deadline in seconds.
+*fn http.request  (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) -> Response  [eff net.http]  [fails HttpError]  -- Send one request with a 30-second total deadline. Non-2xx statuses are results.
+*fn http.request-within  (method Str) (url Str) (headers (List (Pair Str Str))) (body Str) (secs Int) -> Response  [eff net.http]  [fails HttpError]  -- Send one request; a deadline outside 1..600 seconds fails before network I/O.
 *fn http.url-decode  (s Str) -> Str  [fails BadEncoding]  -- Decode percent escapes as strict UTF-8; keep plus signs.
 module io  -- Console input, output, and program arguments.
 *error io.IoError  (msg Str)
@@ -113,7 +148,7 @@ module list  -- List operations.
 *fn list.last  (xs (List a)) -> (Opt a)  -- Last element, or None when empty.
 *fn list.map  (xs (List a)) (f (Fn (a) b)) -> (List b)  -- Apply f to every element.
 *fn list.map2  (xs (List a)) (ys (List b)) (f (Fn (a b) c)) -> (List c)  -- Combine elements pairwise with f.
-*fn list.nth  (xs (List a)) (i Int) -> a  [fails OutOfRange]  -- Element at zero-based index i.
+*fn list.nth  (xs (List a)) (i Int) -> a  [fails OutOfRange]  -- Read index i; a proven-safe nonnegative literal index discharges OutOfRange.
 *fn list.range  (start Int) (stop Int) -> (List Int)  -- Integers from start up to but excluding stop.
 *fn list.reverse  (xs (List a)) -> (List a)  -- Elements in opposite order.
 *fn list.sort-by  (xs (List a)) (less (Fn (a a) Bool)) -> (List a)  -- Stable sort by less, a strict weak ordering (top-down merge sort, same in every backend).
@@ -134,7 +169,7 @@ module map  -- Immutable maps keyed by Int, Float, Str or Bool; every traversal 
 *fn map.update  (m (Map k v)) (key k) (default v) (f (Fn (v) v)) -> (Map k v)  -- Bind key to f of its value, or of default when key is absent.
 *fn map.values  (m (Map k v)) -> (List v)  -- The values in ascending order of their keys.
 module math  -- Integer math helpers.
-*fn math.abs  (x Int) -> Int  -- Absolute value.
+*fn math.abs  (x Int) -> Int  -- Absolute value; the smallest signed Int faults E-OVERFLOW.
 *fn math.int-max  -> Int  -- Largest Int (2^63 - 1); exceeding it is the runtime fault E-OVERFLOW.
 *fn math.int-min  -> Int  -- Smallest Int (-2^63); going below it is the runtime fault E-OVERFLOW.
 *fn math.max  (a Int) (b Int) -> Int  -- Larger of two integers.
@@ -151,7 +186,7 @@ module pat  -- Bounded Unicode text patterns with deterministic ordered matching
 *type pat.Match  (rec (start Int) (end Int) (text Str) (groups (List (Opt Str))))
 *type pat.Pat  (opaque)
 *error pat.BadPattern  (pos Int) (reason Str)
-*fn pat.compile  (s Str) -> Pat  [fails BadPattern]  -- Compile a pattern; positions count Unicode scalars.
+*fn pat.compile  (s Str) -> Pat  [fails BadPattern]  -- Compile with scalar error offsets; valid Str literals discharge BadPattern.
 *fn pat.find  (s Str) (p Pat) -> (Opt Match)  -- Find the first leftmost match.
 *fn pat.find-all  (s Str) (p Pat) -> (List Match)  -- Find nonoverlapping matches, advancing one scalar after empty matches.
 *fn pat.matches  (s Str) (p Pat) -> Bool  -- Test the whole text against a pattern.
@@ -162,11 +197,11 @@ module proc  -- Bounded POSIX subprocesses with explicit arguments and environme
 *type proc.Exit  (sum (Exited (code Int)) (Signaled (signal Int)))
 *type proc.Result  (rec (exit Exit) (stdout Str) (stderr Str))
 *error proc.ProcError  (msg Str)
-*fn proc.run  (argv (List Str)) (stdin Str) (cwd (Opt Str)) (env (List (Pair Str Str))) -> Result  [eff proc.run]  [fails ProcError]  -- Execute an absolute executable with explicit stdin, cwd and environment.
-*fn proc.which  (name Str) (dirs (List Str)) -> (Opt Str)  [eff fs.read]  [fails fs.IoError]  -- Find a non-directory named entry in the supplied absolute directories.
+*fn proc.run  (argv (List Str)) (stdin Str) (cwd (Opt Str)) (env (List (Pair Str Str))) -> Result  [eff proc.run]  [fails ProcError]  -- Run nonempty argv with absolute argv[0] and exactly the supplied child environment.
+*fn proc.which  (name Str) (dirs (List Str)) -> (Opt Str)  [eff fs.read]  [fails fs.IoError]  -- Find the first existing non-directory entry in absolute dirs; skips PATH and permission checks.
 module rand  -- Seedable SplitMix64 random numbers.
 *fn rand.float  -> Float  [eff rand]  -- Uniform random Float in [0, 1) using 53 random bits.
-*fn rand.int  (lo Int) (hi Int) -> Int  [eff rand]  -- Uniform random Int in the inclusive range lo..hi.
+*fn rand.int  (lo Int) (hi Int) -> Int  [eff rand]  -- Uniform Int in inclusive lo..hi; requires lo <= hi and consumes a draw even when lo = hi.
 module set  -- Immutable sets of Int, Float, Str or Bool; every traversal is in ascending order.  (use list)
 *fn set.add  (s (Set a)) (x a) -> (Set a)  -- The set with x added (unchanged when x is already in it).
 *fn set.diff  (s (Set a)) (t (Set a)) -> (Set a)  -- Elements of s that are not in t.
@@ -198,13 +233,13 @@ module str  -- String operations.
 *fn str.lines  (s Str) -> (List Str)  -- Split CRLF, LF, or CR lines, omitting a final empty line.
 *fn str.lower  (s Str) -> Str  -- Unicode simple lowercase mapping; length is preserved.
 *fn str.lower-ascii  (s Str) -> Str  -- Turn A-Z into a-z; every other character is unchanged.
-*fn str.pad-left  (s Str) (width Int) (fill Str) -> Str  -- Prefix fill until s is width code points long; s unchanged if already that long.
-*fn str.pad-right  (s Str) (width Int) (fill Str) -> Str  -- Append fill until s is width code points long; s unchanged if already that long.
-*fn str.repeat  (s Str) (n Int) -> Str  -- s concatenated n times.
+*fn str.pad-left  (s Str) (width Int) (fill Str) -> Str  -- Prefix one-scalar fill to reach width in code points; keep s if already long enough.
+*fn str.pad-right  (s Str) (width Int) (fill Str) -> Str  -- Append one-scalar fill to reach width in code points; keep s if already long enough.
+*fn str.repeat  (s Str) (n Int) -> Str  -- Concatenate s n times; requires n >= 0.
 *fn str.replace  (s Str) (old Str) (replacement Str) -> Str  -- Replace every non-overlapping occurrence of old, left to right; empty old changes nothing.
 *fn str.split  (s Str) (sep Str) -> (List Str)  -- Split on a literal separator; empty separator splits characters.
 *fn str.starts-with  (s Str) (prefix Str) -> Bool  -- Test a literal prefix.
-*fn str.substring  (s Str) (start Int) (end Int) -> Str  [fails OutOfRange]  -- Slice Unicode characters from start inclusive to end exclusive.
+*fn str.substring  (s Str) (start Int) (end Int) -> Str  [fails OutOfRange]  -- Slice scalars from start inclusive to end exclusive; needs 0 <= start <= end <= length.
 *fn str.to-codes  (s Str) -> (List Int)  -- Unicode scalar values of each character in s.
 *fn str.to-float  (s Str) -> (Opt Float)  -- Parse decimal text like 1.5 or 1e-3; None if malformed, inf, nan or out of range.
 *fn str.to-int  (s Str) -> (Opt Int)  -- Parse signed ASCII decimal text; None if malformed or outside the signed 64-bit range.
@@ -213,7 +248,7 @@ module str  -- String operations.
 *fn str.upper-ascii  (s Str) -> Str  -- Turn a-z into A-Z; every other character is unchanged.
 module time  -- Wall and monotonic clocks in milliseconds.
 *fn time.mono-ms  -> Int  [eff time.now]  -- Monotonic milliseconds from an arbitrary origin; only differences are meaningful.
-*fn time.now-ms  -> Int  [eff time.now]  -- Unix epoch milliseconds.
+*fn time.now-ms  -> Int  [eff time.now]  -- Unix epoch milliseconds; wall-clock adjustments can move it backwards.
 module tree  -- A persistent binary search tree with reusable generic traversals.  (use list)
 *type tree.Tree a  (sum Leaf (Node (left (Tree a)) (value a) (right (Tree a))))
 *fn tree.insert  (value Int) (tree (Tree Int)) -> (Tree Int)  -- Insert an integer, preserving order and ignoring duplicate values.

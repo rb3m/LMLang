@@ -1,0 +1,211 @@
+(module bytes
+  (purpose "Immutable byte sequences and binary encoding.")
+  (notes "Offsets are zero-based. Binary read/write names encode signedness (s/u), width (8/16/32) and byte order (le/be for multibyte fields). Signed fields use two's complement. Reads return None if the field does not fit; put-* returns None for an out-of-bounds field or value. from-hex follows bytesof rules: ASCII hex pairs, either case, no whitespace.")
+  (export
+    at
+    concat
+    empty
+    fill
+    from-hex
+    from-list
+    from-str
+    hex
+    put-s16be
+    put-s16le
+    put-s32be
+    put-s32le
+    put-s8
+    put-u16be
+    put-u16le
+    put-u32be
+    put-u32le
+    put-u8
+    s16be
+    s16le
+    s32be
+    s32le
+    s8
+    size
+    slice
+    to-list
+    to-str
+    u16be
+    u16le
+    u32be
+    u32le
+    u8)
+  (fn at
+    (purpose "Byte at the zero-based index, or None when out of range.")
+    (sig (b Bytes) (i Int) -> (Opt Int))
+    (example ((bytesof "00ff") 1) => (Some 255))
+    (body (prim "bytes.at")))
+  (fn concat
+    (purpose "Append the second byte sequence to the first.")
+    (sig (a Bytes) (b Bytes) -> Bytes)
+    (example ((bytesof "00") (bytesof "ff")) => (bytesof "00ff"))
+    (body (prim "bytes.concat")))
+  (fn empty
+    (purpose "An empty byte sequence.")
+    (sig -> Bytes)
+    (example () => (bytesof ""))
+    (body (prim "bytes.empty")))
+  (fn fill
+    (purpose
+      "Repeat an unsigned byte n times. Invalid values give None; nonpositive counts give empty Bytes.")
+    (sig (n Int) (v Int) -> (Opt Bytes))
+    (example (3 255) => (Some (bytesof "ffffff")))
+    (body (prim "bytes.fill")))
+  (fn from-hex
+    (purpose "Decode hex pairs, or return None for malformed input.")
+    (sig (s Str) -> (Opt Bytes))
+    (example ("00fF") => (Some (bytesof "00ff")))
+    (body (prim "bytes.from-hex")))
+  (fn from-list
+    (purpose "Convert a list of unsigned bytes, or return None if an element is outside 0..255.")
+    (sig (xs (List Int)) -> (Opt Bytes))
+    (example ((list 0 255)) => (Some (bytesof "00ff")))
+    (body (prim "bytes.from-list")))
+  (fn from-str
+    (purpose "Encode text as UTF-8.")
+    (sig (s Str) -> Bytes)
+    (example ("é") => (bytesof "c3a9"))
+    (body (prim "bytes.from-str")))
+  (fn hex
+    (purpose "Encode bytes as lowercase hex pairs.")
+    (sig (b Bytes) -> Str)
+    (example ((bytesof "00ff")) => "00ff")
+    (body (prim "bytes.hex")))
+  (fn put-s16be
+    (purpose
+      "Write a signed 16-bit integer (big-endian) to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "0000") 0 -2) => (Some (bytesof "fffe")))
+    (body (prim "bytes.put-s16be")))
+  (fn put-s16le
+    (purpose
+      "Write a signed 16-bit integer (little-endian) to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "0000") 0 -2) => (Some (bytesof "feff")))
+    (body (prim "bytes.put-s16le")))
+  (fn put-s32be
+    (purpose
+      "Write a signed 32-bit integer (big-endian) to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "00000000") 0 -2) => (Some (bytesof "fffffffe")))
+    (body (prim "bytes.put-s32be")))
+  (fn put-s32le
+    (purpose
+      "Write a signed 32-bit integer (little-endian) to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "00000000") 0 -2) => (Some (bytesof "feffffff")))
+    (body (prim "bytes.put-s32le")))
+  (fn put-s8
+    (purpose "Write a signed 8-bit integer to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "00") 0 -2) => (Some (bytesof "fe")))
+    (body (prim "bytes.put-s8")))
+  (fn put-u16be
+    (purpose
+      "Write a unsigned 16-bit integer (big-endian) to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "0000") 0 4660) => (Some (bytesof "1234")))
+    (body (prim "bytes.put-u16be")))
+  (fn put-u16le
+    (purpose
+      "Write a unsigned 16-bit integer (little-endian) to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "0000") 0 4660) => (Some (bytesof "3412")))
+    (body (prim "bytes.put-u16le")))
+  (fn put-u32be
+    (purpose
+      "Write a unsigned 32-bit integer (big-endian) to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "00000000") 0 4660) => (Some (bytesof "00001234")))
+    (body (prim "bytes.put-u32be")))
+  (fn put-u32le
+    (purpose
+      "Write a unsigned 32-bit integer (little-endian) to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "00000000") 0 4660) => (Some (bytesof "34120000")))
+    (body (prim "bytes.put-u32le")))
+  (fn put-u8
+    (purpose "Write a unsigned 8-bit integer to a copy. None if the field or value does not fit.")
+    (sig (b Bytes) (offset Int) (v Int) -> (Opt Bytes))
+    (example ((bytesof "00") 0 18) => (Some (bytesof "12")))
+    (body (prim "bytes.put-u8")))
+  (fn s16be
+    (purpose "Read a signed 16-bit integer (big-endian), or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "fffe") 0) => (Some -2))
+    (body (prim "bytes.s16be")))
+  (fn s16le
+    (purpose
+      "Read a signed 16-bit integer (little-endian), or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "feff") 0) => (Some -2))
+    (body (prim "bytes.s16le")))
+  (fn s32be
+    (purpose "Read a signed 32-bit integer (big-endian), or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "fffffffe") 0) => (Some -2))
+    (body (prim "bytes.s32be")))
+  (fn s32le
+    (purpose
+      "Read a signed 32-bit integer (little-endian), or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "feffffff") 0) => (Some -2))
+    (body (prim "bytes.s32le")))
+  (fn s8
+    (purpose "Read a signed 8-bit integer, or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "fe") 0) => (Some -2))
+    (body (prim "bytes.s8")))
+  (fn size
+    (purpose "Number of bytes.")
+    (sig (b Bytes) -> Int)
+    (example ((bytesof "00ff")) => 2)
+    (body (prim "bytes.size")))
+  (fn slice
+    (purpose "Take count bytes at start, clamping both to the available range.")
+    (sig (b Bytes) (start Int) (count Int) -> Bytes)
+    (example ((bytesof "00ff80") 1 5) => (bytesof "ff80"))
+    (body (prim "bytes.slice")))
+  (fn to-list
+    (purpose "Return the unsigned bytes as a list in order.")
+    (sig (b Bytes) -> (List Int))
+    (example ((bytesof "00ff")) => (list 0 255))
+    (body (prim "bytes.to-list")))
+  (fn to-str
+    (purpose "Decode UTF-8 strictly, or return None for invalid UTF-8.")
+    (sig (b Bytes) -> (Opt Str))
+    (example ((bytesof "c3a9")) => (Some "é"))
+    (body (prim "bytes.to-str")))
+  (fn u16be
+    (purpose
+      "Read a unsigned 16-bit integer (big-endian), or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "1234") 0) => (Some 4660))
+    (body (prim "bytes.u16be")))
+  (fn u16le
+    (purpose
+      "Read a unsigned 16-bit integer (little-endian), or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "3412") 0) => (Some 4660))
+    (body (prim "bytes.u16le")))
+  (fn u32be
+    (purpose
+      "Read a unsigned 32-bit integer (big-endian), or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "00001234") 0) => (Some 4660))
+    (body (prim "bytes.u32be")))
+  (fn u32le
+    (purpose
+      "Read a unsigned 32-bit integer (little-endian), or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "34120000") 0) => (Some 4660))
+    (body (prim "bytes.u32le")))
+  (fn u8
+    (purpose "Read a unsigned 8-bit integer, or return None if the field does not fit.")
+    (sig (b Bytes) (offset Int) -> (Opt Int))
+    (example ((bytesof "12") 0) => (Some 18))
+    (body (prim "bytes.u8"))))

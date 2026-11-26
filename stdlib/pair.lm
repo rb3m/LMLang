@@ -1,5 +1,6 @@
 (module pair
   (purpose "Pair operations: accessors and swap.")
+  (notes "Construct with the prelude (pair a b) and destructure with the same pattern. Pairs cannot be Map keys or Set elements; use a record for more than two fields.")
   (export first second swap)
   (fn first
     (purpose "First element of a pair.")

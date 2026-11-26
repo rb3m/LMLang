@@ -1,0 +1,83 @@
+(module hid-monitor
+  (purpose "List attached HID devices and print input reports as hexadecimal.")
+  (use bytes hid io str time)
+  (export main)
+  (fn clock-example
+    (purpose "Measure how far a HID timer advances the monotonic clock.")
+    (sig -> Int)
+    (eff hid.grab hid.io time.now)
+    (fails hid.HidError)
+    (example
+      ()
+      (given (now-ms 100) (hid (device "demo" 1 2 1 4)))
+      =>
+      115
+      (hid-log (grab 0 "demo" true) (grab 15 "demo" false) (close 15 "demo")))
+    (body
+      (let
+        ((d (hid.open "demo")))
+        (do
+          (hid.grab d true)
+          (let ((ready (hid.wait (list d) 15))) (do (hid.grab d false) (time.mono-ms)))))))
+  (fn main
+    (purpose "List attached devices and monitor the device selected by its ID.")
+    (sig -> Unit)
+    (eff hid.io io.in io.out)
+    (fails hid.HidError)
+    (example
+      ()
+      (given
+        (args "demo")
+        (hid
+          (device "demo" 1 2 1 4 -1 "Controller" "")
+          (report 10 "demo" 3 "00fe")
+          (unplug 20 "demo")))
+      =>
+      unit
+      (out "demo Controller\n3 00fe\n")
+      (hid-log (close 20 "demo")))
+    (example
+      ()
+      (given (hid (device "demo" 1 2 1 4)))
+      =>
+      unit
+      (out "demo \nUsage: hid-monitor DEVICE-ID\n"))
+    (body
+      (do
+        (for (info (hid.enumerate)) (io.print (str.join (list (get info id) (get info name)) " ")))
+        (match
+          (io.args)
+          ((list device) (monitor device))
+          (_ (io.print "Usage: hid-monitor DEVICE-ID"))))))
+  (fn monitor
+    (purpose "Print reports until the selected device disconnects.")
+    (sig (device Str) -> Unit)
+    (eff hid.io io.out)
+    (fails hid.HidError)
+    (body
+      (let
+        ((d (hid.open device)))
+        (do
+          (try
+            (reports d)
+            (catch
+              hid.HidError
+              (id msg)
+              (if (= msg "disconnected") unit (fail hid.HidError id msg))))
+          (hid.close d)))))
+  (fn reports
+    (purpose "Wait for and print the next input report, then keep listening.")
+    (sig (d hid.Dev) -> Unit)
+    (eff hid.io io.out)
+    (fails hid.HidError)
+    (body
+      (let
+        ((ready (hid.wait (list d) 1000)))
+        (do
+          (match
+            (hid.read d)
+            (None unit)
+            (
+              (Some r)
+              (io.print (str.join (list (str.from-int (get r id)) (bytes.hex (get r data))) " "))))
+          (reports d))))))

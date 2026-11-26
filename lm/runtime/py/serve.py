@@ -45,6 +45,7 @@ def run_serve(entry, site):
         result["headers"] = tuple((p.a, p.b) for p in result["headers"])
         return result
 
+    if "_start_hid" in globals(): _start_hid()
     try:
         if listener:
             server_mod.serve_listener(call, diagnostic=diagnostic, **options)
@@ -55,3 +56,5 @@ def run_serve(entry, site):
         sys.exit(2)
     except KeyboardInterrupt:
         pass
+    finally:
+        if "_close_hid" in globals(): _close_hid()

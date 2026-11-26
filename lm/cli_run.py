@@ -10,6 +10,7 @@ def cmd_run(args) -> int:
     from .check import Checker
     from .interp import Interp
     from .runner import FAULT_CODES, FAULT_EXIT, in_big_stack, runtime_diag
+    from .runtime.py.shutdown import run_with_signal_shutdown
     from .sexpr import read
     from .rand_prims import parse_seed
     from .values import LmFail, show
@@ -98,7 +99,7 @@ def cmd_run(args) -> int:
                 raise
             return "diag", d
 
-    kind, val = in_big_stack(go)
+    kind, val = run_with_signal_shutdown(lambda: in_big_stack(go, daemon=True), it)
     if kind == "ok":
         print(show(val))
         return 0

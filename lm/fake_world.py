@@ -3,10 +3,12 @@ from __future__ import annotations
 
 from io import StringIO
 
+from .hid_prims import hid_call
+from .hid_replay import ReplayHid
 from .io_prims import io_read_all, io_read_line
 from .prims import PRIMS
 from .rand_prims import SplitMix64
-from .values import UNIT, Denied, LmFail, Var
+from .values import UNIT, Denied, LmFail, Overflow, Var, in_range
 
 
 def valid_path(path):
@@ -46,6 +48,7 @@ class FakeWorld:
         self.now_ms = 0
         self.procs = []
         self.proc_index = 0
+        trace = ((), ())
         seed = 0
         for name, values in given:
             if name == 'args':
@@ -64,7 +67,16 @@ class FakeWorld:
                 seed = values[0]
             elif name == 'proc':
                 self.procs.append(values[0])
+            elif name == 'hid':
+                trace = values[0]
         self.rng = SplitMix64(seed)
+        self.mono_ms = self.now_ms
+        self.hid_log = []
+        self.hid = ReplayHid(trace, lambda: self.mono_ms - self.now_ms,
+                             self.advance_clock, self.hid_log.append)
+
+    def advance_clock(self, elapsed):
+        self.mono_ms += elapsed
 
     def call(self, name, it, args):
         """Route effects here and delegate pure primitives normally."""
@@ -72,7 +84,13 @@ class FakeWorld:
                     'fs.entries', 'fs.is-dir', 'fs.make-dir', 'fs.remove',
                     'fs.rename'):
             return self._fs(name[3:], *args)
-        if name in ('time.now-ms', 'time.mono-ms'):
+        if name.startswith('hid.'):
+            return hid_call(self.hid, name[4:], *args)
+        if name == 'time.mono-ms':
+            if not in_range(self.mono_ms):
+                raise Overflow("+", (self.now_ms, self.mono_ms - self.now_ms))
+            return self.mono_ms
+        if name == 'time.now-ms':
             return self.now_ms
         if name == 'rand.int':
             return self.rng.int(*args)

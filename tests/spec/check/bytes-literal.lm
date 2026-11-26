@@ -1,0 +1,14 @@
+(module bytes-literal
+  (purpose "Reject malformed Bytes literals.")
+  (fn invalid
+    (purpose "Reject missing, extra, dynamic, odd, nonhex and spaced arguments.")
+    (sig (text Str) -> (List Bytes))
+    (body
+      (list
+        (bytesof)
+        (bytesof "00" "ff")
+        (bytesof text)
+        (bytesof 0)
+        (bytesof "f")
+        (bytesof "gg")
+        (bytesof "00 ff")))))

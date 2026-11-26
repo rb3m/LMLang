@@ -1,4 +1,4 @@
-"""Run golden commands with only the fixed examples and stdlib project paths."""
+"""Run golden commands with the fixed examples, stdlib and project manifest."""
 import os
 import subprocess
 import sys
@@ -15,6 +15,9 @@ def golden_command(args, root=ROOT):
         project = Path(directory)
         for name in ("examples", "stdlib"):
             (project / name).symlink_to(root / name, target_is_directory=True)
+        manifest = root / "lm.deps"
+        if manifest.is_file():
+            (project / manifest.name).symlink_to(manifest)
         env = {**os.environ, "PYTHONPATH": str(ROOT)}
         return subprocess.run([sys.executable, "-m", "lm", *args], cwd=project,
                               env=env, capture_output=True, text=True)

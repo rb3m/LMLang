@@ -1,5 +1,6 @@
 (module opt
   (purpose "Optional values: defaults, mapping, tests.")
+  (notes "unwrap-or evaluates its default eagerly. Use let? to short-circuit a sequence of optional computations at the first None.")
   (export is-some map unwrap-or)
   (fn is-some
     (purpose "True for (Some _), false for None.")

@@ -50,12 +50,12 @@ def _flags(args, spec):
 
 
 
-def _open(paths, extra=(), defaults=True):
+def _open(paths, extra=(), defaults=True, discover_ext=False):
     from .check import Checker
     from .index import Index
     from .loader import load
 
-    prog = load(paths, extra, defaults)
+    prog = load(paths, extra, defaults, discover_ext)
     ck = Checker(prog)
     ck.check_all = True
     ck.run()

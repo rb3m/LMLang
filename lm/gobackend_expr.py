@@ -20,6 +20,9 @@ class GoExprMixin:
             return f"fbits(0x{struct.unpack('<Q', struct.pack('<d', e.value))[0]:016x}) /* {float_text(e.value)} */"
         if e.kind == "str":
             return f"Value({golit(e.value)})"
+        if e.kind == "bytes":
+            escaped = "".join(f"\\x{byte:02x}" for byte in e.value)
+            return f'Bytes("{escaped}")'
         if e.kind == "bool":
             return "Value(true)" if e.value else "Value(false)"
         return "U"

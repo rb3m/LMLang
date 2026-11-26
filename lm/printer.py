@@ -1,7 +1,7 @@
 """Canonical printer: the single definition of LM text form (docs/SPEC.md section 2)."""
 from __future__ import annotations
 
-from .ast import canonicalize
+from .ast import _head, canonicalize
 from .diag import has_errors
 from .sexpr import Atom, SList, read
 
@@ -54,8 +54,13 @@ def render(n, ind: int) -> str:
     return head + "".join("\n" + pad + render(a, ind + 2) for a in rest) + ")"
 
 
-def _is_fn(n) -> bool:
-    return isinstance(n, SList) and n.items and isinstance(n.items[0], Atom) and n.items[0].value == "fn"
+def _block_clause(node, ind):
+    head = _head(node)
+    if head == "fn":
+        return _block(node, ind)
+    if head == "notes":
+        return flat(node)
+    return render(node, ind)
 
 
 def _block(node, ind: int) -> str:
@@ -64,7 +69,7 @@ def _block(node, ind: int) -> str:
     if not kids:
         return head + ")"
     pad = " " * (ind + 2)
-    return head + "".join("\n" + pad + (_block(k, ind + 2) if _is_fn(k) else render(k, ind + 2)) for k in kids) + ")"
+    return head + "".join("\n" + pad + _block_clause(k, ind + 2) for k in kids) + ")"
 
 
 def print_module(m) -> str:

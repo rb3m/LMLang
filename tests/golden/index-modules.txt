@@ -1,0 +1,21 @@
+bytes  32 exports  Immutable byte sequences and binary encoding.
+date  21 exports  Pure Gregorian dates and UTC datetimes, years 1..9999.
+env  1 exports  Read-only environment access.
+float  32 exports  Float helpers: conversions, rounding, constants, exp, logs, sqrt, abs, min, max, sum.
+fs  10 exports  UTF-8 file operations.
+http  9 exports  HTTP client, request records and strict query decoding.
+io  6 exports  Console input, output, and program arguments.
+json  12 exports  Strict JSON values, parsing, rendering and object lookup.
+list  20 exports  List operations.
+map  11 exports  Immutable maps keyed by Int, Float, Str or Bool; every traversal is in ascending key order.
+math  5 exports  Integer math helpers.
+opt  3 exports  Optional values: defaults, mapping, tests.
+pair  3 exports  Pair operations: accessors and swap.
+pat  10 exports  Bounded Unicode text patterns with deterministic ordered matching.
+proc  7 exports  Bounded POSIX subprocesses with explicit arguments and environment.
+rand  2 exports  Seedable SplitMix64 random numbers.
+set  10 exports  Immutable sets of Int, Float, Str or Bool; every traversal is in ascending order.
+str  26 exports  String operations.
+time  2 exports  Wall and monotonic clocks in milliseconds.
+vec  15 exports  Persistent immutable indexed collections backed by a 32-way trie with a tail.
+hid  14 exports  Access HID devices through the active runtime adapter.  opt-in: (ext hid) in lm.deps

@@ -109,6 +109,51 @@ class DependencyTests(unittest.TestCase):
                         self.assertEqual(Path(diag.file).name, 'geo.lm')
                         self.assertEqual(diag.line, 3)
 
+    def test_extension_fix_and_discovery(self):
+        self.pin(allow="fs.read")
+        manifest = Path("lm.deps")
+        original_pin = manifest.read_text().splitlines()[1].removesuffix(")")
+        source = Path("src/main.lm")
+        source.write_text(source.read_text().replace("(use geo)", "(use geo hid)"))
+        diagnostic = next(d for d in self.check().diags if d.code == "E-EXT-UNDECLARED")
+        self.assertEqual((diagnostic.line, diagnostic.path), (3, "main/use"))
+        fix = json.dumps(diagnostic.fix)
+        rc, out, err = self.cli("edit", "apply", fix, "--dry-run")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("+  (ext hid)\n", out)
+        self.assertNotIn("(ext hid)", manifest.read_text())
+
+        rc, out, err = self.cli("index", "--ext", "--module", "hid")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("fn hid.read", out)
+        self.assertIn("opt-in: (ext hid) in lm.deps", out)
+        self.assertIn("opt-in: (ext hid) in lm.deps",
+                      self.cli("index", "--stdlib", "--modules")[1])
+        self.assertNotIn("opt-in:", self.cli("index", "--ext", "--modules")[1])
+
+        rc, out, err = self.cli("edit", "apply", fix)
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual(manifest.read_text(), f"(deps\n  (ext hid)\n{original_pin})\n")
+        self.assertFalse([d for d in self.check().diags if d.severity == "error"])
+        rc, out, err = self.cli("index", "--module", "hid")
+        self.assertEqual((rc, err), (0, ""))
+        self.assertNotIn("opt-in:", out)
+        with patch("lm.deps.download", return_value=SOURCE):
+            rc, out, err = self.cli("fetch", "--pin", "geo", "https://example.org/geo.lm")
+        self.assertEqual(rc, 0, out + err)
+        self.assertTrue(manifest.read_text().startswith("(deps\n  (ext hid)\n  (pin geo "))
+
+    def test_pinned_module_notes_are_marked_as_untrusted(self):
+        self.pin(SOURCE.replace(b'  (fn value',
+                                b'  (notes "Pinned module notes.")\n  (fn value'))
+        rc, out, err = self.cli("index", "--module", "geo")
+        self.assertEqual((rc, err), (0, ""))
+        header, notes, *_ = out.splitlines()
+        self.assertTrue(header.startswith("ext module geo "))
+        self.assertEqual(notes, "ext   notes: Pinned module notes.")
+        self.assertNotIn("Pinned module notes.", self.cli("slice", "geo.value")[1])
+        self.assertNotIn("Pinned module notes.", self.cli("explain", "geo.value")[1])
+
     def test_valid_pin_loads_and_tests(self):
         self.pin()
         prog = self.check()

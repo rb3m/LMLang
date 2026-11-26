@@ -1,5 +1,6 @@
 (module time
   (purpose "Wall and monotonic clocks in milliseconds.")
+  (notes "Wall time may jump; use mono-ms for elapsed time. Example clocks start at now-ms (default 0) and stay frozen except for monotonic time advanced by hid.wait.")
   (export mono-ms now-ms)
   (fn mono-ms
     (purpose "Monotonic milliseconds from an arbitrary origin; only differences are meaningful.")
@@ -7,7 +8,7 @@
     (eff time.now)
     (body (prim "time.mono-ms")))
   (fn now-ms
-    (purpose "Unix epoch milliseconds.")
+    (purpose "Unix epoch milliseconds; wall-clock adjustments can move it backwards.")
     (sig -> Int)
     (eff time.now)
     (body (prim "time.now-ms"))))

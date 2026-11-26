@@ -30,7 +30,8 @@ def fixture_outcomes(prog, modules):
         for label, f, _ in fixture_cases(prog, modules):
             it = Interp(prog, allowed=f.eff, contracts=True, seed=0)
             try:
-                results[label] = ('ok', show(it.call_fn(f, [])))
+                with it:
+                    results[label] = ('ok', show(it.call_fn(f, [])))
             except LmFail as ex:
                 results[label] = ('fail', f'(fail {ex.id}' + ''.join(' ' + show(a) for a in ex.args_) + ')')
             except Exception as ex:

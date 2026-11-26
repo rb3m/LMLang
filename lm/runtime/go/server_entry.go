@@ -46,11 +46,17 @@ func runServe(entry func(Value) Value, site int) {
 	seedFromEnv()
 	setup()
 	// Handler io.print belongs on stderr; stdout is reserved for CGI protocol.
-	out = bufio.NewWriterSize(os.Stderr, 65536)
+	out.writer = bufio.NewWriterSize(os.Stderr, 65536)
 	outTTY = isTTY(os.Stderr)
-	if !listen {
-		serverCGI(entry)
-		return
-	}
-	os.Exit(serverListen(entry, host, port, public))
+	status := func() int {
+		startHid()
+		defer watchHidInterrupt()()
+		defer stopHid()
+		if !listen {
+			serverCGI(entry)
+			return 0
+		}
+		return serverListen(entry, host, port, public)
+	}()
+	os.Exit(status)
 }

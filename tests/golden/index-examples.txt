@@ -22,6 +22,11 @@ module colsum  -- Sum a CSV column per key, keys ascending: colsum FILE KEY-COL 
 module file-lines  -- Count lines in a UTF-8 file named by the first program argument.  (use fs io list str)
 *fn file-lines.count  (text Str) -> Int  -- Count LF, CRLF, or CR text lines.
 *fn file-lines.main  -> Unit  [eff fs.read io.in io.out]  [fails fs.IoError]  -- Print the line count of the first file argument.
+module hid-monitor  -- List attached HID devices and print input reports as hexadecimal.  (use bytes hid io str time)
+ fn hid-monitor.clock-example  -> Int  [eff hid.grab hid.io time.now]  [fails hid.HidError]  -- Measure how far a HID timer advances the monotonic clock.
+*fn hid-monitor.main  -> Unit  [eff hid.io io.in io.out]  [fails hid.HidError]  -- List attached devices and monitor the device selected by its ID.
+ fn hid-monitor.monitor  (device Str) -> Unit  [eff hid.io io.out]  [fails hid.HidError]  -- Print reports until the selected device disconnects.
+ fn hid-monitor.reports  (d hid.Dev) -> Unit  [eff hid.io io.out]  [fails hid.HidError]  -- Wait for and print the next input report, then keep listening.
 module shapes  -- Areas and descriptions of simple shapes.  (use float math str)
 *type shapes.Shape  (sum (Circle (r Int)) (Rect (w Int) (h Int)) Empty)
 *fn shapes.area  (s Shape) -> Float  -- Area in square units; circles use float.pi.

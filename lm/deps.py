@@ -16,6 +16,7 @@ from .sexpr import Atom, SList, read
 from .prelude import EFFECTS
 
 MANIFEST = 'lm.deps'
+EXT = Path(__file__).resolve().parent.parent / 'ext'
 STEM = re.compile(r'[a-z][a-z0-9-]*\Z')
 HASH = re.compile(r'[0-9a-f]{64}\Z')
 
@@ -41,19 +42,24 @@ def valid_url(url):
         return False
 
 
-def read_pins():
+def extension_files():
+    return {p.stem: p for p in sorted(EXT.glob('*.lm')) if p.is_file()}
+
+
+def read_manifest():
+    """Return pins, opted-in stems and declaration diagnostics."""
     path = Path(MANIFEST)
     if not path.exists():
-        return [], []
+        return [], set(), []
     try:
         root, diags = read(path.read_text(encoding='utf-8'), MANIFEST)
     except (OSError, UnicodeError) as ex:
-        return [], [make('E-DEPS', MANIFEST, 1, 1, str(ex))]
+        return [], set(), [make('E-DEPS', MANIFEST, 1, 1, str(ex))]
     if diags:
-        return [], [make('E-DEPS', MANIFEST, d.line, d.col, d.msg) for d in diags]
+        return [], set(), [make('E-DEPS', MANIFEST, d.line, d.col, d.msg) for d in diags]
 
     def bad(node, msg):
-        return [], [make('E-DEPS', MANIFEST, node.line, node.col, msg)]
+        return [], set(), [make('E-DEPS', MANIFEST, node.line, node.col, msg)]
 
     def atom(node, kind, value=None):
         return (isinstance(node, Atom) and node.kind == kind
@@ -61,9 +67,21 @@ def read_pins():
 
     if not (isinstance(root, SList) and root.items
             and atom(root.items[0], 'sym', 'deps')):
-        return bad(root, 'expected (deps (pin STEM "HTTPS-URL" "SHA256") ...)')
-    pins, seen = [], set()
+        return bad(root, 'expected (deps (ext STEM) ... (pin STEM "HTTPS-URL" "SHA256") ...)')
+    pins, exts, seen = [], set(), set()
+    extensions = extension_files()
     for node in root.items[1:]:
+        if isinstance(node, SList) and node.items and atom(node.items[0], 'sym', 'ext'):
+            if len(node.items) != 2 or not atom(node.items[1], 'sym'):
+                return bad(node, 'expected (ext STEM)')
+            stem = node.items[1]
+            if stem.value not in extensions:
+                return bad(stem, f'unknown extension `{stem.value}`')
+            if stem.value in seen:
+                return bad(stem, f'duplicate dependency stem `{stem.value}`')
+            exts.add(stem.value)
+            seen.add(stem.value)
+            continue
         if not (isinstance(node, SList) and len(node.items) in (4, 5)
                 and atom(node.items[0], 'sym', 'pin')
                 and atom(node.items[1], 'sym')
@@ -90,7 +108,7 @@ def read_pins():
             return bad(stem, f'duplicate dependency stem `{stem.value}`')
         seen.add(stem.value)
         pins.append(Pin(stem.value, url.value, digest.value, node.line, node.col, allow))
-    return pins, []
+    return pins, exts, []
 
 
 def cache_path(pin):
@@ -122,6 +140,23 @@ def pin_line(pin):
         effects = " " + " ".join(pin.allow) if pin.allow else ""
         allow = f" (allow{effects})"
     return f'(pin {pin.stem} {json.dumps(pin.url)} "{pin.digest}"{allow})'
+
+
+def manifest_text(pins, exts):
+    entries = [f'(ext {stem})' for stem in sorted(exts)]
+    entries.extend(pin_line(p) for p in sorted(pins, key=lambda p: p.stem))
+    return '(deps\n' + '\n'.join('  ' + entry for entry in entries) + ')\n'
+
+
+def add_extension(stem):
+    if stem not in extension_files():
+        raise ValueError(f'unknown extension `{stem}`')
+    pins, exts, diags = read_manifest()
+    if diags:
+        raise ValueError(diags[0].msg)
+    if any(p.stem == stem for p in pins):
+        raise ValueError(f'extension `{stem}` collides with a pin')
+    return manifest_text(pins, exts | {stem})
 
 
 def atomic_write(path, data):
@@ -158,7 +193,7 @@ def cmd_fetch(args):
                  or len(args[3:]) % 2 or any(a != '--allow' for a in args[3::2])):
         sys.stderr.write('usage: lm fetch [--pin STEM URL [--allow EFF]..]\n')
         return 3
-    pins, diags = read_pins()
+    pins, exts, diags = read_manifest()
     if diags:
         for d in diags:
             print(d.to_json())
@@ -168,6 +203,8 @@ def cmd_fetch(args):
         try:
             if not STEM.fullmatch(stem):
                 raise ValueError('invalid dependency stem')
+            if stem in extension_files():
+                raise ValueError(f'pinned module `{stem}` collides with a toolchain extension')
             allow = args[4::2]
             if any(e not in EFFECTS for e in allow) or len(allow) != len(set(allow)):
                 print(make('E-DEPS', MANIFEST, 1, 1, 'allow effects must be known and unique').to_json())
@@ -176,7 +213,7 @@ def cmd_fetch(args):
             pin = Pin(stem, url, hashlib.sha256(data).hexdigest(), allow=tuple(sorted(allow)) if allow else None)
             atomic_write(cache_path(pin), data)
             pins = sorted([p for p in pins if p.stem != stem] + [pin], key=lambda p: p.stem)
-            text = '(deps\n' + '\n'.join('  ' + pin_line(p) for p in pins) + ')\n'
+            text = manifest_text(pins, exts)
             atomic_write(Path(MANIFEST), text.encode('utf-8'))
             print(pin_line(pin))
             return 0

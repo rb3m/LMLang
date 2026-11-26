@@ -158,6 +158,8 @@ class GoldenOutputs(unittest.TestCase):
     CASES = {
         "index-examples": ["index", "examples"],
         "index-stdlib": ["index", "examples", "--stdlib", "--exported"],
+        "index-modules": ["index", "--stdlib", "--modules"],
+        "index-module-http": ["index", "--module", "http"],
         "slice-billing-total": ["slice", "billing.total"],
         "slice-list-sum-bodies": ["slice", "list.sum", "--bodies"],
         "slice-shapes-scale": ["slice", "shapes.scale"],
@@ -181,6 +183,7 @@ class GoldenOutputs(unittest.TestCase):
             root = Path(directory)
             for name in ("examples", "stdlib"):
                 (root / name).symlink_to(ROOT / name, target_is_directory=True)
+            (root / "lm.deps").symlink_to(ROOT / "lm.deps")
             (root / "src").mkdir()
             # Even a duplicate, malformed module must not affect golden queries.
             (root / "src/billing.lm").write_text("(broken")

@@ -1,0 +1,22 @@
+{
+  "probe": "unsupported",
+  "trace": {
+    "devices": [
+      {
+        "id": "a",
+        "vendor": 1,
+        "product": 2,
+        "usage-page": 1,
+        "usage": 4,
+        "interface": -1,
+        "name": "Controller",
+        "serial": ""
+      }
+    ],
+    "events": []
+  },
+  "stdout": "unavailable\nunknown\nunsupported\na unsupported\n0\n",
+  "darwin_stdout_pattern": "available\nunknown\n[0-9]+\na not-found\n0\n",
+  "log": [],
+  "os_adapter": true
+}
