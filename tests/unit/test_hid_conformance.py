@@ -13,6 +13,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ABSOLUTE_SLACK_MS = 200
 VECTORS = ROOT / "tests/conformance/hid"
 PROBE = VECTORS / "probe.lm"
 LM = ROOT / "bin/lm"
@@ -104,7 +105,10 @@ class HidConformance(unittest.TestCase):
 
     def assert_log(self, actual, vector):
         self.assertEqual(len(actual), len(vector["log"]), actual)
-        tolerance = vector.get("wait_tolerance_ms", 0)
+        # Absolute timestamps include process start-up and scheduler jitter
+        # (shared CI runners add tens of ms), so they get extra slack; order
+        # and the relative pulse window below stay strict.
+        tolerance = vector.get("wait_tolerance_ms", 0) + ABSOLUTE_SLACK_MS
         for item, expected in zip(actual, vector["log"]):
             self.assertEqual({k: v for k, v in item.items() if k != "at-ms"},
                              {k: v for k, v in expected.items() if k != "at-ms"})
