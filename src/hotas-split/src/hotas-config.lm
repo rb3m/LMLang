@@ -1,0 +1,224 @@
+(module hotas-config
+  (purpose "Load and validate the JSON equivalent of the Python bridge configuration.")
+  (use env float fs hotas-calibration json opt str)
+  (export ConfigError Settings defaults load parse)
+  (type
+    Settings
+    (rec
+      (twist hotas-calibration.Calibration)
+      (rocker hotas-calibration.Calibration)
+      (twist-axis Str)
+      (rocker-axis Str)))
+  (error ConfigError (message Str))
+  (const
+    defaults
+    (purpose "Use the measured calibration and standard output axis names.")
+    (type Settings)
+    (value
+      (new
+        Settings
+        (twist hotas-calibration.twist-default)
+        (rocker hotas-calibration.rocker-default)
+        (twist-axis "rz")
+        (rocker-axis "rx"))))
+  (const
+    empty-object
+    (purpose "Supply an empty table when the configuration omits one.")
+    (type json.Json)
+    (value (json.JObj (mapof))))
+  (fn axis-settings
+    (purpose "Apply individual axis settings over shared deadzone and measured defaults.")
+    (sig
+      (obj json.Json)
+      (base hotas-calibration.Calibration)
+      (shared json.Json)
+      ->
+      hotas-calibration.Calibration)
+    (fails ConfigError)
+    (example
+      (empty-object hotas-calibration.twist-default json.JNull)
+      =>
+      hotas-calibration.twist-default)
+    (body
+      (let
+        (
+          (fallback (if (= shared json.JNull) (json.JFloat (get base deadzone)) shared))
+          (percent (deadzone (field obj "deadzone_percent" fallback)))
+          (low (integer-field obj "min" (get base min) "axis min and max must be integers"))
+          (high (integer-field obj "max" (get base max) "axis min and max must be integers"))
+          (midpoint (integer-field obj "centre" (get base centre) "axis centre must be an integer")))
+        (if
+          (and (< low midpoint) (< midpoint high))
+          (with
+            base
+            (min low)
+            (max high)
+            (centre midpoint)
+            (invert (invert-field obj (get base invert)))
+            (deadzone percent))
+          (fail ConfigError "axis must satisfy min < centre < max")))))
+  (fn deadzone
+    (purpose "Check that a deadzone percentage is in range.")
+    (sig (value json.Json) -> Float)
+    (fails ConfigError)
+    (example ((json.JFloat 4.5)) => 4.5)
+    (example
+      ((json.JInt 100))
+      =>
+      (fail ConfigError "deadzone_percent must be finite and in [0, 100)"))
+    (body
+      (let
+        ((percent (number value)))
+        (if
+          (and (>= percent 0.0) (< percent 100.0))
+          percent
+          (fail ConfigError "deadzone_percent must be finite and in [0, 100)")))))
+  (fn field
+    (purpose "Return a present JSON field, with a supplied value for a missing field.")
+    (sig (obj json.Json) (key Str) (fallback json.Json) -> json.Json)
+    (example (empty-object "centre" (json.JInt 1)) => (json.JInt 1))
+    (body (opt.unwrap-or (json.field obj key) fallback)))
+  (fn integer-field
+    (purpose "Read an integral setting without accepting booleans or decimal JSON numbers.")
+    (sig (obj json.Json) (key Str) (fallback Int) (message Str) -> Int)
+    (fails ConfigError)
+    (example (empty-object "centre" 4300 "error") => 4300)
+    (body
+      (match
+        (field obj key (json.JInt fallback))
+        ((json.JInt integer) integer)
+        (_ (fail ConfigError message)))))
+  (fn invert-field
+    (purpose "Read the inversion flag, accepting only a JSON boolean.")
+    (sig (obj json.Json) (fallback Bool) -> Bool)
+    (fails ConfigError)
+    (example (empty-object true) => true)
+    (body
+      (match
+        (field obj "invert" (json.JBool fallback))
+        ((json.JBool flag) flag)
+        (_ (fail ConfigError "axis invert must be a boolean")))))
+  (fn load
+    (purpose "Load the requested file or the optional home-directory settings.")
+    (sig (requested (Opt Str)) -> Settings)
+    (eff env.read fs.read)
+    (fails ConfigError fs.IoError json.BadJson)
+    (body
+      (match
+        requested
+        ((Some path) (load-file path))
+        (None
+          (match
+            (env.lookup "HOME")
+            (None defaults)
+            ((Some home) (load-file (str.concat home "/.config/hotas-split/config.json"))))))))
+  (fn load-file
+    (purpose "Read a UTF-8 JSON file, using defaults when the path is absent.")
+    (sig (path Str) -> Settings)
+    (eff fs.read)
+    (fails ConfigError fs.IoError json.BadJson)
+    (example ("/missing.json") (given) => defaults)
+    (body (if (fs.exists path) (parse (fs.read path)) defaults)))
+  (fn number
+    (purpose "Read a JSON integer or float and reject other types.")
+    (sig (value json.Json) -> Float)
+    (fails ConfigError)
+    (example ((json.JInt 12)) => 12.0)
+    (example ((json.JBool true)) => (fail ConfigError "deadzone_percent must be a number"))
+    (body
+      (match
+        value
+        ((json.JInt integer) (float.from-int integer))
+        ((json.JFloat decimal) decimal)
+        (_ (fail ConfigError "deadzone_percent must be a number")))))
+  (fn output-name
+    (purpose "Convert a supported Linux ABS code name to its vinput axis name.")
+    (sig (value json.Json) -> Str)
+    (fails ConfigError)
+    (example ((json.JStr "ABS_RZ")) => "rz")
+    (example ((json.JStr "ABS_X")) => (fail ConfigError "unsupported output axis: ABS_X"))
+    (body
+      (match
+        value
+        (
+          (json.JStr name)
+          (match
+            name
+            ("ABS_RX" "rx")
+            ("ABS_RY" "ry")
+            ("ABS_RZ" "rz")
+            ("ABS_THROTTLE" "throttle")
+            ("ABS_RUDDER" "rudder")
+            ("ABS_WHEEL" "wheel")
+            ("ABS_GAS" "gas")
+            ("ABS_BRAKE" "brake")
+            (_ (fail ConfigError (str.concat "unsupported output axis: " name)))))
+        (_ (fail ConfigError "output axis must be a name such as ABS_RZ")))))
+  (fn parse
+    (purpose "Parse and validate the bridge settings from JSON text.")
+    (sig (source Str) -> Settings)
+    (fails ConfigError json.BadJson)
+    (example ("{}") => defaults)
+    (example
+      ("{\"axes\":{\"twist\":\"ABS_RX\"}}")
+      =>
+      (fail ConfigError "twist and rocker output axes must differ"))
+    (example
+      ("{\"deadzone_percent\":4.5,\"twist\":{\"min\":300,\"centre\":4000,\"invert\":true},\"rocker\":{\"deadzone_percent\":1},\"axes\":{\"twist\":\"ABS_RY\"}}")
+      =>
+      (new
+        Settings
+        (twist
+          (with
+            hotas-calibration.twist-default
+            (min 300)
+            (centre 4000)
+            (invert true)
+            (deadzone 4.5)))
+        (rocker (with hotas-calibration.rocker-default (deadzone 1.0)))
+        (twist-axis "ry")
+        (rocker-axis "rx")))
+    (body
+      (let
+        ((root (json.parse source)))
+        (match
+          root
+          ((json.JObj _) (settings root))
+          (_ (fail ConfigError "configuration must be a table"))))))
+  (fn settings
+    (purpose "Validate an object and combine its axis tables and output mapping.")
+    (sig (root json.Json) -> Settings)
+    (fails ConfigError)
+    (example (empty-object) => defaults)
+    (body
+      (let
+        (
+          (axes (table root "axes"))
+          (twist-name (output-name (field axes "twist" (json.JStr "ABS_RZ"))))
+          (rocker-name (output-name (field axes "rocker" (json.JStr "ABS_RX"))))
+          (shared (field root "deadzone_percent" json.JNull)))
+        (if
+          (= twist-name rocker-name)
+          (fail ConfigError "twist and rocker output axes must differ")
+          (new
+            Settings
+            (twist (axis-settings (table root "twist") (get defaults twist) shared))
+            (rocker (axis-settings (table root "rocker") (get defaults rocker) shared))
+            (twist-axis twist-name)
+            (rocker-axis rocker-name))))))
+  (fn table
+    (purpose "Return a named JSON object or an empty object for a missing field.")
+    (sig (root json.Json) (key Str) -> json.Json)
+    (fails ConfigError)
+    (example (empty-object "axes") => empty-object)
+    (example
+      ((json.JObj (mapof ("axes" (json.JArr (list))))) "axes")
+      =>
+      (fail ConfigError "axes must be a table"))
+    (body
+      (let
+        ((value (opt.unwrap-or (json.field root key) empty-object)))
+        (match
+          value
+          ((json.JObj _) value)
+          (_ (fail ConfigError (str.concat key " must be a table"))))))))

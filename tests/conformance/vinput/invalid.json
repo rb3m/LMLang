@@ -1,0 +1,59 @@
+{
+  "trace": {
+    "devices": [],
+    "events": []
+  },
+  "probe": "invalid",
+  "stdout": " invalid-request\n invalid-request\n invalid-request\n invalid-request\n invalid-request\n invalid-request\n invalid-request\n invalid-request\n invalid-request\nv1 invalid-request\nv1 invalid-request\nv1 invalid-request\nv2 invalid-request\nv2 invalid-request\nv2 invalid-request\n",
+  "log": [
+    {
+      "at-ms": 0,
+      "op": "vinput-create",
+      "dev": "v1",
+      "name": "Probe",
+      "vendor": 1,
+      "product": 65535,
+      "axes": [],
+      "buttons": 0,
+      "hats": 0
+    },
+    {
+      "at-ms": 0,
+      "op": "vinput-create",
+      "dev": "v2",
+      "name": "Probe",
+      "vendor": 1,
+      "product": 65535,
+      "axes": [
+        {
+          "name": "rz",
+          "min": -2,
+          "max": 1
+        },
+        {
+          "name": "x",
+          "min": 0,
+          "max": 10
+        }
+      ],
+      "buttons": 56,
+      "hats": 4
+    },
+    {
+      "at-ms": 0,
+      "op": "vinput-frame",
+      "dev": "v2",
+      "events": []
+    },
+    {
+      "at-ms": 0,
+      "op": "vinput-close",
+      "dev": "v1"
+    },
+    {
+      "at-ms": 0,
+      "op": "vinput-close",
+      "dev": "v2"
+    }
+  ]
+}

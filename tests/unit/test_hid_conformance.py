@@ -21,22 +21,30 @@ EFFECTS = ("hid.grab", "hid.io", "io.in", "io.out", "time.now")
 
 
 class HidConformance(unittest.TestCase):
+    vectors = VECTORS
+    probe = PROBE
+    effects = EFFECTS
+    extensions = ("hid",)
+
     def run_vectors(self, target):
         with tempfile.TemporaryDirectory(prefix="lm-hid-") as directory:
             work = Path(directory)
             cache = work / "src"
             cache.mkdir()
-            shutil.copyfile(PROBE, cache / PROBE.name)
-            (work / "lm.deps").write_text("(deps\n  (ext hid))\n", encoding="utf-8")
+            shutil.copyfile(self.probe, cache / self.probe.name)
+            declarations = "".join(f" (ext {stem})" for stem in self.extensions)
+            (work / "lm.deps").write_text(f"(deps{declarations})\n", encoding="utf-8")
             env = dict(os.environ)
             for name in ("LM_HID_REPLAY", "LM_HID_REPLAY_LOG"):
                 env.pop(name, None)
             command = self.probe_command(target, work, env)
-            for path in sorted(VECTORS.glob("*.json")):
+            for path in sorted(self.vectors.glob("*.json")):
                 self.run_vector(command, path, work, env, target)
 
     def run_vector(self, command, path, work, env, target):
         vector = json.loads(path.read_text(encoding="utf-8"))
+        if sys.platform in vector.get("skip_platforms", []):
+            return
         signals = (signal.SIGTERM, signal.SIGINT) if vector.get("interrupt") else (None,)
         for signum in signals:
             with self.subTest(target=target, vector=path.stem, signal=signum):
@@ -44,7 +52,7 @@ class HidConformance(unittest.TestCase):
 
     def probe_command(self, target, work, env):
         if target == "interpreter":
-            allow = [part for effect in EFFECTS for part in ("--allow", effect)]
+            allow = [part for effect in self.effects for part in ("--allow", effect)]
             return [LM, "run", "probe.main", *allow, "--"]
         executable = work / ("probe.py" if target == "py" else "probe")
         build = subprocess.run(
@@ -65,7 +73,8 @@ class HidConformance(unittest.TestCase):
         args = [*command, vector["probe"]]
         expected_status = vector.get("returncode", 0)
         if signum is not None:
-            run = self.interrupt(args, work, run_env, log, signum)
+            run = self.interrupt(args, work, run_env, log, signum,
+                                 vector.get("interrupt_after", 1))
             expected_status = 128 + signum
             self.assertEqual(run.stderr, "")
         if signum is None:
@@ -73,7 +82,7 @@ class HidConformance(unittest.TestCase):
                 args, cwd=work, env=run_env, capture_output=True, text=True, timeout=10,
             )
         self.assertEqual(run.returncode, expected_status, run.stderr)
-        pattern = vector.get("darwin_stdout_pattern") if sys.platform == "darwin" else None
+        pattern = vector.get("live_stdout_pattern") if sys.platform in ("darwin", "linux") else None
         suffix = "unit\n" if target == "interpreter" and run.returncode == 0 else ""
         if pattern is None:
             self.assertEqual(run.stdout, vector["stdout"] + suffix, run.stderr)
@@ -84,7 +93,7 @@ class HidConformance(unittest.TestCase):
         actual = [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
         self.assert_log(actual, vector)
 
-    def interrupt(self, args, work, env, log, signum):
+    def interrupt(self, args, work, env, log, signum, entries):
         with subprocess.Popen(
             args, cwd=work, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True,
@@ -92,7 +101,7 @@ class HidConformance(unittest.TestCase):
             try:
                 deadline = time.monotonic() + 5
                 while time.monotonic() < deadline and program.poll() is None:
-                    if log.exists() and log.read_text().endswith("\n"):
+                    if log.exists() and log.read_text().count("\n") >= entries:
                         program.send_signal(signum)
                         break
                     time.sleep(0.01)

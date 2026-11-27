@@ -86,7 +86,7 @@ class TypeChecksMixin:
         return self.has_opaque(t, seen, "Fn")
 
     def primitive_opaque(self, t):
-        types = {"pat.Pat": "Pat", "hid.Dev": "hid.Dev"}
+        types = {"pat.Pat": "Pat", "hid.Dev": "hid.Dev", "vinput.Dev": "vinput.Dev"}
         return next((label for name, label in types.items()
                      if self.has_opaque(t, set(), name)), None)
 

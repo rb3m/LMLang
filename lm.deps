@@ -1,2 +1,3 @@
 (deps
-  (ext hid))
+  (ext hid)
+  (ext vinput))

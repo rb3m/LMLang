@@ -1,0 +1,141 @@
+(module probe
+  (purpose "Run virtual joystick replay vectors across the LM runtimes.")
+  (use hid io math str time vinput)
+  (export main)
+  (fn check-create
+    (purpose "Print the category for a rejected create request.")
+    (sig (s vinput.Spec) -> Unit)
+    (eff io.out vinput.emit)
+    (body
+      (try
+        (vinput.close (vinput.create s))
+        (catch vinput.VinputError (id msg) (io.print (str.join (list id msg) " "))))))
+  (fn cleanup
+    (purpose "Leave two joysticks and a HID handle open on exit, fault or signal.")
+    (sig (mode Str) -> Unit)
+    (eff hid.io io.out time.now vinput.emit)
+    (fails hid.HidError vinput.VinputError)
+    (body
+      (let
+        ((first (vinput.create (spec))) (second (vinput.create (spec))) (h (hid.open "a")))
+        (let
+          ((ready (hid.wait (list h) 1000)))
+          (do
+            (vinput.button second 0 true)
+            (io.print (if (>= (time.mono-ms) 25) "ready" "early"))
+            (vinput.sync second)
+            (if (= mode "fault") (io.print (str.from-int (+ (math.int-max) 1))) unit)
+            (if (= mode "interrupt") (let ((wake (hid.wait (list) 3600000))) unit) unit))))))
+  (fn frames
+    (purpose "Exercise frame coalescing, canonical order, and explicit close.")
+    (sig -> Unit)
+    (eff io.out vinput.emit)
+    (fails vinput.VinputError)
+    (body
+      (let
+        ((d (vinput.create (spec))))
+        (do
+          (io.print (if (vinput.supports "create") "true" "false"))
+          (io.print (if (vinput.supports "unknown") "true" "false"))
+          (vinput.axis d "x" 5)
+          (vinput.axis d "rz" -1)
+          (vinput.button d 0 true)
+          (vinput.button d 0 false)
+          (vinput.sync d)
+          (vinput.hat d 3 1 1)
+          (vinput.hat d 0 -1 0)
+          (vinput.button d 55 true)
+          (vinput.button d 3 true)
+          (vinput.axis d "x" 10)
+          (vinput.axis d "rz" 1)
+          (vinput.sync d)
+          (vinput.axis d "rz" 1)
+          (vinput.hat d 0 0 0)
+          (vinput.button d 3 false)
+          (vinput.sync d)
+          (vinput.close d)
+          (vinput.close d)
+          (try
+            (vinput.sync d)
+            (catch vinput.VinputError (id msg) (io.print (str.join (list id msg) " "))))))))
+  (fn invalid
+    (purpose "Check invalid specifications and pending control updates.")
+    (sig -> Unit)
+    (eff io.out vinput.emit)
+    (fails vinput.VinputError)
+    (body
+      (let
+        ((s (spec)))
+        (do
+          (check-create (with s (name "")))
+          (check-create (with s (name "ééééééééééééééééééééééééééééééééééééééééé")))
+          (check-create (with s (vendor -1)))
+          (check-create (with s (product 65536)))
+          (check-create (with s (buttons 57)))
+          (check-create (with s (hats -1)))
+          (check-create (with s (axes (list (new vinput.Axis (name "foo") (min 0) (max 1))))))
+          (check-create (with s (axes (list (new vinput.Axis (name "x") (min 1) (max 1))))))
+          (check-create
+            (with
+              s
+              (axes
+                (list
+                  (new vinput.Axis (name "x") (min 0) (max 1))
+                  (new vinput.Axis (name "x") (min 0) (max 1))))))
+          (let
+            ((d (vinput.create (with s (axes (list)) (buttons 0) (hats 0)))))
+            (do
+              (try
+                (vinput.axis d "y" 0)
+                (catch vinput.VinputError (id msg) (io.print (str.join (list id msg) " "))))
+              (try
+                (vinput.button d 0 true)
+                (catch vinput.VinputError (id msg) (io.print (str.join (list id msg) " "))))
+              (try
+                (vinput.hat d 0 0 0)
+                (catch vinput.VinputError (id msg) (io.print (str.join (list id msg) " "))))))
+          (let
+            ((d (vinput.create s)))
+            (do
+              (try
+                (vinput.axis d "rz" -3)
+                (catch vinput.VinputError (id msg) (io.print (str.join (list id msg) " "))))
+              (try
+                (vinput.button d -1 true)
+                (catch vinput.VinputError (id msg) (io.print (str.join (list id msg) " "))))
+              (try
+                (vinput.hat d 0 0 2)
+                (catch vinput.VinputError (id msg) (io.print (str.join (list id msg) " "))))
+              (vinput.sync d)))))))
+  (fn main
+    (purpose "Select a conformance vector by its name.")
+    (sig -> Unit)
+    (eff hid.io io.in io.out time.now vinput.emit)
+    (fails hid.HidError vinput.VinputError)
+    (body
+      (match
+        (io.args)
+        ((list "frames") (frames))
+        ((list "invalid") (invalid))
+        (
+          (list "unsupported")
+          (do
+            (io.print (if (vinput.supports "create") "available" "unavailable"))
+            (check-create (spec))))
+        ((list mode) (cleanup mode))
+        (_ unit))))
+  (fn spec
+    (purpose "Return the standard joystick specification used by the vectors.")
+    (sig -> vinput.Spec)
+    (body
+      (new
+        vinput.Spec
+        (name "Probe")
+        (vendor 1)
+        (product 65535)
+        (axes
+          (list
+            (new vinput.Axis (name "rz") (min -2) (max 1))
+            (new vinput.Axis (name "x") (min 0) (max 10))))
+        (buttons 56)
+        (hats 4)))))

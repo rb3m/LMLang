@@ -57,7 +57,8 @@ class GenericMixin:
                 continue
             b = body[0]
             if head(b) == "opaque":
-                primitive = {"pat.Pat": m.is_stdlib, "hid.Dev": m.is_extension}
+                primitive = {"pat.Pat": m.is_stdlib, "hid.Dev": m.is_extension,
+                             "vinput.Dev": m.is_extension}
                 if not primitive.get(t.qual) or len(b.items) != 1 or t.params:
                     self.diag(m, "E-TYPE", b, path + "/2",
                               "opaque declarations are reserved for primitive types")

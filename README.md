@@ -94,11 +94,11 @@ The agent walks you through each scenario. Only after your explicit yes may it r
 
 ## Devices (extensions)
 
-OS-specific capabilities live in first-party extension modules under `ext/`, enabled per project with `(ext STEM)` in `lm.deps`. `hid` reads and writes HID reports, feature reports and grabs devices for exclusive use, with the same interface on every OS and one adapter per OS underneath (macOS today, Linux next). Effects `hid.io` and `hid.grab` gate it; binary data uses the core `Bytes` type. Examples run against scripted devices, and `LM_HID_REPLAY` replays recorded traces, so device programs are tested without hardware. See [ADR-083](docs/decisions/0083-device-io-layered-hid-vinput.md).
+OS-specific capabilities live in first-party extension modules under `ext/`, enabled per project with `(ext STEM)` in `lm.deps`. `hid` reads and writes HID reports, feature reports and grabs devices for exclusive use, with the same interface on every OS and one adapter per OS underneath (Linux and macOS). `vinput` creates virtual joysticks (Linux, through uinput). Effects `hid.io`, `hid.grab` and `vinput.emit` gate them; binary data uses the core `Bytes` type. Examples run against scripted devices, and `LM_HID_REPLAY` replays recorded traces, so device programs are tested without hardware. `src/hotas-split/` is a complete joystick bridge. To use your own devices, see [docs/DEVICES.md](docs/DEVICES.md); for the design, [ADR-083](docs/decisions/0083-device-io-layered-hid-vinput.md).
 
 ## Status
 
-Research prototype **v0.15.1**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
+Research prototype **v0.16.0**, with a standard-library-only Python reference implementation and Go and Python build targets. The benchmark tests the thesis; its measurements are evidence on this task set, not a claim about all programming work.
 
 | Metric | Target | Recorded result |
 |---|---|---|

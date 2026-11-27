@@ -451,8 +451,8 @@ func setup() {
 func runMain(entry func() Value, site int) {
 	seedFromEnv()
 	setup()
-	startHid()
-	shutdown := sync.OnceFunc(closeHid)
+	startDevices()
+	shutdown := sync.OnceFunc(closeDevices)
 	stopWatching := watchRuntimeSignals(shutdown)
 	kind, v, fl, ft := outcome(func() Value {
 		defer shutdown()
@@ -515,8 +515,8 @@ func runCases(cases []Case) {
 	for _, c := range cases {
 		randomState = 0
 		kind, v, fl, ft := outcome(func() Value {
-			startHid()
-			defer stopHid()
+			startDevices()
+			defer stopDevices()
 			return c.Run()
 		})
 		detail := ""

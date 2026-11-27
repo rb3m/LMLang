@@ -45,16 +45,20 @@ def run_serve(entry, site):
         result["headers"] = tuple((p.a, p.b) for p in result["headers"])
         return result
 
-    if "_start_hid" in globals(): _start_hid()
-    try:
+    def run():
         if listener:
-            server_mod.serve_listener(call, diagnostic=diagnostic, **options)
-        else:
-            server_mod.serve_cgi(call, diagnostic=diagnostic)
+            return server_mod.serve_listener(call, diagnostic=diagnostic, **options)
+        return server_mod.serve_cgi(call, diagnostic=diagnostic)
+
+    try:
+        if "_start_vinput" in globals():
+            return run_with_signal_shutdown(run, runtime_devices())
+        if "_start_hid" in globals():
+            with runtime_devices():
+                return run()
+        return run()
     except (ValueError, OSError) as ex:
         sys.stderr.write(f"HTTP server: {ex}\n")
         sys.exit(2)
     except KeyboardInterrupt:
         pass
-    finally:
-        if "_close_hid" in globals(): _close_hid()

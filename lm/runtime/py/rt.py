@@ -112,6 +112,7 @@ def _esc_str(s: str) -> str:
     return '"' + "".join(out) + '"'
 
 def show(v) -> str:
+    if "VinputDev" in globals() and isinstance(v, VinputDev): return "<vinput.Dev>"
     if "HidDev" in globals() and isinstance(v, HidDev): return "<hid.Dev>"
     if "Pat" in globals() and isinstance(v, Pat): return "<pat>"
     if v is True: return "true"

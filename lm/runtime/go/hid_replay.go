@@ -132,7 +132,11 @@ func (r *hidReplay) log(op string, handle *hidDev, fields map[string]any) error 
 		fields = map[string]any{}
 	}
 	fields["at-ms"], fields["op"], fields["dev"] = r.now(), op, handle.id
-	stream, err := os.OpenFile(r.logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	return appendReplayLog(r.logPath, fields)
+}
+
+func appendReplayLog(path string, fields any) error {
+	stream, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return err
 	}

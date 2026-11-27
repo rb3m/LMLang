@@ -19,3 +19,4 @@ str  26 exports  String operations.
 time  2 exports  Wall and monotonic clocks in milliseconds.
 vec  15 exports  Persistent immutable indexed collections backed by a 32-way trie with a tail.
 hid  14 exports  Access HID devices through the active runtime adapter.  opt-in: (ext hid) in lm.deps
+vinput  11 exports  Create and drive virtual joysticks through the active runtime adapter.  opt-in: (ext vinput) in lm.deps

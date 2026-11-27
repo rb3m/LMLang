@@ -1,0 +1,94 @@
+(module hotas-calibration
+  (purpose "Calibrate either HOTAS vendor sensor with a fixed centre and widening bounds.")
+  (use float math)
+  (export Calibration Reading rocker-default twist-default update)
+  (type Calibration (rec (min Int) (max Int) (centre Int) (invert Bool) (deadzone Float)))
+  (type Reading (rec (calibration Calibration) (position Int)))
+  (const
+    rocker-default
+    (purpose "Measured default rocker settings in the de-inverted coordinate system.")
+    (type Calibration)
+    (value (new Calibration (min 1200) (max 7000) (centre 4170) (invert true) (deadzone 12.0))))
+  (const
+    twist-default
+    (purpose "Measured default twist settings.")
+    (type Calibration)
+    (value (new Calibration (min 1000) (max 7700) (centre 4300) (invert false) (deadzone 13.0))))
+  (fn distance
+    (purpose "Convert an exact nonnegative Int difference to Float, even across both Int bounds.")
+    (sig (high Int) (low Int) -> Float)
+    (example (4300 1000) => 3300.0)
+    (example (9223372036854775807 -9223372036854775808) => 1.8446744073709552e+19)
+    (body
+      (let
+        (
+          (high-quotient (/ high 4096))
+          (low-quotient (/ low 4096))
+          (high-remainder (- high (* high-quotient 4096)))
+          (low-remainder (- low (* low-quotient 4096))))
+        (+
+          (* (float.from-int (- high-quotient low-quotient)) 4096.0)
+          (float.from-int (- high-remainder low-remainder))))))
+  (fn position
+    (purpose "Scale each side independently around the fixed centre at output 512.")
+    (sig (state Calibration) (raw Int) -> Int)
+    (example (twist-default 1000) => 0)
+    (example (twist-default 4300) => 512)
+    (example (twist-default 7700) => 1023)
+    (body
+      (let
+        ((midpoint (get state centre)) (percent (get state deadzone)))
+        (if
+          (< raw midpoint)
+          (- 512 (scaled (distance midpoint raw) (distance midpoint (get state min)) percent 512.0))
+          (+ 512 (scaled (distance raw midpoint) (distance (get state max) midpoint) percent 511.0))))))
+  (fn round-even
+    (purpose "Match Python rounding for a nonnegative, scaled half-axis value.")
+    (sig (value Float) -> Int)
+    (example (0.5) => 0)
+    (example (1.5) => 2)
+    (example (2.5) => 2)
+    (example (3.5000000000000004) => 4)
+    (example (3.4999999999999996) => 3)
+    (body
+      (let
+        ((lower (float.floor value)) (fraction (- value (float.from-int lower))))
+        (if (or (> fraction 0.5) (and (= fraction 0.5) (= (mod lower 2) 1))) (+ lower 1) lower))))
+  (fn scaled
+    (purpose "Compress the deadzone and rescale the rest of a half-axis.")
+    (sig (offset Float) (width Float) (percent Float) (limit Float) -> Int)
+    (example (100.0 5000.0 2.0 512.0) => 0)
+    (example (2550.0 5000.0 2.0 512.0) => 256)
+    (example (1024.0 2048.0 0.0 511.0) => 256)
+    (body
+      (let
+        ((zone (/ (* width percent) 100.0)))
+        (if
+          (<= offset zone)
+          0
+          (round-even (* limit (float.min 1.0 (/ (- offset zone) (- width zone)))))))))
+  (fn update
+    (purpose "Guard unpopulated words, apply inversion, and return the next bounds and position.")
+    (sig (state Calibration) (raw Int) -> Reading)
+    (example (twist-default 299) => (new Reading (calibration twist-default) (position 512)))
+    (example
+      (twist-default 900)
+      =>
+      (new Reading (calibration (with twist-default (min 900))) (position 0)))
+    (example
+      (rocker-default 7800)
+      =>
+      (new Reading (calibration (with rocker-default (min 391))) (position 0)))
+    (body
+      (if
+        (< raw 300)
+        (new Reading (calibration state) (position 512))
+        (let
+          (
+            (value (if (get state invert) (- 8191 raw) raw))
+            (next
+              (with
+                state
+                (min (math.min (get state min) value))
+                (max (math.max (get state max) value)))))
+          (new Reading (calibration next) (position (position next value))))))))

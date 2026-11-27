@@ -39,3 +39,5 @@ module tree  -- A persistent binary search tree with reusable generic traversals
 *fn tree.member  (value Int) (tree (Tree Int)) -> Bool  -- Test whether an integer is present in an ordered tree.
 *fn tree.size  (tree (Tree a)) -> Int  -- Count values in a tree of any element type.
 *fn tree.to-list  (tree (Tree a)) -> (List a)  -- List values in order; ordered trees produce ascending lists.
+module vinput-demo  -- Sweep an axis and tap a button on a virtual joystick.  (use vinput)
+*fn vinput-demo.main  -> Unit  [eff vinput.emit]  [fails vinput.VinputError]  -- Create a virtual joystick, sweep its X axis, then press and release button zero.

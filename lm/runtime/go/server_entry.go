@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 )
 
 func runServe(entry func(Value) Value, site int) {
@@ -49,9 +50,16 @@ func runServe(entry func(Value) Value, site int) {
 	out.writer = bufio.NewWriterSize(os.Stderr, 65536)
 	outTTY = isTTY(os.Stderr)
 	status := func() int {
-		startHid()
-		defer watchHidInterrupt()()
-		defer stopHid()
+		startDevices()
+		if vinputEnabled {
+			shutdown := sync.OnceFunc(closeDevices)
+			defer watchRuntimeSignals(shutdown)()
+			defer shutdown()
+		}
+		if !vinputEnabled {
+			defer watchHidInterrupt()()
+			defer stopDevices()
+		}
 		if !listen {
 			serverCGI(entry)
 			return 0

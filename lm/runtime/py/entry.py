@@ -35,13 +35,18 @@ def seed_from_env():
 @contextmanager
 def runtime_devices():
     hid = "_start_hid" in globals()
+    vinput = "_start_vinput" in globals()
     if hid:
         _start_hid()
+    if vinput:
+        _start_vinput()
     try:
         yield
     finally:
         if hid:
             _close_hid()
+        if vinput:
+            _close_vinput()
 
 def run_main(entry, site: int):
     seed_from_env()
@@ -92,10 +97,8 @@ def run_cases(cases):
     except (ValueError, RuntimeError): pass
     def run_one(fn):
         try:
-            if "_start_hid" in globals(): _start_hid()
-            try: return "ok", show(fn())
-            finally:
-                if "_close_hid" in globals(): _close_hid()
+            with runtime_devices():
+                return "ok", show(fn())
         except LmFail as fl: return "fail", str(fl)
         except Fault as ft: return "fault", ft.diag["code"]
         except RecursionError: return "fault", "E-RECURSION-LIMIT"

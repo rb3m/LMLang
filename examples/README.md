@@ -10,6 +10,7 @@ Working programs to copy patterns from. Each one passes `lm check` and `lm test`
 | `file-lines.lm` | A small CLI: program arguments, reading a file, effects, exit status. | `lm run file-lines.main --allow io.in --allow io.out --allow fs.read -- FILE` |
 | `colsum.lm` | A CSV tool: parse lines, group into a `Map`, print sorted output, handle errors. | `lm run colsum.main --allow io.in --allow io.out --allow fs.read -- FILE 0 1` |
 | `cgi-echo.lm` | An HTTP handler for `lm serve` / `lm build --serve` (CGI or listener), JSON output. | `REQUEST_METHOD=GET REQUEST_URI='/hi?a=1' QUERY_STRING='a=1' lm serve cgi-echo.handle examples/cgi-echo.lm --cgi`; deploying: `docs/DEPLOY-CGI.md` |
+| [`vinput-demo/`](vinput-demo/USAGE.md) | Create a virtual joystick and check its frames in a fake-world example. | `lm test examples/vinput-demo` |
 
 Larger programs (each has its own `src/` and `tests/accept/`; run `lm` commands inside the directory):
 

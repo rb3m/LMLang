@@ -6,6 +6,7 @@ import json
 import threading
 import time
 
+from .device_replay import replay_log_writer
 from .hid_adapter import CAPS, INFO_FIELDS, MAX_QUEUE, HidDev, HidProblem, UnavailableHid
 from .hid_adapter import decode_report, report_id, valid_int
 
@@ -73,12 +74,7 @@ def replay_hid(path, log_path):
     def now():
         return (time.monotonic_ns() - start) // 1_000_000
 
-    def append(row):
-        if log_path is not None:
-            with open(log_path, "a", encoding="utf-8") as stream:
-                stream.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-    return LiveReplayHid(trace, now, append)
+    return LiveReplayHid(trace, now, replay_log_writer(log_path))
 
 
 class ReplayDevice:

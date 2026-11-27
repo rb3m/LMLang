@@ -16,7 +16,7 @@
     "events": []
   },
   "stdout": "unavailable\nunknown\nunsupported\na unsupported\n0\n",
-  "darwin_stdout_pattern": "available\nunknown\n[0-9]+\na not-found\n0\n",
+  "live_stdout_pattern": "available\nunknown\n[0-9]+\na not-found\n0\n",
   "log": [],
   "os_adapter": true
 }

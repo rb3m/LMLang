@@ -3,11 +3,11 @@
 ## What and why
 **Writing a program IN LM, not changing LM? Skip this file:** run `<this repo>/bin/lm new NAME` in your own dir and follow the AGENTS.md it creates.
 LM is a programming language and toolchain authored and read by AI agents: dependency-closed slices, exact name resolution, declared contracts/effects, edit-by-operation, JSON diagnostics. It tests a falsifiable thesis (PRD.md section 2); the owner judges intent and does not read code.
-Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go -> native binary (`lm build`). Python reference impl, stdlib only; s-expressions.
+Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go binary (`lm build`). Python reference impl, stdlib only; s-expressions.
 
 ## Current step
-- Backlog 3-6, 8, 9, 13-20, 22-28, 31 done (ADR-058..082). 21 left: a program the owner uses daily (docs/EVIDENCE.md). Public v0.13.0, export only.
-- Backlog 30 (ADR-083): P1 bytes, P2 ext/hid + macOS adapter done. Next P3: Linux adapter, `vinput` (uinput), port both bridges (needs Linux workstation). 32 done (ADR-084); 33-34 queued.
+- Backlog 3-6, 8, 9, 13-20, 22-28, 31 done (ADR-058..082). 21 left: a program the owner uses daily (docs/EVIDENCE.md). Public v0.16.0, export only.
+- Backlog 30 (ADR-083): hid + `vinput` done (macOS, Linux); hotas-split ported. Next: tartarus-bridge. 32 done; 33-36 queued.
 - Open: S5 real tokenizer 1.302x vs target <= 1.3x (ADR-025), OPEN by 0.002. Never call it passed.
 
 ## Rules
@@ -32,8 +32,9 @@ Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> ty
 - `docs/ROADMAP.md`: open backlog and current milestone. Read when picking or scoping work.
 - `docs/EVIDENCE.md`: thesis datapoints. Append when an experiment yields a measurement.
 - `docs/EXPERIMENTS.md`: trying LM on real programs; known gaps. Read when writing in `src/`.
+- `docs/DEVICES.md`: using your own HID devices; `docs/HID-LIVE.md`: live checklists. Read before device work.
 - `docs/DEPLOY-CGI.md`: deploying a `--serve` handler as CGI. Read before deploying.
 - `docs/ENVIRONMENT.md` (public: `ENVIRONMENT.example.md`): machines, Go, remotes, agents. Read before building, pushing or switching hosts.
 - `docs/decisions/`: one ADR per file, indexed in README; read matching ADR before changing behavior it covers.
 - `docs/archive/`: finished milestones (M0-M12), old reviews (history).
-- Code: `bin/lm` (wrapper), `lm/` (Python package; `lm/runtime/go/` Go runtime), `stdlib/*.lm`, `skills/lm/` (agent skill, `lm install`), `src/` (user programs), `games/`, `benchprojects/` (run `../../bin/lm` inside), `examples/` (index: README.md), `tests/{unit,spec,accept,golden}`, `bench/`.
+- Code: `bin/lm`, `lm/` (Python; `lm/runtime/go/` Go runtime), `stdlib/`, `ext/` (opt-in), `skills/lm/` (`lm install`), `src/` (user programs), `games/`, `benchprojects/` (run `../../bin/lm` inside), `examples/` (index README.md), `tests/`, `bench/`.

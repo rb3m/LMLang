@@ -1,0 +1,35 @@
+(module hotas-split
+  (purpose "Bridge the T.Flight Hotas One to a joystick with independent twist and rocker.")
+  (use fs hotas-bridge hotas-config io json str)
+  (export main)
+  (fn bad-config
+    (purpose "Print a configuration error and return status 2.")
+    (sig (message Str) -> Int)
+    (eff io.out)
+    (body (do (io.eprint (str.concat "Cannot load configuration: " message)) 2)))
+  (fn main
+    (purpose "Run the HOTAS bridge with defaults or an explicit JSON configuration path.")
+    (sig -> Int)
+    (eff env.read fs.read hid.grab hid.io io.in io.out vinput.emit)
+    (example () (given) => 0 (err "Hotas One not found; waiting for the next plug-in\n"))
+    (body
+      (match
+        (io.args)
+        ((list) (start None))
+        ((list "--config" path) (start (Some path)))
+        (_ (do (io.eprint "Usage: hotas-split [--config PATH]") 2)))))
+  (fn start
+    (purpose "Load settings before any device access, then run the bridge.")
+    (sig (path (Opt Str)) -> Int)
+    (eff env.read fs.read hid.grab hid.io io.out vinput.emit)
+    (body
+      (try
+        (try
+          (try
+            (do (hotas-bridge.run (hotas-config.load path)) 0)
+            (catch hotas-config.ConfigError (message) (bad-config message)))
+          (catch fs.IoError (file message) (bad-config (str.cat (list file ": " message)))))
+        (catch
+          json.BadJson
+          (offset message)
+          (bad-config (str.cat (list "JSON at offset " (str.from-int offset) ": " message))))))))

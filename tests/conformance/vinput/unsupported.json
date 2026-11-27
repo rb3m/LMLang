@@ -1,0 +1,13 @@
+{
+  "trace": {
+    "devices": [],
+    "events": []
+  },
+  "probe": "unsupported",
+  "stdout": "unavailable\n unsupported\n",
+  "log": [],
+  "os_adapter": true,
+  "skip_platforms": [
+    "linux"
+  ]
+}

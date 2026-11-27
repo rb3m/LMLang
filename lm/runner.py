@@ -85,7 +85,7 @@ def test_program(prog):
                     signature = fn([t for _, t in f.params], f.ret)
                     if not f.eff and not any(
                             contains_opaque(signature, name, prog.type_index)
-                            for name in ("pat.Pat", "hid.Dev")):
+                            for name in ("pat.Pat", "hid.Dev", "vinput.Dev")):
                         stats["no_examples"].append(f.qual)
                     continue
                 for k, c in enumerate(exs):
@@ -142,7 +142,7 @@ def _example(prog, f, k, c):
             matched = failed is None and got == want and type(got) is type(want)
         mismatches = [] if matched else [(expected, found)]
         if world is not None:
-            world.hid.shutdown()
+            world.shutdown()
             world.check_procs()
             mismatches.extend(_world_checks(prog, f, parts, world))
         if not mismatches:
@@ -163,7 +163,7 @@ def _example(prog, f, k, c):
         return d
     finally:
         if world is not None:
-            world.hid.shutdown()
+            world.shutdown()
 
 
 def _world_checks(prog, f, parts, world):
@@ -180,10 +180,10 @@ def _world_checks(prog, f, parts, world):
                 mismatches.append((f"{name} {show(values[0])}",
                                    f"{name} {show(got)}"))
             continue
-        if name == "hid-log":
-            if world.hid_log != values[0]:
-                mismatches.append((f"hid-log {values[0]!r}",
-                                   f"hid-log {world.hid_log!r}"))
+        if name in ("hid-log", "vinput-log"):
+            log = getattr(world, name.replace("-", "_"))
+            if log != values[0]:
+                mismatches.append((f"{name} {values[0]!r}", f"{name} {log!r}"))
             continue
         path = values[0]
         is_file, is_dir = path in world.files, path in world.dirs

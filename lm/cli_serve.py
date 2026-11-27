@@ -13,6 +13,7 @@ def cmd_serve(args):
     from .http_server import serve_cgi, serve_listener
     from .interp import Interp
     from .runner import in_big_stack, runtime_diag
+    from .runtime.py.shutdown import run_with_signal_shutdown
     from .values import Denied, Named, Pair, Rec
 
     try:
@@ -46,11 +47,16 @@ def cmd_serve(args):
         result["headers"] = tuple((p.a, p.b) for p in result["headers"])
         return result
 
+    def run():
+        if listener:
+            return serve_listener(call, diagnostic=diagnostic, **options)
+        return serve_cgi(call, diagnostic=diagnostic)
+
     try:
+        if "vinput" in prog.modules:
+            return run_with_signal_shutdown(run, interp)
         with interp:
-            if listener:
-                return serve_listener(call, diagnostic=diagnostic, **options)
-            return serve_cgi(call, diagnostic=diagnostic)
+            return run()
     except (ValueError, OSError) as ex:
         sys.stderr.write(f"lm serve: {ex}\n")
         return 2

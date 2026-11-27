@@ -85,7 +85,7 @@ class Interp:
         self.err = err if err is not None else sys.stderr
         self.args = tuple(sanitize_arg(a) for a in args)
         self.world = world
-        self.hid = None
+        self.hid = self.vinput = None
         self.rng = world.rng if world is not None else SplitMix64(seed)
         self.frames: list = []
         self.tail_sites = {}  # fn id -> source node identities; cached for this checked program
@@ -93,14 +93,21 @@ class Interp:
         self.reset()
 
     def __enter__(self):
-        if self.world is None and "hid" in self.prog.modules:
+        if self.world is not None:
+            return self
+        if "hid" in self.prog.modules:
             from .hid_prims import start_hid
             self.hid = start_hid()
+        if "vinput" in self.prog.modules:
+            from .vinput_prims import start_vinput
+            self.vinput = start_vinput(self.hid)
         return self
 
     def __exit__(self, *exc):
         if self.hid is not None:
             self.hid.shutdown()
+        if self.vinput is not None:
+            self.vinput.shutdown()
 
     def reset(self):
         self.frames[:] = [["top", None, None, None]]

@@ -1,0 +1,231 @@
+(module hotas-bridge
+  (purpose "Grab a HOTAS, relay its reports as joystick controls, and close both handles.")
+  (use hid hotas-calibration hotas-config hotas-report io list str vinput)
+  (export run)
+  (const
+    joystick-name
+    (purpose "Virtual joystick name shown to applications.")
+    (type Str)
+    (value "T.Flight Hotas One (split)"))
+  (const product-id (purpose "T.Flight Hotas One USB product ID, b68d.") (type Int) (value 46733))
+  (const vendor-id (purpose "Thrustmaster USB vendor ID, 044f.") (type Int) (value 1103))
+  (fn attach
+    (purpose "Grab the device and release its handle after driving the joystick.")
+    (sig (info hid.Info) (settings hotas-config.Settings) -> Unit)
+    (eff hid.grab hid.io io.out vinput.emit)
+    (fails hid.HidError)
+    (body
+      (let
+        ((source (hid.open (get info id))))
+        (do
+          (try
+            (try
+              (do
+                (hid.grab source true)
+                (io.eprint (str.cat (list "Bridging " (get info id) " as " joystick-name)))
+                (drive source settings))
+              (catch hid.HidError (device-id message) (stopped message)))
+            (catch vinput.VinputError (device-id message) (stopped message)))
+          (hid.close source)))))
+  (fn axis
+    (purpose "Declare the zero-based output range for an axis.")
+    (sig (name Str) (maximum Int) -> vinput.Axis)
+    (example ("z" 255) => (new vinput.Axis (name "z") (min 0) (max 255)))
+    (body (new vinput.Axis (name name) (min 0) (max maximum))))
+  (fn drive
+    (purpose "Create the joystick and close it after the relay stops or fails.")
+    (sig (source hid.Dev) (settings hotas-config.Settings) -> Unit)
+    (eff hid.io io.out vinput.emit)
+    (fails vinput.VinputError)
+    (body
+      (let
+        ((output (vinput.create (joystick settings))))
+        (do
+          (try
+            (try
+              (relay source output settings (get settings twist) (get settings rocker))
+              (catch hid.HidError (device-id message) (stopped message)))
+            (catch vinput.VinputError (device-id message) (stopped message)))
+          (vinput.close output)))))
+  (fn emit
+    (purpose "Queue all decoded controls, then sync a single change-only frame.")
+    (sig
+      (output vinput.Dev)
+      (settings hotas-config.Settings)
+      (controls hotas-report.Controls)
+      (twist Int)
+      (rocker Int)
+      ->
+      Unit)
+    (eff vinput.emit)
+    (fails vinput.VinputError)
+    (body
+      (do
+        (vinput.axis output "x" (get controls x))
+        (vinput.axis output "y" (get controls y))
+        (vinput.axis output "z" (get controls z))
+        (vinput.axis output (get settings twist-axis) twist)
+        (vinput.axis output (get settings rocker-axis) rocker)
+        (match (get controls hat) ((pair east south) (vinput.hat output 0 east south)))
+        (set-buttons output (get controls buttons) 0)
+        (vinput.sync output))))
+  (fn joystick
+    (purpose "Declare the fixed controls and the configurable twist and rocker axes.")
+    (sig (settings hotas-config.Settings) -> vinput.Spec)
+    (example
+      (hotas-config.defaults)
+      =>
+      (new
+        vinput.Spec
+        (name "T.Flight Hotas One (split)")
+        (vendor 1103)
+        (product 46733)
+        (axes
+          (list
+            (new vinput.Axis (name "x") (min 0) (max 1023))
+            (new vinput.Axis (name "y") (min 0) (max 1023))
+            (new vinput.Axis (name "z") (min 0) (max 255))
+            (new vinput.Axis (name "rz") (min 0) (max 1023))
+            (new vinput.Axis (name "rx") (min 0) (max 1023))))
+        (buttons 15)
+        (hats 1)))
+    (body
+      (new
+        vinput.Spec
+        (name joystick-name)
+        (vendor vendor-id)
+        (product product-id)
+        (axes
+          (list
+            (axis "x" 1023)
+            (axis "y" 1023)
+            (axis "z" 255)
+            (axis (get settings twist-axis) 1023)
+            (axis (get settings rocker-axis) 1023)))
+        (buttons 15)
+        (hats 1))))
+  (fn matches-device
+    (purpose "Identify the T.Flight Hotas One by USB vendor and product IDs.")
+    (sig (info hid.Info) -> Bool)
+    (example
+      (
+        (new
+          hid.Info
+          (id "hotas")
+          (vendor 1103)
+          (product 46733)
+          (usage-page 1)
+          (usage 4)
+          (interface -1)
+          (name "HOTAS")
+          (serial "")))
+      =>
+      true)
+    (body (and (= (get info vendor) vendor-id) (= (get info product) product-id))))
+  (fn relay
+    (purpose "Wait for input, skip invalid reports, and carry each axis's widened bounds forward.")
+    (sig
+      (source hid.Dev)
+      (output vinput.Dev)
+      (settings hotas-config.Settings)
+      (twist hotas-calibration.Calibration)
+      (rocker hotas-calibration.Calibration)
+      ->
+      Unit)
+    (eff hid.io vinput.emit)
+    (fails hid.HidError vinput.VinputError)
+    (body
+      (let
+        ((ready (hid.wait (list source) 1000)))
+        (match
+          (hid.read source)
+          (None (relay source output settings twist rocker))
+          (
+            (Some report)
+            (match
+              (hotas-report.decode (get report id) (get report data))
+              (None (relay source output settings twist rocker))
+              (
+                (Some controls)
+                (let
+                  (
+                    (twist-reading (hotas-calibration.update twist (get controls twist-raw)))
+                    (rocker-reading (hotas-calibration.update rocker (get controls rocker-raw))))
+                  (do
+                    (emit
+                      output
+                      settings
+                      controls
+                      (get twist-reading position)
+                      (get rocker-reading position))
+                    (relay
+                      source
+                      output
+                      settings
+                      (get twist-reading calibration)
+                      (get rocker-reading calibration)))))))))))
+  (fn run
+    (purpose "Enumerate and bridge the matching HOTAS, or log that it is absent.")
+    (sig (settings hotas-config.Settings) -> Unit)
+    (eff hid.grab hid.io io.out vinput.emit)
+    (example
+      (hotas-config.defaults)
+      (given (hid (device "other" 1103 4 1 4)))
+      =>
+      unit
+      (err "Hotas One not found; waiting for the next plug-in\n"))
+    (example
+      (hotas-config.defaults)
+      (given
+        (hid
+          (device "hotas" 1103 46733 1 4)
+          (report 1 "hotas" 2 "00")
+          (report 2 "hotas" 1 "00")
+          (report
+            3
+            "hotas"
+            1
+            "0000ff03ff000000000010000000000000cc1000000000b50f0000000000000000000000000000000000000000000000000000000000000000000000000000")
+          (unplug 4 "hotas")))
+      =>
+      unit
+      (err "Bridging hotas as T.Flight Hotas One (split)\nBridge stopped: disconnected\n")
+      (hid-log (grab 0 "hotas" true) (close 4 "hotas"))
+      (vinput-log
+        (create 0 "v1" "T.Flight Hotas One (split)")
+        (frame
+          3
+          "v1"
+          (
+            (axis "x" 0)
+            (axis "y" 1023)
+            (axis "z" 255)
+            (axis "rz" 512)
+            (axis "rx" 512)
+            (button 0 true)
+            (hat 0 0 -1)))
+        (close 4 "v1")))
+    (body
+      (try
+        (match
+          (list.filter (hid.enumerate) matches-device)
+          ((cons info _) (attach info settings))
+          ((list) (io.eprint "Hotas One not found; waiting for the next plug-in")))
+        (catch hid.HidError (device-id message) (stopped message)))))
+  (fn set-buttons
+    (purpose "Queue the button states in kernel key-code order.")
+    (sig (output vinput.Dev) (buttons (List Bool)) (index Int) -> Unit)
+    (eff vinput.emit)
+    (fails vinput.VinputError)
+    (body
+      (match
+        buttons
+        ((list) unit)
+        (
+          (cons pressed remaining)
+          (do (vinput.button output index pressed) (set-buttons output remaining (+ index 1)))))))
+  (fn stopped
+    (purpose "Log why the bridge stopped.")
+    (sig (message Str) -> Unit)
+    (eff io.out)
+    (body (io.eprint (str.concat "Bridge stopped: " message)))))

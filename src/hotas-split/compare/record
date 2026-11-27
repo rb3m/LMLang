@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Record HID packets from a HOTAS for LM replay. Run with the owner at the controls."""
+
+import argparse
+import errno
+import os
+from pathlib import Path
+import select
+import sys
+import time
+
+from trace import PRODUCT, VENDOR, trace, write_trace
+
+
+def find_hotas():
+    pattern = f"0003:{VENDOR:04X}:{PRODUCT:04X}.*/hidraw/hidraw*"
+    nodes = sorted(Path("/sys/bus/hid/devices").glob(pattern))
+    if not nodes:
+        raise FileNotFoundError("No T.Flight Hotas One hidraw device found")
+    return Path("/dev") / nodes[0].name
+
+
+def capture(node, duration):
+    packets = []
+    with node.open("rb", buffering=0) as source:
+        start = time.monotonic_ns()
+        deadline = start + int(duration * 1_000_000_000)
+        print("Move the HOTAS controls. Press Ctrl+C or unplug to stop.", file=sys.stderr)
+        try:
+            while (remaining := deadline - time.monotonic_ns()) > 0:
+                if not select.select([source], [], [], remaining / 1_000_000_000)[0]:
+                    break
+                packet = os.read(source.fileno(), 4096)
+                if not packet:
+                    break
+                at = max(1, (time.monotonic_ns() - start) // 1_000_000)
+                packets.append((at, packet))
+        except KeyboardInterrupt:
+            pass
+        except OSError as error:
+            if error.errno not in (errno.ENODEV, errno.EIO):
+                raise
+    return packets
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("output", type=Path, help="Replay JSON output path")
+    parser.add_argument("--seconds", type=float, default=30)
+    args = parser.parse_args()
+    if not 0 < args.seconds < float("inf"):
+        parser.error("--seconds must be positive and finite")
+    if args.output.exists():
+        parser.error(f"{args.output} already exists")
+    packets = capture(find_hotas(), args.seconds)
+    write_trace(args.output, trace(packets))
+    print(f"Wrote {len(packets)} reports to {args.output}")
+
+
+if __name__ == "__main__":
+    main()

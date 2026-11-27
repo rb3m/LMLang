@@ -7,12 +7,14 @@ def hid_runtime(directory):
     """Return source segments with the same primitive names as the Go target."""
     adapter = (directory / "hid_adapter.py").read_text(encoding="utf-8")
     darwin = (directory / "hid_darwin.py").read_text(encoding="utf-8")
+    linux = (directory / "hid_linux.py").read_text(encoding="utf-8")
     host = (directory / "hid_os.py").read_text(encoding="utf-8")
     replay = (directory / "hid_replay.py").read_text(encoding="utf-8")
     prims = (directory / "hid_prims.py").read_text(encoding="utf-8")
     segments = [
         clean_source(adapter),
         wrap_module(darwin, "hid_darwin"),
+        wrap_module(linux, "hid_linux"),
         clean_source(host),
         wrap_module(replay, "hid_replay"),
         "replay_hid = hid_replay.replay_hid",

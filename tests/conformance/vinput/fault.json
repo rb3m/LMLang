@@ -1,0 +1,101 @@
+{
+  "trace": {
+    "devices": [
+      {
+        "id": "a",
+        "vendor": 1,
+        "product": 2,
+        "usage-page": 1,
+        "usage": 6,
+        "interface": -1,
+        "name": "Replay HID",
+        "serial": ""
+      }
+    ],
+    "events": [
+      {
+        "at-ms": 25,
+        "dev": "a",
+        "report-id": 0,
+        "data": "12"
+      }
+    ]
+  },
+  "probe": "fault",
+  "stdout": "ready\n",
+  "log": [
+    {
+      "at-ms": 0,
+      "op": "vinput-create",
+      "dev": "v1",
+      "name": "Probe",
+      "vendor": 1,
+      "product": 65535,
+      "axes": [
+        {
+          "name": "rz",
+          "min": -2,
+          "max": 1
+        },
+        {
+          "name": "x",
+          "min": 0,
+          "max": 10
+        }
+      ],
+      "buttons": 56,
+      "hats": 4
+    },
+    {
+      "at-ms": 0,
+      "op": "vinput-create",
+      "dev": "v2",
+      "name": "Probe",
+      "vendor": 1,
+      "product": 65535,
+      "axes": [
+        {
+          "name": "rz",
+          "min": -2,
+          "max": 1
+        },
+        {
+          "name": "x",
+          "min": 0,
+          "max": 10
+        }
+      ],
+      "buttons": 56,
+      "hats": 4
+    },
+    {
+      "at-ms": 25,
+      "op": "vinput-frame",
+      "dev": "v2",
+      "events": [
+        [
+          "button",
+          0,
+          true
+        ]
+      ]
+    },
+    {
+      "at-ms": 25,
+      "op": "close",
+      "dev": "a"
+    },
+    {
+      "at-ms": 25,
+      "op": "vinput-close",
+      "dev": "v1"
+    },
+    {
+      "at-ms": 25,
+      "op": "vinput-close",
+      "dev": "v2"
+    }
+  ],
+  "fault": "E-OVERFLOW",
+  "returncode": 70
+}

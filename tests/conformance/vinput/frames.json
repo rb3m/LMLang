@@ -1,0 +1,12 @@
+{
+  "trace": {"devices": [], "events": []},
+  "probe": "frames",
+  "stdout": "true\nfalse\nv1 disconnected\n",
+  "log": [
+    {"at-ms":0,"op":"vinput-create","dev":"v1","name":"Probe","vendor":1,"product":65535,"axes":[{"name":"rz","min":-2,"max":1},{"name":"x","min":0,"max":10}],"buttons":56,"hats":4},
+    {"at-ms":0,"op":"vinput-frame","dev":"v1","events":[]},
+    {"at-ms":0,"op":"vinput-frame","dev":"v1","events":[["axis","rz",1],["axis","x",10],["button",3,true],["button",55,true],["hat",0,-1,0],["hat",3,1,1]]},
+    {"at-ms":0,"op":"vinput-frame","dev":"v1","events":[["button",3,false],["hat",0,0,0]]},
+    {"at-ms":0,"op":"vinput-close","dev":"v1"}
+  ]
+}

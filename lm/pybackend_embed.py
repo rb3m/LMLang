@@ -244,6 +244,9 @@ def prim_time_mono_ms():
     adapter = globals().get("_hid_adapter")
     if adapter is not None and isinstance(adapter, hid_replay.ReplayHid):
         return adapter.now()
+    vinput = globals().get("_vinput_adapter")
+    if vinput is not None and vinput.now is not None:
+        return vinput.now()
     return time.monotonic_ns() // 1_000_000
 """
 
@@ -361,6 +364,12 @@ def generate_embedded_runtime(prog: ir.Program, vec_literals: bool = False,
             '',
         ])
 
+    if any(name.startswith(('hid.', 'vinput.')) for name in prog.prims):
+        parts.append(clean_source((LM_DIR / 'device_replay.py').read_text(encoding="utf-8")))
+    if any(name.startswith('vinput.') for name in prog.prims):
+        from .vinput_embed import vinput_runtime
+
+        parts.extend(vinput_runtime(LM_DIR))
     if any(name.startswith('hid.') for name in prog.prims):
         from .hid_embed import hid_runtime
 

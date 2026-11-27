@@ -55,15 +55,15 @@ Float is finite binary64. Literals need a dot or exponent (`1.0`, `2.5e-3`) and 
 
 ## Effects and examples
 
-Effects are `io.out io.in env.read fs.read fs.write fs.delete hid.io hid.grab net.http proc.run time.now rand`. Declare them with `(eff EFF..)`.
+Effects are `io.out io.in env.read fs.read fs.write fs.delete hid.io hid.grab vinput.emit net.http proc.run time.now rand`. Declare them with `(eff EFF..)`.
 
-Effectful examples require `given`, even if empty. For `io.in io.out`:
+Effectful examples require `given`:
 
 ```lisp
 (example () (given (stdin "hi")) => unit (out "hi\n"))
 ```
 
-Inputs: `args stdin env file dir now-ms seed proc hid`. Checks: `out err file no-file dir no-dir`. Each example gets a fresh fake world (default clocks and seed 0). Omitted out/err assert empty output. Checks run after expected failures too.
+Inputs: `args stdin env file dir now-ms seed proc hid`. Checks: `out err file no-file dir no-dir hid-log vinput-log`. Each example gets a fresh fake world (default clocks and seed 0). Omitted out/err assert empty output. Checks run after expected failures too.
 
 ## Scenarios
 

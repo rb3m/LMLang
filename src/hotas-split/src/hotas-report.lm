@@ -1,0 +1,94 @@
+(module hotas-report
+  (purpose "Decode a T.Flight Hotas One input report after stripping its report ID.")
+  (use bytes)
+  (export Controls decode)
+  (type
+    Controls
+    (rec
+      (x Int)
+      (y Int)
+      (z Int)
+      (twist-raw Int)
+      (rocker-raw Int)
+      (hat (Pair Int Int))
+      (buttons (List Bool))))
+  (fn button-bits
+    (purpose "Unpack a little-endian sequence of button bits, least significant first.")
+    (sig (bits Int) (count Int) -> (List Bool))
+    (example (5 4) => (list true false true false))
+    (body (if (<= count 0) (list) (cons (= (mod bits 2) 1) (button-bits (/ bits 2) (- count 1))))))
+  (fn decode
+    (purpose "Read stick axes, raw vendor words, hat and buttons from a valid 63-byte payload.")
+    (sig (report-id Int) (data Bytes) -> (Opt Controls))
+    (example (2 (bytesof "00")) => None)
+    (example (1 (bytesof "00")) => None)
+    (example
+      (1
+        (bytesof
+          "2301ab03ff7fff8080801701fc00000000341200000000bc1a0000000000000000000000000000000000000000000000000000000000000000000000000000"))
+      =>
+      (Some
+        (new
+          Controls
+          (x 291)
+          (y 939)
+          (z 255)
+          (twist-raw 4660)
+          (rocker-raw 6844)
+          (hat (pair -1 -1))
+          (buttons
+            (list
+              true
+              false
+              false
+              false
+              true
+              false
+              false
+              false
+              false
+              false
+              false
+              false
+              false
+              false
+              true)))))
+    (body
+      (if
+        (and (= report-id 1) (= (bytes.size data) 63))
+        (let?
+          (
+            (stick-x (bytes.u16le data 0))
+            (stick-y (bytes.u16le data 2))
+            (lever (bytes.u8 data 4))
+            (twist-word (bytes.u16le data 17))
+            (rocker-word (bytes.u16le data 23))
+            (packed (bytes.u32le data 10)))
+          (Some
+            (new
+              Controls
+              (x stick-x)
+              (y stick-y)
+              (z lever)
+              (twist-raw twist-word)
+              (rocker-raw rocker-word)
+              (hat (hat-direction (mod packed 16)))
+              (buttons (button-bits (/ packed 16) 15)))))
+        None)))
+  (fn hat-direction
+    (purpose "Translate the hat nibble clockwise from north, with eight neutral codes.")
+    (sig (hat-code Int) -> (Pair Int Int))
+    (example (3) => (pair 1 1))
+    (example (15) => (pair 0 0))
+    (body
+      (match
+        hat-code
+        (0 (pair 0 -1))
+        (1 (pair 1 -1))
+        (2 (pair 1 0))
+        (3 (pair 1 1))
+        (4 (pair 0 1))
+        (5 (pair -1 1))
+        (6 (pair -1 0))
+        (7 (pair -1 -1))
+        (_ (pair 0 0))))))

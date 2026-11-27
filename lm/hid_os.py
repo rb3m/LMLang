@@ -20,4 +20,7 @@ def os_hid():
     if sys.platform == "darwin":
         from . import hid_darwin
         return hid_darwin.DarwinHid()
+    if sys.platform.startswith("linux"):
+        from . import hid_linux
+        return hid_linux.LinuxHid()
     return UnsupportedHid()

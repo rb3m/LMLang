@@ -1,0 +1,50 @@
+(module vinput
+  (purpose "Create and drive virtual joysticks through the active runtime adapter.")
+  (notes "Axis, button and hat updates are pending until sync. In an example use (given) or the usual fake inputs, and (vinput-log (create MS ID NAME) (frame MS ID ((axis NAME VALUE) (button INDEX DOWN) (hat INDEX X Y))) (close MS ID)) to check the ordered output. LM_HID_REPLAY enables recording to LM_HID_REPLAY_LOG.")
+  (type Axis (rec (name Str) (min Int) (max Int)))
+  (type Dev (opaque))
+  (type
+    Spec
+    (rec (name Str) (vendor Int) (product Int) (axes (List Axis)) (buttons Int) (hats Int)))
+  (error VinputError (id Str) (msg Str))
+  (fn axis
+    (purpose "Set a pending value for a declared axis.")
+    (sig (d Dev) (name Str) (value Int) -> Unit)
+    (eff vinput.emit)
+    (fails VinputError)
+    (body (prim "vinput.axis")))
+  (fn button
+    (purpose "Set a pending state for a zero-based button index.")
+    (sig (d Dev) (index Int) (down Bool) -> Unit)
+    (eff vinput.emit)
+    (fails VinputError)
+    (body (prim "vinput.button")))
+  (fn close
+    (purpose "Destroy the virtual joystick. Repeated closes do nothing.")
+    (sig (d Dev) -> Unit)
+    (eff vinput.emit)
+    (fails VinputError)
+    (body (prim "vinput.close")))
+  (fn create
+    (purpose "Create a virtual joystick with the given name, identity and controls.")
+    (sig (spec Spec) -> Dev)
+    (eff vinput.emit)
+    (fails VinputError)
+    (body (prim "vinput.create")))
+  (fn hat
+    (purpose "Set a pending state for a zero-based hat index, where each coordinate is -1, 0 or 1.")
+    (sig (d Dev) (index Int) (x Int) (y Int) -> Unit)
+    (eff vinput.emit)
+    (fails VinputError)
+    (body (prim "vinput.hat")))
+  (fn supports
+    (purpose "Test adapter support for create. Unknown capabilities return false.")
+    (sig (cap Str) -> Bool)
+    (eff vinput.emit)
+    (body (prim "vinput.supports")))
+  (fn sync
+    (purpose "Emit changed controls in one frame.")
+    (sig (d Dev) -> Unit)
+    (eff vinput.emit)
+    (fails VinputError)
+    (body (prim "vinput.sync"))))

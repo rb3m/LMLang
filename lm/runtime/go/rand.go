@@ -79,5 +79,8 @@ func prim_time_mono_ms() Value {
 	if replay, ok := activeHid.(*hidReplay); ok {
 		return replay.now()
 	}
+	if activeVinput != nil && activeVinput.now != nil {
+		return activeVinput.now()
+	}
 	return time.Since(monoOrigin).Milliseconds()
 }

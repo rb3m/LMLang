@@ -5,6 +5,8 @@ from io import StringIO
 
 from .hid_prims import hid_call
 from .hid_replay import ReplayHid
+from .vinput_adapter import RecordingVinput, VinputAdapter
+from .vinput_prims import vinput_call
 from .io_prims import io_read_all, io_read_line
 from .prims import PRIMS
 from .rand_prims import SplitMix64
@@ -75,6 +77,18 @@ class FakeWorld:
         self.hid = ReplayHid(trace, lambda: self.mono_ms - self.now_ms,
                              self.advance_clock, self.hid_log.append)
 
+        self.vinput_log = []
+        self.vinput = VinputAdapter(RecordingVinput(self.hid.now, self.record_vinput))
+
+    def record_vinput(self, row):
+        if row["op"] == "vinput-create":
+            row = {key: row[key] for key in ("at-ms", "op", "dev", "name")}
+        self.vinput_log.append(row)
+
+    def shutdown(self):
+        self.hid.shutdown()
+        self.vinput.shutdown()
+
     def advance_clock(self, elapsed):
         self.mono_ms += elapsed
 
@@ -86,6 +100,8 @@ class FakeWorld:
             return self._fs(name[3:], *args)
         if name.startswith('hid.'):
             return hid_call(self.hid, name[4:], *args)
+        if name.startswith('vinput.'):
+            return vinput_call(self.vinput, name[7:], *args)
         if name == 'time.mono-ms':
             if not in_range(self.mono_ms):
                 raise Overflow("+", (self.now_ms, self.mono_ms - self.now_ms))

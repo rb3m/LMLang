@@ -271,3 +271,5 @@ module vec  -- Persistent immutable indexed collections backed by a 32-way trie 
 *fn vec.size  (v (Vec a)) -> Int  -- The number of elements.
 *fn vec.tabulate  (n Int) (f (Fn (Int) a)) -> (Vec a)  -- A vector of f applied to indices 0 through n minus one; negative n gives empty.
 *fn vec.to-list  (v (Vec a)) -> (List a)  -- The vector elements as a list in index order.
+module vinput-demo  -- Sweep an axis and tap a button on a virtual joystick.  (use vinput)
+*fn vinput-demo.main  -> Unit  [eff vinput.emit]  [fails vinput.VinputError]  -- Create a virtual joystick, sweep its X axis, then press and release button zero.

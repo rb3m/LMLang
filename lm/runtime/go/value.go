@@ -216,6 +216,8 @@ func showTo(b *strings.Builder, v Value) {
 		b.WriteByte(')')
 	case Bytes:
 		b.WriteString(`(bytesof "` + bytesHex(x) + `")`)
+	case *vinputDev:
+		b.WriteString("<vinput.Dev>")
 	case *hidDev:
 		b.WriteString("<hid.Dev>")
 	case *Pat:

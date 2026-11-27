@@ -104,9 +104,12 @@ class Denied(Exception):
 def show(v) -> str:
     from .pat_compile import Pat
     from .hid_adapter import HidDev
+    from .vinput_adapter import VinputDev
 
     if isinstance(v, HidDev):
         return "<hid.Dev>"
+    if isinstance(v, VinputDev):
+        return "<vinput.Dev>"
     if isinstance(v, Pat):
         return "<pat>"
     if v is True:

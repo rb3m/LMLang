@@ -210,8 +210,7 @@ def emit_main(prog: ir.Program, entry: str, entry_site: ir.Site,
     s = g.site(entry_site)
     call = (f"runServe(func(req Value) Value {{ return {mangle(entry, 'F_')}(req) }}, {s})"
             if serve else f"runMain(func() Value {{ return {mangle(entry, 'F_')}() }}, {s})")
-    hid = ["\thidEnabled = true"] if uses_hid(prog) else []
-    main = ["func main() {", *hid, f"\t{call}", "}"]
+    main = ["func main() {", *device_flags(prog), f"\t{call}", "}"]
     return g.program(main)
 
 
@@ -227,9 +226,15 @@ def emit_cases(prog: ir.Program, cases, contracts: bool = True) -> str:
         g.ind -= 1
         g.emit("}},")
     rows, g.ind = g.lines, 0
-    hid = ["\thidEnabled = true"] if uses_hid(prog) else []
-    return g.program(["func main() {", *hid, "\trunCases([]Case{", *rows, "\t})", "}"])
+    return g.program(["func main() {", *device_flags(prog), "\trunCases([]Case{", *rows, "\t})", "}"])
 
 
 def uses_hid(prog):
     return any(name.startswith("hid.") for name in prog.prims)
+
+
+def device_flags(prog):
+    flags = ["\thidEnabled = true"] if uses_hid(prog) else []
+    if any(name.startswith("vinput.") for name in prog.prims):
+        flags.append("\tvinputEnabled = true")
+    return flags

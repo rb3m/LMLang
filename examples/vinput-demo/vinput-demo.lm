@@ -1,0 +1,46 @@
+(module vinput-demo
+  (purpose "Sweep an axis and tap a button on a virtual joystick.")
+  (use vinput)
+  (export main)
+  (fn main
+    (purpose "Create a virtual joystick, sweep its X axis, then press and release button zero.")
+    (sig -> Unit)
+    (eff vinput.emit)
+    (fails vinput.VinputError)
+    (example
+      ()
+      (given)
+      =>
+      unit
+      (vinput-log
+        (create 0 "v1" "LM Virtual Joystick")
+        (frame 0 "v1" ((axis "x" -100)))
+        (frame 0 "v1" ((axis "x" -50)))
+        (frame 0 "v1" ((axis "x" 0)))
+        (frame 0 "v1" ((axis "x" 50)))
+        (frame 0 "v1" ((axis "x" 100)))
+        (frame 0 "v1" ((button 0 true)))
+        (frame 0 "v1" ((button 0 false)))
+        (close 0 "v1")))
+    (body
+      (let
+        (
+          (joystick
+            (vinput.create
+              (new
+                vinput.Spec
+                (name "LM Virtual Joystick")
+                (vendor 0)
+                (product 0)
+                (axes (list (new vinput.Axis (name "x") (min -100) (max 100))))
+                (buttons 1)
+                (hats 0)))))
+        (do
+          (for
+            (position (list -100 -50 0 50 100))
+            (do (vinput.axis joystick "x" position) (vinput.sync joystick)))
+          (vinput.button joystick 0 true)
+          (vinput.sync joystick)
+          (vinput.button joystick 0 false)
+          (vinput.sync joystick)
+          (vinput.close joystick))))))

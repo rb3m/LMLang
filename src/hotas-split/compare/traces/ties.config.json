@@ -1,0 +1,6 @@
+{
+  "deadzone_percent": 0,
+  "twist": {"min": 2252, "max": 6348, "centre": 4300},
+  "rocker": {"min": 2122, "max": 6218, "centre": 4170},
+  "axes": {"twist": "ABS_WHEEL", "rocker": "ABS_RUDDER"}
+}

@@ -56,6 +56,8 @@ def mono_ms(it):
 
     if isinstance(it.hid, ReplayHid):
         return it.hid.now()
+    if it.vinput is not None and it.vinput.now is not None:
+        return it.vinput.now()
     return time.monotonic_ns() // 1_000_000
 
 
