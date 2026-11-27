@@ -6,7 +6,7 @@ LM is a programming language and toolchain authored and read by AI agents: depen
 Pipeline: `.lm` -> reader -> AST (stable node paths) -> modules -> resolve -> types -> effects/fails -> interpreter (oracle), or -> IR -> Go binary (`lm build`). Python reference impl, stdlib only; s-expressions.
 
 ## Current step
-- Backlog 3-6, 8, 9, 13-20, 22-28, 31 done (ADR-058..082). 21 left: a program the owner uses daily (docs/EVIDENCE.md). Public v0.16.0, export only.
+- Backlog 3-6, 8, 9, 13-20, 22-28, 31 done (ADR-058..082). 21 left: a program the owner uses daily (docs/EVIDENCE.md). Public v0.16.1, export only.
 - Backlog 30 (ADR-083): hid + `vinput` done (macOS, Linux); hotas-split ported. Next: tartarus-bridge. 32 done; 33-36 queued.
 - Open: S5 real tokenizer 1.302x vs target <= 1.3x (ADR-025), OPEN by 0.002. Never call it passed.
 

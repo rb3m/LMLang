@@ -97,5 +97,6 @@
     }
   ],
   "interrupt": true,
-  "interrupt_after": 3
+  "interrupt_after": 3,
+  "wait_tolerance_ms": 100
 }
